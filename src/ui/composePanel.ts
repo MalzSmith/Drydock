@@ -108,13 +108,7 @@ function editor(sp: Shape): HTMLElement {
 export function mountComposePanel(root: HTMLElement) {
   const summary = text()
   const stack = h('div', { style: 'display:contents' })
-  const add = h(
-    'div',
-    { class: 'add-row' },
-    ...(['box', 'sphere', 'cylinder', 'ellipsoid', 'torus', 'pyramid'] as ShapeType[]).map((t) =>
-      h('button', { class: 'btn btn-secondary', onClick: () => actions.addShape(t) }, '+ ' + cap(t)),
-    ),
-  )
+  const add = h('div', { class: 'add-row' }, h('button', { class: 'btn btn-secondary', onClick: () => actions.addShape('box') }, '+ Add shape'))
   const grid = seg<'Large' | 'Small'>({
     options: [['Large', 'Large grid · 2.5 m'], ['Small', 'Small grid · 0.5 m']],
     value: 'Large',

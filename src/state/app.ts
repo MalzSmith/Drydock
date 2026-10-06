@@ -32,7 +32,7 @@ export type { SourceKind }
 export type Source = { id: number; name: string; kind: SourceKind; when: number; note: string }
 export type ShapeOp = 'add' | 'subtract' | 'intersect'
 export type ShapeType = 'box' | 'sphere' | 'cylinder' | 'ellipsoid' | 'torus' | 'pyramid'
-export const ROTATABLE: ShapeType[] = ['torus', 'pyramid']
+export const ROTATABLE: ShapeType[] = ['cylinder', 'torus', 'pyramid']
 export type Shape = {
   id: number
   op: ShapeOp
