@@ -52,6 +52,8 @@ function mul3(a: ArrayLike<number>, b: ArrayLike<number>, out: Float32Array) {
     for (let j = 0; j < 3; j++) out[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j]
 }
 
+const sgn = (v: number) => (v > 1e-6 ? 1 : v < -1e-6 ? -1 : 0)
+
 const cellKey = (x: number, y: number, z: number) => ((x + 32768) * 65536 + (y + 32768)) * 65536 + (z + 32768)
 
 const isMod = (d: DefRecord) => d.source !== 'vanilla' && d.source !== 'game'
@@ -191,6 +193,7 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
       }
       if (r.topo !== undefined && r.sides?.length) {
         const topo = table.topologies[r.topo]
+        const U = ORIENT[topo.uniq?.[d.orient[i]] ?? d.orient[i]]
         const n = Math.min(topo.tiles.length, r.sides.length)
         const meshes: MeshState[] = []
         let pending = false
@@ -211,9 +214,9 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
               for (let t = 0; t < n; t++) {
                 const tile = topo.tiles[t]
                 const tn = tile.n
-                const nx = tn[0] * R[0] + tn[1] * R[3] + tn[2] * R[6]
-                const ny = tn[0] * R[1] + tn[1] * R[4] + tn[2] * R[7]
-                const nz = tn[0] * R[2] + tn[1] * R[5] + tn[2] * R[8]
+                const nx = tn[0] * U[0] + tn[1] * U[3] + tn[2] * U[6]
+                const ny = tn[0] * U[1] + tn[1] * U[4] + tn[2] * U[7]
+                const nz = tn[0] * U[2] + tn[1] * U[5] + tn[2] * U[8]
                 let tf = flags
                 if (tile.f & TILE_FULL || r.topo === TOPO_BOX) {
                   const ix = Math.round(nx), iy = Math.round(ny), iz = Math.round(nz)
@@ -229,7 +232,9 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
                   }
                 }
                 const m = meshes[t]
-                mul3([tile.m[0], tile.m[1], tile.m[2], tile.m[3], tile.m[4], tile.m[5], tile.m[6], tile.m[7], tile.m[8]], R, tileM)
+                const fixed = tile.id ? table.grid[tile.id]?.find((g) => g.s[0] === sgn(nx) && g.s[1] === sgn(ny) && g.s[2] === sgn(nz)) : undefined
+                if (fixed) for (let k = 0; k < 9; k++) tileM[k] = fixed.m[k]
+                else mul3([tile.m[0], tile.m[1], tile.m[2], tile.m[3], tile.m[4], tile.m[5], tile.m[6], tile.m[7], tile.m[8]], U, tileM)
                 const side = r.sides[t]
                 patternOffset(r.topo, tile, nx, ny, nz, x, y, z, side[1], side[2], side[3], side[4], m.data!.patternScale, uvo, 0)
                 emit(m, sk, tileM, tx, ty, tz, key, paint, uvo[0], uvo[1], tf)

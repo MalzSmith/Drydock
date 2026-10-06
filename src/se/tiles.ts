@@ -1,8 +1,8 @@
 import { TOPO_SLOPE2BASE, TOPO_SLOPE2TIP } from './defs.ts'
 
-export type Tile = { m: number[]; n: [number, number, number]; f: number }
-export type Topology = { name: string; tiles: Tile[]; edges: Array<[[number, number, number], [number, number, number]]> }
-export type TileTable = { v: number; topologies: Topology[] }
+export type Tile = { m: number[]; n: [number, number, number]; f: number; id?: string }
+export type Topology = { name: string; tiles: Tile[]; edges: Array<[[number, number, number], [number, number, number]]>; uniq: Array<number | null> }
+export type TileTable = { v: number; topologies: Topology[]; grid: Record<string, Array<{ s: [number, number, number]; m: number[] }>> }
 
 export const TILE_FULL = 1
 export const TILE_DONT_OFFSET = 2

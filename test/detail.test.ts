@@ -57,7 +57,7 @@ const lookup = (status: MeshState['status']) => (c: string[]): MeshState => ({ s
 
 describe('buildDetail', () => {
   it('moves armor faces between full cubes to section-only groups', () => {
-    const s = buildDetail(model([[0, 0, 0, 0], [1, 0, 0, 0]], [armor]), table as TileTable, lookup('ok'))
+    const s = buildDetail(model([[0, 0, 0, 0], [1, 0, 0, 0]], [armor]), table as unknown as TileTable, lookup('ok'))
     const front = s.groups.find((g) => !g.behind)!
     const back = s.groups.find((g) => g.behind)!
     expect(front.count).toBe(10)
@@ -68,18 +68,18 @@ describe('buildDetail', () => {
   })
 
   it('keeps pending blocks as boxes and shrinks missing models', () => {
-    const pending = buildDetail(model([[0, 0, 0, 0]], [battery]), table as TileTable, lookup('pending'))
+    const pending = buildDetail(model([[0, 0, 0, 0]], [battery]), table as unknown as TileTable, lookup('pending'))
     expect(pending.groups.length).toBe(0)
     expect(pending.boxes[0].count).toBe(1)
     expect(pending.boxes[0].inst[7] & FLAG_SHRINK).toBe(0)
-    const missing = buildDetail(model([[0, 0, 0, 0]], [battery]), table as TileTable, lookup('missing'))
+    const missing = buildDetail(model([[0, 0, 0, 0]], [battery]), table as unknown as TileTable, lookup('missing'))
     expect(missing.boxes[0].inst[7] & FLAG_SHRINK).toBe(FLAG_SHRINK)
     expect(missing.missing).toBe(1)
   })
 
   it('draws armor with missing or uncached tile models as boxes, not bare edges', () => {
     for (const status of ['missing', 'uncached'] as const) {
-      const s = buildDetail(model([[0, 0, 0, 0], [1, 0, 0, 0]], [armor]), table as TileTable, lookup(status))
+      const s = buildDetail(model([[0, 0, 0, 0], [1, 0, 0, 0]], [armor]), table as unknown as TileTable, lookup(status))
       expect(s.groups.length).toBe(0)
       expect(s.lines.length).toBe(0)
       expect(s.boxes[0].count).toBe(2)
@@ -88,7 +88,7 @@ describe('buildDetail', () => {
   })
 
   it('places a model at the block centre', () => {
-    const s = buildDetail(model([[2, 0, 0, 0]], [battery]), table as TileTable, lookup('ok'))
+    const s = buildDetail(model([[2, 0, 0, 0]], [battery]), table as unknown as TileTable, lookup('ok'))
     expect(Array.from(s.groups[0].inst.subarray(9, 12))).toEqual([5, 0, 0])
   })
 })
