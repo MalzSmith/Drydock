@@ -23,6 +23,7 @@ import {
   PRESETS,
   aspectOf,
   clampZoom,
+  centerOfMass,
   computeFit,
   createCameras,
   frameRect,
@@ -176,7 +177,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
   let dragging = false
   let model: RenderModel | null = null
   let bounds: Bounds = { center: [0, 0, 0], radius: 10, min: [-10, -10, -10], max: [10, 10, 10] }
-  let fitState: Fit = { dist: 40, half: 12, offP: [0, 0, 0], offO: [0, 0, 0] }
+  let fitState: Fit = { dist: 40, half: 12 }
   let fitGrids: FitGrid[] = []
   let W = 1
   let H = 1
@@ -253,15 +254,14 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
       }
       const lo = m.boundsMin
       const hi = m.boundsMax
-      bounds = {
-        center: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2],
-        radius: Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2,
-        min: lo,
-        max: hi,
-      }
+      fitGrids = m.grids.map((g) => ({ cell: g.cell, toMain: g.toMain, inst: new Float32Array(g.inst), count: g.count }))
+      const com = centerOfMass(fitGrids)
+      let radius = 0
+      for (let i = 0; i < 8; i++)
+        radius = Math.max(radius, Math.hypot((i & 1 ? hi[0] : lo[0]) - com[0], (i & 2 ? hi[1] : lo[1]) - com[1], (i & 4 ? hi[2] : lo[2]) - com[2]))
+      bounds = { center: com, radius, min: lo, max: hi }
       boxMat.uniforms.u_cmin.value.set(m.cellMin[0], m.cellMin[1], m.cellMin[2])
       boxMat.uniforms.u_mc.value = m.mainCell
-      fitGrids = m.grids.map((g) => ({ cell: g.cell, toMain: g.toMain, inst: new Float32Array(g.inst), count: g.count }))
       if (o.refit) refit(view.yaw, view.pitch)
       else if (grew) {
         refit(view.yaw, view.pitch)
@@ -423,15 +423,11 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
       requestFrame()
     },
     fitFor(yaws: number[]): Fit {
-      const sum: Fit = { dist: 0, half: 0, offP: [0, 0, 0], offO: [0, 0, 0] }
+      const sum: Fit = { dist: 0, half: 0 }
       for (const y of yaws) {
         const f = computeFit(y, view.pitch, fitGrids, bounds.center, aspectOf(aspect))
         sum.dist = Math.max(sum.dist, f.dist)
         sum.half = Math.max(sum.half, f.half)
-        for (let i = 0; i < 3; i++) {
-          sum.offP[i] += f.offP[i] / yaws.length
-          sum.offO[i] += f.offO[i] / yaws.length
-        }
       }
       return sum
     },

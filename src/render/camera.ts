@@ -64,11 +64,30 @@ export type Bounds = { center: [number, number, number]; radius: number; min: [n
 
 export type Vec3 = [number, number, number]
 
-export type Fit = { dist: number; half: number; offP: Vec3; offO: Vec3 }
+export type Fit = { dist: number; half: number }
 
 export const FIT_FILL = 0.85
 
 export type FitGrid = { cell: number; toMain: Float32Array; inst: Float32Array; count: number }
+
+export function centerOfMass(grids: FitGrid[]): Vec3 {
+  let x = 0, y = 0, z = 0, n = 0
+  for (const g of grids) {
+    const m = g.toMain
+    const f = g.inst
+    for (let i = 0; i < g.count; i++) {
+      const o = i * 8
+      const lx = (f[o] + (f[o + 3] - 1) * 0.5) * g.cell
+      const ly = (f[o + 1] + (f[o + 4] - 1) * 0.5) * g.cell
+      const lz = (f[o + 2] + (f[o + 5] - 1) * 0.5) * g.cell
+      x += lx * m[0] + ly * m[4] + lz * m[8] + m[12]
+      y += lx * m[1] + ly * m[5] + lz * m[9] + m[13]
+      z += lx * m[2] + ly * m[6] + lz * m[10] + m[14]
+      n++
+    }
+  }
+  return n ? [x / n, y / n, z / n] : [0, 0, 0]
+}
 
 export function computeFit(yaw: number, pitch: number, grids: FitGrid[], center: Vec3, aspect: number): Fit {
   const c = Math.cos(yaw)
@@ -121,46 +140,20 @@ export function computeFit(yaw: number, pitch: number, grids: FitGrid[], center:
   }
   const kx = 1 / (tanV * aspect * FIT_FILL)
   const ky = 1 / (tanV * FIT_FILL)
-  let ox = 0
-  let oy = 0
   let dist = 1e-3
-  for (let iter = 0; iter < 8; iter++) {
-    dist = 1e-3
-    for (let i = 0; i < total; i++) {
-      const q = i * 6
-      const zn = P[q + 2] + P[q + 5]
-      const d = zn + Math.max((Math.abs(P[q] - ox) + P[q + 3]) * kx, (Math.abs(P[q + 1] - oy) + P[q + 4]) * ky)
-      if (d > dist) dist = d
-    }
-    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity
-    for (let i = 0; i < total; i++) {
-      const q = i * 6
-      const depth = Math.max(dist - (P[q + 2] + P[q + 5]), 1e-3)
-      const a = (P[q] - ox - P[q + 3]) / depth
-      const b = (P[q] - ox + P[q + 3]) / depth
-      const cc = (P[q + 1] - oy - P[q + 4]) / depth
-      const dd = (P[q + 1] - oy + P[q + 4]) / depth
-      if (a < x0) x0 = a
-      if (b > x1) x1 = b
-      if (cc < y0) y0 = cc
-      if (dd > y1) y1 = dd
-    }
-    ox += ((x0 + x1) / 4) * dist
-    oy += ((y0 + y1) / 4) * dist
-  }
-  let ux0 = Infinity, ux1 = -Infinity, uy0 = Infinity, uy1 = -Infinity
+  let hx = 0
+  let hy = 0
   for (let i = 0; i < total; i++) {
     const q = i * 6
-    if (P[q] - P[q + 3] < ux0) ux0 = P[q] - P[q + 3]
-    if (P[q] + P[q + 3] > ux1) ux1 = P[q] + P[q + 3]
-    if (P[q + 1] - P[q + 4] < uy0) uy0 = P[q + 1] - P[q + 4]
-    if (P[q + 1] + P[q + 4] > uy1) uy1 = P[q + 1] + P[q + 4]
+    const ax = Math.abs(P[q]) + P[q + 3]
+    const ay = Math.abs(P[q + 1]) + P[q + 4]
+    const d = P[q + 2] + P[q + 5] + Math.max(ax * kx, ay * ky)
+    if (d > dist) dist = d
+    if (ax > hx) hx = ax
+    if (ay > hy) hy = ay
   }
-  const mx = (ux0 + ux1) / 2
-  const my = (uy0 + uy1) / 2
-  const half = Math.max((uy1 - uy0) / 2, (ux1 - ux0) / 2 / aspect, 1e-3) / FIT_FILL
-  const off = (a: number, b: number): Vec3 => [vx[0] * a + vy[0] * b, vx[1] * a + vy[1] * b, vx[2] * a + vy[2] * b]
-  return { dist, half, offP: off(ox, oy), offO: off(mx, my) }
+  const half = Math.max(hy, hx / aspect, 1e-3) / FIT_FILL
+  return { dist, half }
 }
 
 export type CameraKit = {
@@ -185,11 +178,11 @@ export function placeCameras(kit: CameraKit, view: View, b: Bounds, W: number, H
   const zx = -s * cp
   const zy = sp
   const zz = c * cp
-  const pos = new Vector3(b.center[0] + fit.offP[0] + zx * dist, b.center[1] + fit.offP[1] + zy * dist, b.center[2] + fit.offP[2] + zz * dist)
+  const pos = new Vector3(b.center[0] + zx * dist, b.center[1] + zy * dist, b.center[2] + zz * dist)
   const near = Math.max(0.05 * r, dist - 2.5 * r)
   const far = dist + 2.5 * r
   const distO = 3 * r
-  const posO = new Vector3(b.center[0] + fit.offO[0] + zx * distO, b.center[1] + fit.offO[1] + zy * distO, b.center[2] + fit.offO[2] + zz * distO)
+  const posO = new Vector3(b.center[0] + zx * distO, b.center[1] + zy * distO, b.center[2] + zz * distO)
   const scale = H / frame.h
   const p = kit.persp
   p.position.copy(pos)
