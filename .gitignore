@@ -1,0 +1,4 @@
+node_modules
+dist
+scripts/gen-tiles/bin/
+scripts/gen-tiles/obj/
