@@ -8,7 +8,7 @@ Static, framework-free browser app: Vite + TypeScript, three.js (WebGL2), Web Wo
 - **Build the DOM once, patch it on state change.** There is no virtual DOM, and no panel is re-rendered wholesale through innerHTML on a state change. A list rebuilds its rows only when its own data changes.
 - **Render on demand.** The GL loop runs only while something animates (camera lerp, drag, turntable). Otherwise a state change draws one frame.
 - **Heavy work goes in a worker.** Blueprint parsing, source scanning and CSG voxelizing never block the UI.
-- **Performance targets:** first paint < 100 ms; JS bundle < 200 kB gzip without data (three included); a 10k-block bp.sbc goes from drop to frame in < 300 ms; the 105k-block / 54 MB workshop blueprint `244850/3489293609` in < 2.5 s; 60 fps orbit at 105k blocks with boxes. With block models every block draws its LOD0 mesh (no LOD switching), so the model frame rate on huge ships is whatever the GPU manages; measured: 88 fps for `3489293609` at 1600×1000 with 2× SS.
+- **Performance targets:** first paint < 100 ms; JS bundle < 200 kB gzip without data (three included); a 10k-block bp.sbc goes from drop to frame in < 300 ms; a 105k-block / 54 MB bp.sbc in < 2.5 s; 60 fps orbit at 105k blocks with boxes. With block models every block draws its LOD0 mesh (no LOD switching), so the model frame rate on huge ships is whatever the GPU manages; measured: 88 fps for a 105k-block ship at 1600×1000 with 2× SS.
 
 ## Layout
 
@@ -213,4 +213,4 @@ Flow: after a scan the worker writes `snap` and prunes removed mods, the list is
 - `?bp=<url>` loads a bp.sbc by URL on start, through the same path as a drop. Vite dev serves repo files under `/@fs/`.
 - `?view=iso|front|side|top|rear`, `?style=textured|shaded|clay|line`, `?light=directional|uniform` and `?w=..&h=..` exist for screenshot scripts.
 - `scripts/shot.mjs <url> <out.png>` drives `playwright-core` with `channel: 'msedge'` and waits for `document.body.dataset.ready === '1'`, which the app sets after the first frame of a loaded model.
-- `test/blueprint.test.ts` checks parsed block counts against every `<dir>/*/bp.sbc` under `DRYDOCK_BP_DIR`; `test/assets.test.ts` reads game files from `SE_GAME_ROOT`. Both are skipped when the folders are missing.
+- Tests are self-contained (synthetic XML, in-memory trees) except the `game assets` suite in `test/assets.test.ts`, which builds real meshes and textures from the game's `Content` folder. It runs only when `SE_GAME_ROOT` points at a Space Engineers install and is skipped otherwise; there is no default path.

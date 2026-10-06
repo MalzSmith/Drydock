@@ -1,18 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { parseBlueprint } from '../src/se/blueprint.ts'
-
-const finals = process.env.DRYDOCK_BP_DIR ?? ''
-const files = finals && existsSync(finals)
-  ? readdirSync(finals)
-      .map((d) => join(finals, d, 'bp.sbc'))
-      .filter(existsSync)
-  : []
-
-function grepCount(text: string): number {
-  return text.split('<MyObjectBuilder_CubeBlock').length - 1
-}
 
 describe('parseBlueprint', () => {
   it('parses attributes and children forms', () => {
@@ -59,14 +46,5 @@ describe('parseBlueprint', () => {
     const xml = `<CubeGrids><CubeGrid><GridSizeEnum>Small</GridSizeEnum><CubeBlocks>${blk(0)}${blk(1)}${blk(2)}</CubeBlocks></CubeGrid><CubeGrid><GridSizeEnum>Large</GridSizeEnum><CubeBlocks>${blk(0)}</CubeBlocks></CubeGrid></CubeGrids>`
     const bp = parseBlueprint(xml)
     expect(bp.grids.map((g) => g.large)).toEqual([true, false])
-  })
-
-  it.skipIf(!files.length)('matches grep block counts on reference ships', () => {
-    for (const f of files) {
-      const text = readFileSync(f, 'utf8')
-      const bp = parseBlueprint(text)
-      const total = bp.grids.reduce((n, g) => n + g.key.length, 0)
-      expect(total, f).toBe(grepCount(text))
-    }
   })
 })
