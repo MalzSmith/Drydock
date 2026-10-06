@@ -479,6 +479,7 @@ export const actions = {
   setSearch: (search: string) => store.set({ search }),
   setSpin: (spin: boolean) => store.set({ spin }),
   setPreset: (preset: string) => store.set({ preset, spin: false }),
+  clearPreset: () => store.set({ preset: '' }),
   openSources: () => store.set({ srcOpen: true }),
   closeSources: () => store.set({ srcOpen: false }),
   openMissing: () => store.set({ missingOpen: true }),

@@ -105,7 +105,7 @@ export function fileName(): string {
   const bp = (s.mode === 'compose' ? s.compose.name : (s.info?.name ?? 'blueprint')).replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'blueprint'
   const base = s.export.fileName
     .replace('{blueprint}', bp)
-    .replace('{view}', s.preset)
+    .replace('{view}', s.preset || 'custom')
     .replace('{date}', new Date().toISOString().slice(0, 10))
   return base.replace(/[\\/:*?"<>|]+/g, '_')
 }

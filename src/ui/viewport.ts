@@ -137,23 +137,32 @@ export function mountViewport(root: HTMLElement) {
       h(
         'div',
         { class: 'vp-right' },
-        h('span', { class: 'hint' }, 'Drag to orbit · scroll to zoom · Shift+scroll steps section'),
+        h('span', { class: 'hint' }, 'Drag to orbit · right-drag to pan · scroll to zoom · Shift+scroll steps section'),
         h('span', { class: 'readout' }, readout.el),
       ),
     ),
     toast,
   )
 
-  let drag: { x: number; y: number; yaw: number; pitch: number; dir: number } | null = null
+  let drag: { x: number; y: number; lx: number; ly: number; yaw: number; pitch: number; dir: number; pan: boolean } | null = null
+  const manual = () => {
+    if (store.get().preset) actions.clearPreset()
+  }
+  gl.addEventListener('contextmenu', (e) => e.preventDefault())
   gl.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 && e.button !== 2) return
     gl.setPointerCapture(e.pointerId)
-    drag = { x: e.clientX, y: e.clientY, yaw: renderer.view.yaw, pitch: renderer.view.pitch, dir: Math.cos(renderer.view.pitch) < 0 ? -1 : 1 }
+    drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, yaw: renderer.view.yaw, pitch: renderer.view.pitch, dir: Math.cos(renderer.view.pitch) < 0 ? -1 : 1, pan: e.button === 2 }
     renderer.dragStart()
     gl.classList.add('drag')
   })
   gl.addEventListener('pointermove', (e) => {
-    if (!drag) return
-    renderer.orbit(drag.yaw + (e.clientX - drag.x) * 0.008 * drag.dir, drag.pitch + (e.clientY - drag.y) * 0.008)
+    if (!drag || (e.clientX === drag.lx && e.clientY === drag.ly)) return
+    manual()
+    if (drag.pan) renderer.panBy(e.clientX - drag.lx, e.clientY - drag.ly)
+    else renderer.orbit(drag.yaw + (e.clientX - drag.x) * 0.008 * drag.dir, drag.pitch + (e.clientY - drag.y) * 0.008)
+    drag.lx = e.clientX
+    drag.ly = e.clientY
   })
   const up = () => {
     drag = null
@@ -169,7 +178,10 @@ export function mountViewport(root: HTMLElement) {
       e.preventDefault()
       const d = e.deltaY || e.deltaX
       if (e.shiftKey && store.get().section.on) actions.stepSection(d > 0 ? -1 : 1)
-      else renderer.zoomBy(d)
+      else {
+        manual()
+        renderer.zoomBy(d)
+      }
     },
     { passive: false },
   )

@@ -23,6 +23,7 @@ import {
   PRESETS,
   aspectOf,
   clampZoom,
+  FOV,
   centerOfMass,
   computeFit,
   createCameras,
@@ -214,14 +215,22 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     }
   }
 
+  let pan: [number, number, number] = [0, 0, 0]
+
+  function viewBounds(): Bounds {
+    const c = bounds.center
+    return { ...bounds, center: [c[0] + pan[0], c[1] + pan[1], c[2] + pan[2]], radius: bounds.radius + Math.hypot(pan[0], pan[1], pan[2]) }
+  }
+
   function refit(yaw: number, pitch: number) {
+    pan = [0, 0, 0]
     fitState = computeFit(yaw, pitch, fitGrids, bounds.center, aspectOf(aspect))
   }
 
   function outsideView(m: RenderModel): boolean {
     if (!model) return true
     const fr = frameRect(W, H, aspectOf(aspect))
-    placeCameras(cameras, view, bounds, W, H, fr, fitState)
+    placeCameras(cameras, view, viewBounds(), W, H, fr, fitState)
     const cam: Camera = proj === 'persp' ? cameras.persp : cameras.ortho
     const lo = m.boundsMin
     const hi = m.boundsMax
@@ -307,7 +316,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
 
   function draw() {
     const fr = frameRect(W, H, aspectOf(aspect))
-    placeCameras(cameras, view, bounds, W, H, fr, fitState)
+    placeCameras(cameras, view, viewBounds(), W, H, fr, fitState)
     const cam: Camera = proj === 'persp' ? cameras.persp : cameras.ortho
     const sc = Math.max(W, H) / 1400
     bgMat.uniforms.u_origin.value.set(0, 0)
@@ -417,6 +426,19 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
       view.pitch = pitch
       requestFrame()
     },
+    panBy(dx: number, dy: number) {
+      const fr = frameRect(W, H, aspectOf(aspect))
+      const per = proj === 'persp' ? (2 * (fitState.dist / view.zoom) * Math.tan((FOV * Math.PI) / 360)) / fr.h : (2 * (fitState.half / view.zoom)) / fr.h
+      const c = Math.cos(view.yaw)
+      const s = Math.sin(view.yaw)
+      const cp = Math.cos(view.pitch)
+      const sp = Math.sin(view.pitch)
+      const rx = [c, 0, s]
+      const uy = [s * sp, cp, -c * sp]
+      for (let i = 0; i < 3; i++) pan[i] += (-rx[i] * dx + uy[i] * dy) * per
+      target = null
+      requestFrame()
+    },
     zoomBy(dy: number) {
       view.zoom = clampZoom(view.zoom * Math.exp(-dy * 0.0015))
       target = null
@@ -436,7 +458,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     exportBegin(o: { W: number; H: number; cssW: number; ss: number; transparent: boolean; yaw?: number; fit?: Fit }) {
       exportState = { ...o, rt: null, zo: null }
       const v = { ...view, yaw: o.yaw ?? view.yaw }
-      placeCameras(cameras, v, bounds, o.W, o.H, { x: 0, y: 0, w: o.W, h: o.H }, o.fit ?? fitState)
+      placeCameras(cameras, v, viewBounds(), o.W, o.H, { x: 0, y: 0, w: o.W, h: o.H }, o.fit ?? fitState)
       bgMat.uniforms.u_res.value.set(o.W, o.H)
       bgMat.uniforms.u_scale.value = Math.max(o.W, o.H) / 1400
       bgMat.uniforms.u_yaw.value = v.yaw
