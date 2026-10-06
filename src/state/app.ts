@@ -97,7 +97,7 @@ export type AppState = {
   search: string
   mods: Record<string, boolean>
   tab: Tab
-  render: { mode: RenderStyle; proj: 'persp' | 'ortho'; edges: boolean; tintMods: boolean; missing: MissingMode }
+  render: { mode: RenderStyle; proj: 'persp' | 'ortho'; edges: boolean; tintMods: boolean; missing: MissingMode; exposure: number }
   section: { on: boolean; axis: 0 | 1 | 2; pos: number; mode: 'cut' | 'slice'; flip: boolean; thick: number; capHi: boolean }
   scene: { bg: string; gradTop: string; gradBot: string; sun: number }
   skies: SkyItem[]
@@ -152,7 +152,7 @@ export const store = createStore<AppState>({
   search: '',
   mods: {},
   tab: 'view',
-  render: { mode: 'textured', proj: 'ortho', edges: true, tintMods: false, missing: 'placeholder' },
+  render: { mode: 'textured', proj: 'ortho', edges: true, tintMods: false, missing: 'placeholder', exposure: 0 },
   section: { on: false, axis: 0, pos: 0.5, mode: 'cut', flip: false, thick: 2, capHi: true },
   scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40 },
   skies: [],

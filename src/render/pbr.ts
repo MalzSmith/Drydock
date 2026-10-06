@@ -1,13 +1,13 @@
 export const PBR = {
-  key: [2.2, 2.15, 2.05],
-  fill: [0.45, 0.47, 0.52],
-  sky: [0.32, 0.34, 0.38],
-  ground: [0.12, 0.11, 0.1],
-  emissive: 4,
-  exposure: 0.8,
-  glassDiffuse: 1,
-  glassSky: [0.006, 0.007, 0.009],
-  glassGround: [0.002, 0.002, 0.002],
+  key: [3.8, 3.7, 3.6],
+  fill: [0.15, 0.15, 0.16],
+  sky: [0.3, 0.3, 0.31],
+  ground: [0.2, 0.2, 0.19],
+  emissive: 1.6,
+  exposure: 2,
+  glassDiffuse: 0.27,
+  glassSky: [0.0024, 0.0028, 0.0036],
+  glassGround: [0.0008, 0.0008, 0.0008],
 }
 
 export type GlassFallback = { color: [number, number, number, number]; add: [number, number, number, number]; reflectivity: number; fresnel: number; glossAdd: number; light: number }

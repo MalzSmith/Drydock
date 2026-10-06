@@ -47,6 +47,7 @@ export type RenderOptions = {
   style: 'textured' | 'shaded' | 'clay' | 'line'
   edges: boolean
   tintMods: boolean
+  exposure: number
   proj: 'persp' | 'ortho'
   sun: number
   bg: string
@@ -192,6 +193,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     style: 'textured',
     edges: true,
     tintMods: false,
+    exposure: 0,
     proj: 'persp',
     sun: 40,
     bg: 'sky-default',
@@ -288,7 +290,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     boxMat.uniforms.u_sec.value.set(sec.on ? 1 : 0, sec.axis, sec.mode === 'slice' ? 1 : 0, sec.flip ? 1 : 0)
     boxMat.uniforms.u_cut.value.set(sec.cut, sec.thick)
     boxMat.uniforms.u_capHi.value = sec.capHi ? 1 : 0
-    detail.setOptions({ style: opts.style, edges: opts.edges, tintMods: opts.tintMods, sun: opts.sun, section: sec })
+    detail.setOptions({ style: opts.style, edges: opts.edges, tintMods: opts.tintMods, exposure: opts.exposure, sun: opts.sun, section: sec })
     requestFrame()
   }
 

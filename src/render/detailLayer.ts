@@ -51,6 +51,7 @@ export type DetailOptions = {
   style: 'textured' | 'shaded' | 'clay' | 'line'
   edges: boolean
   tintMods: boolean
+  exposure: number
   sun: number
   section: { on: boolean; axis: number; cut: number; mode: 'cut' | 'slice'; flip: boolean; thick: number; capHi: boolean }
 }
@@ -187,6 +188,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
       u_mc: { value: 2.5 },
       u_ss: { value: 1 },
       u_line: { value: 0 },
+      u_refLook: { value: 1 },
       u_clip: clip,
     },
     { depthTest: true, depthWrite: true, depthFunc: AlwaysDepth },
@@ -221,6 +223,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     style: 'textured',
     edges: true,
     tintMods: false,
+    exposure: 0,
     sun: 40,
     section: { on: false, axis: 0, cut: 0, mode: 'cut', flip: false, thick: 2, capHi: true },
   }
@@ -503,6 +506,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     shared.u_cut.value.set(sec.cut, sec.thick)
     shared.u_capHi.value = sec.capHi ? 1 : 0
     compMat.uniforms.u_line.value = o.style === 'line' ? 1 : 0
+    compMat.uniforms.u_refLook.value = o.style === 'textured' ? 0 : 1
     applyVisibility()
   }
 
@@ -532,6 +536,15 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   const back = new Vector3()
 
   function updateLights(cam: Camera) {
+    shared.u_keyColor.value.set(...PBR.key)
+    shared.u_fillColor.value.set(...PBR.fill)
+    shared.u_skyColor.value.set(...PBR.sky)
+    shared.u_groundColor.value.set(...PBR.ground)
+    shared.u_glassSky.value.set(...PBR.glassSky)
+    shared.u_glassGround.value.set(...PBR.glassGround)
+    shared.u_emissive.value = PBR.emissive
+    shared.u_glassDiffuse.value = PBR.glassDiffuse
+    shared.u_exposure.value = PBR.exposure * 2 ** opts.exposure
     const e = cam.matrixWorld.elements
     right.set(e[0], e[1], e[2]).normalize()
     up.set(e[4], e[5], e[6]).normalize()

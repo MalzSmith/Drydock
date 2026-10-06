@@ -574,6 +574,7 @@ uniform float u_pxm;
 uniform float u_mc;
 uniform float u_ss;
 uniform int u_line;
+uniform float u_refLook;
 ${linearize}
 
 void main() {
@@ -583,7 +584,7 @@ void main() {
   if (d >= 1.0) discard;
   float z = linz(d);
   vec2 zr = u_useZo == 1 ? u_zo : texelFetch(u_zr, ivec2(0), 0).rg;
-  float zInv = zr.y > zr.x ? 0.3 / (zr.y - zr.x) : 0.0;
+  float zInv = zr.y > zr.x ? 0.3 * u_refLook / (zr.y - zr.x) : 0.0;
   vec4 nr = texelFetch(u_nrm, p, 0);
   bool line = nr.a < 0.5;
   vec3 np = round(nr.rgb * 255.0);
@@ -598,12 +599,12 @@ void main() {
     float dq = texelFetch(u_dep, q, 0).r;
     float zq = dq >= 1.0 ? 1e30 : linz(dq);
     if (zq - z > u_tol) {
-      edge = min(edge, 0.55);
+      edge = min(edge, mix(1.0, 0.55, u_refLook));
       flagged = true;
     } else if (dq < 1.0) {
       vec3 nq = round(texelFetch(u_nrm, q, 0).rgb * 255.0);
       if (nq != np && dot(nq / 127.5 - 1.0, np / 127.5 - 1.0) < 0.8) {
-        edge = min(edge, 0.8);
+        edge = min(edge, mix(1.0, 0.8, u_refLook));
         flagged = true;
       }
     }

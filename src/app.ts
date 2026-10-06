@@ -2,6 +2,7 @@ import './styles/industry.css'
 import './styles/app.css'
 import { installDrop } from './sources/drop.ts'
 import { exportPerf } from './render/exportImage.ts'
+import { PBR } from './render/pbr.ts'
 import { restoreSources } from './sources/sources.ts'
 import { actions, composePerf, getComposeModel, getModel, indexStats, perf, sectionCut, store } from './state/app.ts'
 import { activeInfo } from './state/derive.ts'
@@ -47,6 +48,7 @@ store.watch(
       style: render.mode,
       edges: render.edges,
       tintMods: render.tintMods,
+      exposure: render.exposure,
       proj: render.proj,
       sun: scene.sun,
       bg: scene.bg,
@@ -133,6 +135,7 @@ function bench(frames: number): { avgMs: number; frames: number } {
   store,
   actions,
   renderer,
+  pbr: PBR,
   perf: () => perf.last,
   index: indexStats,
   compose: () => composePerf,
