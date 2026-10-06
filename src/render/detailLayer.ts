@@ -45,6 +45,7 @@ import type { Caps } from '../assets/build.ts'
 import { cubeGeometry, gridGeometry } from './cube.ts'
 import { STRIDE, buildDetail, type DetailScene } from './detail.ts'
 import { compositeFrag, downFrag, glassFrag, lineFrag, lineVert, modelFrag, modelVert, quadVert, reduceFrag, refBoxFrag, refBoxVert } from './detailShaders.ts'
+import { PBR } from './pbr.ts'
 
 export type DetailOptions = {
   style: 'textured' | 'shaded' | 'clay' | 'line'
@@ -110,6 +111,12 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     u_sel: { value: 1 },
     u_light: { value: new Vector3(0, 1, 0) },
     u_fill: { value: new Vector3(1, 0, 0) },
+    u_keyColor: { value: new Vector3(...PBR.key) },
+    u_fillColor: { value: new Vector3(...PBR.fill) },
+    u_skyColor: { value: new Vector3(...PBR.sky) },
+    u_groundColor: { value: new Vector3(...PBR.ground) },
+    u_emissive: { value: PBR.emissive },
+    u_exposure: { value: PBR.exposure },
     u_camPos: { value: new Vector3() },
     u_camDir: { value: new Vector3(0, 0, -1) },
     u_persp: { value: 1 },

@@ -111,6 +111,75 @@ float flatShade(vec3 n) {
 }
 `
 
+const brdf = `
+#define PI 3.14159265359
+
+vec3 diffuseTerm(vec3 albedo) {
+  return albedo / PI;
+}
+
+vec3 specularTerm(float nl, float nv, float nh, float vh, vec3 f0, float a) {
+  float a2 = a * a;
+  float d = nh * nh * (a2 - 1.0) + 1.0;
+  float D = a2 / (PI * d * d);
+  float vis = 0.5 / max(nl * sqrt(nv * nv * (1.0 - a2) + a2) + nv * sqrt(nl * nl * (1.0 - a2) + a2), 1e-5);
+  vec3 F = f0 + (1.0 - f0) * pow(1.0 - vh, 5.0);
+  return D * vis * F;
+}
+
+float filteredAlpha(float a, float len) {
+  float v = clamp((1.0 - len) / max(len, 1e-4), 0.0, 1.0);
+  return sqrt(min(a * a + v, 1.0));
+}
+
+vec2 envBrdf(float roughness, float nv) {
+  vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
+  vec4 c1 = vec4(1.0, 0.0425, 1.04, -0.04);
+  vec4 r = roughness * c0 + c1;
+  float a004 = min(r.x * r.x, exp2(-9.28 * nv)) * r.x + r.y;
+  return vec2(-1.04, 1.04) * a004 + r.zw;
+}
+`
+
+const pbr = `
+uniform vec3 u_keyColor;
+uniform vec3 u_fillColor;
+uniform vec3 u_skyColor;
+uniform vec3 u_groundColor;
+uniform float u_emissive;
+uniform float u_exposure;
+
+vec3 env(vec3 dir) {
+  return mix(u_groundColor, u_skyColor, smoothstep(-1.0, 1.0, dir.y));
+}
+
+vec3 directLight(vec3 lightColor, vec3 L, vec3 N, vec3 V, vec3 albedo, vec3 f0, float a) {
+  float nl = max(dot(N, L), 0.0);
+  float nv = max(dot(N, V), 1e-4);
+  vec3 H = normalize(L + V);
+  float nh = max(dot(N, H), 0.0);
+  float vh = max(dot(V, H), 0.0);
+  return lightColor * (diffuseTerm(albedo) + specularTerm(nl, nv, nh, vh, f0, a)) * nl;
+}
+
+vec3 shadePbr(vec3 N, vec3 base, float metal, float gloss, float len, float ao, float e) {
+  vec3 albedo = base * (1.0 - metal);
+  vec3 f0 = mix(vec3(0.04), base, metal);
+  float roughness = 1.0 - gloss;
+  float a = filteredAlpha(max(roughness * roughness, 2e-3), len);
+  vec3 V = u_persp == 1 ? normalize(u_camPos - v_wp) : -u_camDir;
+  vec3 rad = directLight(u_keyColor, u_light, N, V, albedo, f0, a);
+  rad += directLight(u_fillColor, u_fill, N, V, albedo, f0, a);
+  float nv = max(dot(N, V), 1e-4);
+  rad += albedo * env(N) * ao;
+  vec3 envSpec = mix(env(reflect(-V, N)), 0.5 * (u_skyColor + u_groundColor), roughness);
+  vec2 AB = envBrdf(roughness, nv);
+  rad += envSpec * (f0 * AB.x + AB.y) * ao;
+  rad += base * e * u_emissive;
+  return rad;
+}
+`
+
 export const DEFAULT_CM = 'vec4(0.991102, 0.0, 0.991102, 1.0)'
 export const DEFAULT_NG = 'vec4(0.498039, 0.498039, 1.0, 0.003922)'
 export const DEFAULT_ADD = 'vec4(1.0, 0.0, 0.0, 0.0)'
@@ -142,6 +211,8 @@ uniform sampler2D u_add;
 uniform sampler2D u_am;
 ${color}
 ${lighting}
+${brdf}
+${pbr}
 
 float tone(float x) { return x * 8.0 / (1.0 + x * 7.0); }
 
@@ -181,11 +252,9 @@ vec3 shadeTextured(vec3 n, vec3 fn, out float alpha) {
   vec3 nm = ng.rgb * 2.0 - 1.0;
   vec3 sn = normalize(t * nm.x - bt * nm.y + n * nm.z);
   if (dot(sn, n) < 0.05) sn = n;
-  float shade = flatShade(sn);
-  float ao = ext.r;
   float e = u_kind == 3 ? clamp(ext.g - 1.0 / 255.0, 0.0, 1.0) : 0.0;
-  vec3 R = toSrgb(vec3(tone(b.r * ao), tone(b.g * ao), tone(b.b * ao)));
-  return R * shade + toSrgb(b) * e;
+  vec3 x = shadePbr(sn, b, cm.a, ng.a, length(nm), ext.r, e) * u_exposure;
+  return toSrgb(vec3(tone(x.r), tone(x.g), tone(x.b)));
 }
 
 void main() {
