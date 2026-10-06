@@ -1,5 +1,5 @@
 import { actions, store } from '../../state/app.ts'
-import { h, kicker, text } from '../dom.ts'
+import { h, kicker, seg, text } from '../dom.ts'
 
 const SKY = [
   { id: 'sky-default', label: 'Deep space', src: 'Procedural', css: 'radial-gradient(circle at 30% 40%, #2c455d 0, transparent 45%), #07090c' },
@@ -42,6 +42,20 @@ export function mountSceneTab(): HTMLElement {
   const colors = h('div', { class: 'colors' }, h('label', { class: 'field' }, 'Top', top), h('label', { class: 'field' }, 'Bottom', bot))
   const sun = h('input', { type: 'range', min: 0, max: 360, onInput: () => actions.setScene({ sun: +sun.value }) })
   const sunLabel = text()
+  const lighting = seg<'directional' | 'uniform'>({
+    options: [['directional', 'Directional'], ['uniform', 'Uniform']],
+    value: 'directional',
+    optCls: 'grow',
+    style: 'display:flex',
+    onChange: (v) => actions.setScene({ lighting: v }),
+  })
+
+  const sunBox = h(
+    'div',
+    { class: 'col g6', style: 'margin-top:4px' },
+    h('div', { class: 'between', style: 'font-size:13px' }, h('span', null, 'Sun azimuth'), h('span', { class: 'acc7' }, sunLabel.el)),
+    sun,
+  )
 
   const el = h(
     'div',
@@ -52,8 +66,8 @@ export function mountSceneTab(): HTMLElement {
       'div',
       { class: 'col g6' },
       kicker('Lighting'),
-      h('div', { class: 'between', style: 'font-size:13px' }, h('span', null, 'Sun azimuth'), h('span', { class: 'acc7' }, sunLabel.el)),
-      sun,
+      lighting.el,
+      sunBox,
     ),
   )
 
@@ -72,6 +86,10 @@ export function mountSceneTab(): HTMLElement {
   store.watch((s) => s.mods.sky === true, (v) => (nebula.hidden = !v))
   store.watch((s) => s.scene.gradTop, (v) => (top.value = v))
   store.watch((s) => s.scene.gradBot, (v) => (bot.value = v))
+  store.watch((s) => s.scene.lighting, (v) => {
+    lighting.set(v)
+    sunBox.hidden = v === 'uniform'
+  })
   store.watch((s) => s.scene.sun, (v) => {
     sun.value = String(v)
     sunLabel.set(`${v}°`)

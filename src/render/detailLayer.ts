@@ -53,6 +53,7 @@ export type DetailOptions = {
   tintMods: boolean
   exposure: number
   sun: number
+  lighting: 'directional' | 'uniform'
   section: { on: boolean; axis: number; cut: number; mode: 'cut' | 'slice'; flip: boolean; thick: number; capHi: boolean }
 }
 
@@ -118,6 +119,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     u_groundColor: { value: new Vector3(...PBR.ground) },
     u_emissive: { value: PBR.emissive },
     u_exposure: { value: PBR.exposure },
+    u_uniform: { value: 0 },
     u_glassDiffuse: { value: PBR.glassDiffuse },
     u_glassSky: { value: new Vector3(...PBR.glassSky) },
     u_glassGround: { value: new Vector3(...PBR.glassGround) },
@@ -225,6 +227,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     tintMods: false,
     exposure: 0,
     sun: 40,
+    lighting: 'directional',
     section: { on: false, axis: 0, cut: 0, mode: 'cut', flip: false, thick: 2, capHi: true },
   }
 
@@ -506,7 +509,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     shared.u_cut.value.set(sec.cut, sec.thick)
     shared.u_capHi.value = sec.capHi ? 1 : 0
     compMat.uniforms.u_line.value = o.style === 'line' ? 1 : 0
-    compMat.uniforms.u_refLook.value = o.style === 'textured' ? 0 : 1
+    compMat.uniforms.u_refLook.value = o.style === 'textured' && o.lighting === 'directional' ? 0 : 1
     applyVisibility()
   }
 
@@ -536,10 +539,12 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   const back = new Vector3()
 
   function updateLights(cam: Camera) {
-    shared.u_keyColor.value.set(...PBR.key)
-    shared.u_fillColor.value.set(...PBR.fill)
-    shared.u_skyColor.value.set(...PBR.sky)
-    shared.u_groundColor.value.set(...PBR.ground)
+    const uni = opts.lighting === 'uniform'
+    shared.u_uniform.value = uni ? 1 : 0
+    shared.u_keyColor.value.set(...(uni ? [0, 0, 0] : PBR.key))
+    shared.u_fillColor.value.set(...(uni ? [0, 0, 0] : PBR.fill))
+    shared.u_skyColor.value.set(...(uni ? PBR.uniform : PBR.sky))
+    shared.u_groundColor.value.set(...(uni ? PBR.uniform : PBR.ground))
     shared.u_glassSky.value.set(...PBR.glassSky)
     shared.u_glassGround.value.set(...PBR.glassGround)
     shared.u_emissive.value = PBR.emissive

@@ -5,6 +5,7 @@ export const PBR = {
   ground: [0.2, 0.2, 0.19],
   emissive: 1.6,
   exposure: 2,
+  uniform: [1, 1, 1],
   glassDiffuse: 0.27,
   glassSky: [0.0024, 0.0028, 0.0036],
   glassGround: [0.0008, 0.0008, 0.0008],

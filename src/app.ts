@@ -51,6 +51,7 @@ store.watch(
       exposure: render.exposure,
       proj: render.proj,
       sun: scene.sun,
+      lighting: scene.lighting,
       bg: scene.bg,
       gradTop: scene.gradTop,
       gradBot: scene.gradBot,
@@ -101,6 +102,8 @@ if (view) {
 }
 const style = q.get('style')
 if (style === 'textured' || style === 'shaded' || style === 'clay' || style === 'line') actions.setRender({ mode: style })
+const light = q.get('light')
+if (light === 'directional' || light === 'uniform') actions.setScene({ lighting: light })
 const proj = q.get('proj')
 if (proj === 'persp' || proj === 'ortho') actions.setRender({ proj })
 const missing = q.get('missing')

@@ -69,6 +69,7 @@ export type Tab = 'view' | 'section' | 'scene' | 'export'
 
 export type SkyItem = { id: string; name: string; src: string; thumb: string }
 
+export type Lighting = 'directional' | 'uniform'
 export type RenderStyle = 'textured' | 'shaded' | 'clay' | 'line'
 
 export type AssetStatus = { meshes: number; meshesDone: number; textures: number; texturesDone: number; uncachedMeshes: number; uncachedTextures: number }
@@ -99,7 +100,7 @@ export type AppState = {
   tab: Tab
   render: { mode: RenderStyle; proj: 'persp' | 'ortho'; edges: boolean; tintMods: boolean; missing: MissingMode; exposure: number }
   section: { on: boolean; axis: 0 | 1 | 2; pos: number; mode: 'cut' | 'slice'; flip: boolean; thick: number; capHi: boolean }
-  scene: { bg: string; gradTop: string; gradBot: string; sun: number }
+  scene: { bg: string; gradTop: string; gradBot: string; sun: number; lighting: Lighting }
   skies: SkyItem[]
   export: { res: number; aspect: string; fmt: 'PNG' | 'JPG' | 'WEBP'; transparent: boolean; ss: number; fileName: string }
   compose: { shapes: Shape[]; selShape: number | null; grid: 'Large' | 'Small'; name: string }
@@ -154,7 +155,7 @@ export const store = createStore<AppState>({
   tab: 'view',
   render: { mode: 'textured', proj: 'ortho', edges: true, tintMods: false, missing: 'placeholder', exposure: 0 },
   section: { on: false, axis: 0, pos: 0.5, mode: 'cut', flip: false, thick: 2, capHi: true },
-  scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40 },
+  scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40, lighting: 'directional' },
   skies: [],
   export: { res: 2160, aspect: '16:9', fmt: 'PNG', transparent: false, ss: 2, fileName: '{blueprint}_{view}_{date}' },
   compose: { shapes: shapes0, selShape: null, grid: 'Large', name: 'Drydock Hull' },

@@ -99,6 +99,7 @@ uniform vec3 u_fill;
 uniform vec3 u_camPos;
 uniform vec3 u_camDir;
 uniform int u_persp;
+uniform float u_uniform;
 
 vec3 faceNormal(vec3 wp) {
   vec3 fn = normalize(cross(dFdx(wp), dFdy(wp)));
@@ -107,6 +108,7 @@ vec3 faceNormal(vec3 wp) {
 }
 
 float flatShade(vec3 n) {
+  if (u_uniform > 0.5) return 0.85;
   return 0.42 + 0.58 * max(0.0, dot(n, u_light)) + 0.12 * max(0.0, dot(n, u_fill));
 }
 `
