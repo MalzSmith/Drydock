@@ -14,6 +14,7 @@ export type PartData = {
   material: string
   technique: string
   tex: TexRefs | null
+  glass?: string
 }
 
 export type MeshData = {
@@ -196,6 +197,7 @@ async function append(env: AssetEnv, key: string, file: File, transform: Float32
       material: part.material,
       technique: part.technique,
       tex: hasUvs ? textures(part.textures, root) : null,
+      ...(part.glassCcw ? { glass: part.glassCcw } : {}),
     })
   }
   if (depth >= 4) return mwm.patternScale

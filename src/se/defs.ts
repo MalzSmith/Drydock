@@ -23,6 +23,20 @@ export type SkinDef = { sub: string; metalColorable: boolean; hsv?: [number, num
 
 export type SkinRecord = SkinDef & { source: string }
 
+export type GlassDef = {
+  sub: string
+  tex?: string
+  gloss?: string
+  color: [number, number, number, number]
+  add: [number, number, number, number]
+  reflectivity: number
+  fresnel: number
+  glossAdd: number
+  light: number
+}
+
+export type GlassRecord = GlassDef & { source: string }
+
 export type Lookup = { find(type: string, subtype: string, large: boolean): DefRecord | undefined }
 
 export type MissingMode = 'placeholder' | 'substitute' | 'hide'
@@ -46,6 +60,7 @@ export type RenderModel = {
   grids: ModelGrid[]
   defs?: DefRecord[]
   skins?: Array<SkinRecord | null>
+  glass?: Record<string, GlassRecord>
 }
 
 export type Resolved = {
@@ -153,6 +168,44 @@ export function parseSkins(text: string): SkinDef[] {
         }
       }
     out.push(skin)
+  }
+  return out
+}
+
+function vec4Of(el: XEl | undefined, d: number): [number, number, number, number] {
+  const g = (n: string) => {
+    const v = el ? (child(el, n)?.text ?? el.attrs[n]) : undefined
+    const f = v === undefined ? NaN : parseFloat(v)
+    return Number.isFinite(f) ? f : d
+  }
+  return [g('X'), g('Y'), g('Z'), g('W')]
+}
+
+export function parseGlass(text: string): GlassDef[] {
+  const out: GlassDef[] = []
+  if (!text.includes('<TransparentMaterial')) return out
+  for (const el of descendants(parseXml(text), 'TransparentMaterial')) {
+    const id = child(el, 'Id')
+    const sub = (id?.attrs['Subtype'] ?? (id ? child(id, 'SubtypeId')?.text : undefined))?.trim()
+    if (!sub) continue
+    const num = (n: string) => {
+      const f = parseFloat(child(el, n)?.text ?? '')
+      return Number.isFinite(f) ? f : 0
+    }
+    const tex = child(el, 'Texture')?.text?.trim()
+    const gloss = child(el, 'GlossTexture')?.text?.trim()
+    const g: GlassDef = {
+      sub,
+      color: vec4Of(child(el, 'Color'), 1),
+      add: vec4Of(child(el, 'ColorAdd'), 0),
+      reflectivity: num('Reflectivity'),
+      fresnel: num('Fresnel'),
+      glossAdd: num('GlossTextureAdd'),
+      light: vec4Of(child(el, 'LightMultiplier'), 1)[0],
+    }
+    if (tex) g.tex = normPath(tex)
+    if (gloss) g.gloss = normPath(gloss)
+    out.push(g)
   }
   return out
 }

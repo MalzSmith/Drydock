@@ -1,4 +1,4 @@
-export type MwmPart = { material: string; technique: string; textures: Record<string, string>; indices: Uint32Array }
+export type MwmPart = { material: string; technique: string; textures: Record<string, string>; indices: Uint32Array; glassCcw?: string }
 
 export type MwmDummy = { name: string; matrix: Float32Array; data: Record<string, string> }
 
@@ -177,7 +177,7 @@ function readMaterial(r: Reader, version: number, part: MwmPart) {
   if (part.technique === 'GLASS') {
     if (version >= 1043001) {
       r.str()
-      r.str()
+      part.glassCcw = r.str()
       r.bool()
     } else r.skip(16)
   }

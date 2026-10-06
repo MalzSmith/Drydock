@@ -9,6 +9,8 @@ import {
   type MissingMode,
   type RenderModel,
   type Resolved,
+  type GlassDef,
+  type GlassRecord,
   type SkinDef,
   type SkinRecord,
   type TableRow,
@@ -97,7 +99,7 @@ export type AppState = {
   tab: Tab
   render: { mode: RenderStyle; proj: 'persp' | 'ortho'; edges: boolean; tintMods: boolean; missing: MissingMode }
   section: { on: boolean; axis: 0 | 1 | 2; pos: number; mode: 'cut' | 'slice'; flip: boolean; thick: number; capHi: boolean }
-  scene: { bg: string; gradTop: string; gradBot: string; sun: number; matchSun: boolean }
+  scene: { bg: string; gradTop: string; gradBot: string; sun: number }
   skies: SkyItem[]
   export: { res: number; aspect: string; fmt: 'PNG' | 'JPG' | 'WEBP'; transparent: boolean; ss: number; fileName: string }
   compose: { shapes: Shape[]; selShape: number | null; grid: 'Large' | 'Small'; name: string }
@@ -152,7 +154,7 @@ export const store = createStore<AppState>({
   tab: 'view',
   render: { mode: 'textured', proj: 'ortho', edges: true, tintMods: false, missing: 'placeholder' },
   section: { on: false, axis: 0, pos: 0.5, mode: 'cut', flip: false, thick: 2, capHi: true },
-  scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40, matchSun: true },
+  scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40 },
   skies: [],
   export: { res: 2160, aspect: '16:9', fmt: 'PNG', transparent: false, ss: 2, fileName: '{blueprint}_{view}_{date}' },
   compose: { shapes: shapes0, selShape: null, grid: 'Large', name: 'Drydock Hull' },
@@ -187,19 +189,20 @@ let current: Current | null = null
 let vanillaP: Promise<DefRecord[]> | null = null
 let gameDefs: DefRecord[] = []
 let gameSkins: SkinRecord[] = []
+let gameGlass: GlassRecord[] = []
 let modMeta: ModMeta[] = []
 let modIndex: ModIndex = buildModIndex([])
 let indexVersion = 0
 let seq = 0
-const modDefCache = new Map<string, { defs: DefRecord[]; skins: SkinRecord[] }>()
+const modDefCache = new Map<string, { defs: DefRecord[]; skins: SkinRecord[]; glass: GlassRecord[] }>()
 
 const getVanilla = () => (vanillaP ??= loadVanilla())
 
-async function loadModDefs(key: string): Promise<{ defs: DefRecord[]; skins: SkinRecord[] }> {
+async function loadModDefs(key: string): Promise<{ defs: DefRecord[]; skins: SkinRecord[]; glass: GlassRecord[] }> {
   let d = modDefCache.get(key)
   if (!d) {
-    const rec = await idbGet<{ defs: DefTuple[]; skins?: SkinDef[] }>('mods', key)
-    d = { defs: rec ? fromTuples(rec.defs, key) : [], skins: (rec?.skins ?? []).map((x) => ({ ...x, source: key })) }
+    const rec = await idbGet<{ defs: DefTuple[]; skins?: SkinDef[]; glass?: GlassDef[] }>('mods', key)
+    d = { defs: rec ? fromTuples(rec.defs, key) : [], skins: (rec?.skins ?? []).map((x) => ({ ...x, source: key })), glass: (rec?.glass ?? []).map((x) => ({ ...x, source: key })) }
     modDefCache.set(key, d)
   }
   return d
@@ -209,6 +212,12 @@ function skinLookup(layers: SkinRecord[][]): (sub: string) => SkinRecord | undef
   const m = new Map<string, SkinRecord>()
   for (const l of layers) for (const sk of l) m.set(sk.sub.toLowerCase(), sk)
   return (sub) => m.get(sub.toLowerCase())
+}
+
+function glassMap(layers: GlassRecord[][]): Record<string, GlassRecord> {
+  const m: Record<string, GlassRecord> = {}
+  for (const l of layers) for (const g of l) m[g.sub.toLowerCase()] = g
+  return m
 }
 
 export function indexStats() {
@@ -272,6 +281,7 @@ function composeModelOf(r: VoxelizeResult, large: boolean, name: string): Render
     grids: r.count ? [{ cell, toMain: identity(), inst: r.inst, count: r.count, detail }] : [],
     defs,
     skins: [],
+    glass: glassMap([gameGlass]),
   }
 }
 
@@ -392,6 +402,7 @@ async function resolveCurrent() {
     labels,
     skinLookup([gameSkins, ...layers.map((l) => l.skins)]),
   )
+  resolved.model.glass = glassMap([gameGlass, ...layers.map((l) => l.glass)])
   c.resolved = resolved
   const meta = new Map(modMeta.map((m) => [m.key, m]))
   const rows: ModRow[] = picks.picked.map((p) => {
@@ -538,9 +549,10 @@ export const actions = {
     store.set({ entries })
   },
 
-  setIndex(game: DefRecord[], mods: ModMeta[], skins: SkinDef[] = []) {
+  setIndex(game: DefRecord[], mods: ModMeta[], skins: SkinDef[] = [], glass: GlassDef[] = []) {
     gameDefs = game
     gameSkins = skins.map((x) => ({ ...x, source: 'game' }))
+    gameGlass = glass.map((x) => ({ ...x, source: 'game' }))
     composeLookup = null
     if (composeModel) void voxelizeLatest()
     modMeta = mods

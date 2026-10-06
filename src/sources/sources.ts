@@ -27,6 +27,7 @@ function publish() {
   const entries: ListEntry[] = []
   const game = []
   const skins = []
+  const glass = []
   const mods: ModMeta[] = []
   for (const src of store.get().sources) {
     const r = results.get(src.id)
@@ -34,6 +35,7 @@ function publish() {
     if (r.kind === 'game') {
       game.push(...fromTuples(r.defs, 'game'))
       skins.push(...(r.skins ?? []))
+      glass.push(...(r.glass ?? []))
     }
     for (const e of r.entries)
       entries.push({
@@ -49,7 +51,7 @@ function publish() {
     for (const m of r.mods) mods.push({ key: m.key, name: m.name, label: MOD_LABEL[r.kind], folder: m.folder, subs: m.subs })
   }
   actions.setEntries(entries)
-  return actions.setIndex(game, mods, skins)
+  return actions.setIndex(game, mods, skins, glass)
 }
 
 let thumbUrls: string[] = []

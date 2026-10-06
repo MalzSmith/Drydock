@@ -1,4 +1,4 @@
-import { parseDefinitions, parseResx, parseSkins, toTuple, type DefTuple, type SkinDef } from '../se/defs.ts'
+import { parseDefinitions, parseGlass, parseResx, parseSkins, toTuple, type DefTuple, type GlassDef, type SkinDef } from '../se/defs.ts'
 import { VANILLA_SEASONAL, VANILLA_SKY, parseSkies, type SkyDef } from '../se/env.ts'
 import { child, parseXml } from '../se/xml.ts'
 import {
@@ -30,7 +30,7 @@ export type BpEntry = {
 
 export type ModInfo = { key: string; sourceId: number; folder: string; name: string; subs: string[] }
 
-export type ModCacheRec = { fp: string; name: string; subs: string[]; defs: DefTuple[]; skins?: SkinDef[]; skies?: SkyDef[] }
+export type ModCacheRec = { fp: string; name: string; subs: string[]; defs: DefTuple[]; skins?: SkinDef[]; glass?: GlassDef[]; skies?: SkyDef[] }
 
 export type ModSkies = { key: string; name: string; skies: SkyDef[] }
 
@@ -45,6 +45,7 @@ export type ScanResult = {
   found: boolean
   defs: DefTuple[]
   skins?: SkinDef[]
+  glass?: GlassDef[]
   skies?: SkyDef[]
   entries: BpEntry[]
   mods: ModInfo[]
@@ -72,9 +73,9 @@ export function withSeasonal(skies: SkyDef[]): SkyDef[] {
   return base ? [...skies, ...VANILLA_SEASONAL.map((path) => ({ ...base, path }))] : skies
 }
 
-export async function scanGame(root: FsDir, progress?: Progress): Promise<{ found: boolean; defs: DefTuple[]; skins: SkinDef[]; skies: SkyDef[] }> {
+export async function scanGame(root: FsDir, progress?: Progress): Promise<{ found: boolean; defs: DefTuple[]; skins: SkinDef[]; glass: GlassDef[]; skies: SkyDef[] }> {
   const data = await findGameData(root)
-  if (!data) return { found: false, defs: [], skins: [], skies: [] }
+  if (!data) return { found: false, defs: [], skins: [], glass: [], skies: [] }
   const loc = await findPath(data, 'Localization')
   const rf = loc ? await tryFile(loc, 'MyTexts.resx') : null
   const names = rf ? parseResx(await (await rf.getFile()).text()) : new Map<string, string>()
@@ -84,9 +85,9 @@ export async function scanGame(root: FsDir, progress?: Progress): Promise<{ foun
   const parts = await mapPool(files, 8, async (get) => {
     const text = await (await get()).text()
     progress?.(`Parsing definitions ${num(++done)}/${num(files.length)}`, done / files.length)
-    return { defs: text.includes('<CubeBlocks') ? parseDefinitions(text, 'game', names).map(toTuple) : [], skins: parseSkins(text), skies: parseSkies(text) }
+    return { defs: text.includes('<CubeBlocks') ? parseDefinitions(text, 'game', names).map(toTuple) : [], skins: parseSkins(text), glass: parseGlass(text), skies: parseSkies(text) }
   })
-  return { found: true, defs: parts.flatMap((p) => p.defs), skins: parts.flatMap((p) => p.skins), skies: withSeasonal(parts.flatMap((p) => p.skies)) }
+  return { found: true, defs: parts.flatMap((p) => p.defs), skins: parts.flatMap((p) => p.skins), glass: parts.flatMap((p) => p.glass), skies: withSeasonal(parts.flatMap((p) => p.skies)) }
 }
 
 async function readEntry(sourceId: number, dir: FsDir, cache: ScanCache): Promise<BpEntry | null> {
@@ -141,14 +142,16 @@ async function indexMod(sourceId: number, dir: FsDir, cache: ScanCache): Promise
   const fp = fingerprint(lines)
   const key = `${sourceId}/${dir.name}`
   const hit = await cache.getMod(key)
-  if (hit && hit.fp === fp && hit.skies) return indexed(key, sourceId, dir.name, hit)
+  if (hit && hit.fp === fp && hit.skies && hit.glass?.every((g) => g.light !== undefined)) return indexed(key, sourceId, dir.name, hit)
   const defs: DefTuple[] = []
   const skins: SkinDef[] = []
+  const glass: GlassDef[] = []
   const skies: SkyDef[] = []
   const subs = new Set<string>()
   for (const f of files) {
     const text = await f.text()
     skins.push(...parseSkins(text))
+    glass.push(...parseGlass(text))
     skies.push(...parseSkies(text))
     if (!text.includes('<CubeBlocks')) continue
     for (const d of parseDefinitions(text, key)) {
@@ -166,7 +169,7 @@ async function indexMod(sourceId: number, dir: FsDir, cache: ScanCache): Promise
       name = dir.name
     }
   }
-  const rec: ModCacheRec = { fp, name, subs: [...subs], defs, skins, skies }
+  const rec: ModCacheRec = { fp, name, subs: [...subs], defs, skins, glass, skies }
   await cache.putMod(key, rec)
   return indexed(key, sourceId, dir.name, rec)
 }
@@ -195,6 +198,7 @@ export async function scanSource(root: FsDir, o: ScanOpts): Promise<ScanResult> 
     r.found = g.found
     r.defs = g.defs
     r.skins = g.skins
+    r.glass = g.glass
     r.skies = g.skies
   } else {
     if (o.kind === 'blueprints' || o.kind === 'workshop') r.entries = await scanBlueprints(root, o.kind, o.sourceId, o.cache, o.progress)

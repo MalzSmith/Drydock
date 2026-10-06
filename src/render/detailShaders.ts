@@ -149,6 +149,8 @@ uniform vec3 u_groundColor;
 uniform float u_emissive;
 uniform float u_exposure;
 
+float tone(float x) { return clamp(x * (2.51 * x + 0.03) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+
 vec3 env(vec3 dir) {
   return mix(u_groundColor, u_skyColor, smoothstep(-1.0, 1.0, dir.y));
 }
@@ -213,8 +215,6 @@ ${color}
 ${lighting}
 ${brdf}
 ${pbr}
-
-float tone(float x) { return x * 8.0 / (1.0 + x * 7.0); }
 
 vec3 g_dp1;
 vec3 g_dp2;
@@ -306,15 +306,61 @@ layout(location = 0) out highp vec4 fragColor;
 in vec3 v_wp;
 in vec3 v_n;
 in vec2 v_uv;
-flat in vec3 v_paint;
-flat in vec3 v_key;
-flat in float v_flags;
-in float v_cap;
+uniform int u_style;
+uniform vec4 u_gColor;
+uniform vec4 u_gAdd;
+uniform float u_gRefl;
+uniform float u_gFresnel;
+uniform float u_gGlossAdd;
+uniform float u_gLight;
+uniform vec3 u_glassSky;
+uniform vec3 u_glassGround;
+uniform float u_inner;
+uniform float u_glassDiffuse;
+uniform sampler2D u_gTex;
+uniform sampler2D u_gGloss;
+uniform vec2 u_gHas;
+${color}
 ${lighting}
+${brdf}
+${pbr}
+
+vec3 glassSpec(vec3 lightColor, vec3 L, vec3 N, float nv, vec3 V, float a) {
+  float nl = max(dot(N, L), 0.0);
+  vec3 H = normalize(L + V);
+  float nh = max(dot(N, H), 0.0);
+  float vh = max(dot(V, H), 0.0);
+  return lightColor * specularTerm(nl, nv, nh, vh, vec3(1.0), a) * nl;
+}
 
 void main() {
-  float shade = flatShade(faceNormal(v_wp));
-  fragColor = vec4(vec3(0.17, 0.22, 0.28) * (0.55 + 0.75 * shade), 0.5);
+  vec3 V = u_persp == 1 ? normalize(u_camPos - v_wp) : -u_camDir;
+  vec3 N = normalize(v_n);
+  if (dot(N, V) <= 0.0) discard;
+  if (u_style != 0) {
+    float al = u_inner > 0.5 ? 0.15 : 0.5;
+    vec3 fl = vec3(0.17, 0.22, 0.28) * (0.55 + 0.75 * flatShade(N));
+    fragColor = vec4(fl * al, al);
+    return;
+  }
+  vec4 t = u_gHas.x > 0.5 ? texture(u_gTex, v_uv) : vec4(1.0, 1.0, 1.0, 0.0);
+  float ga = u_gHas.y > 0.5 ? texture(u_gGloss, v_uv).a : 0.0;
+  float g = clamp(ga + u_gGlossAdd, 0.0, 1.0);
+  float roughness = 1.0 - g;
+  float a = max(roughness * roughness, 2e-3);
+  vec3 base = u_gColor.rgb * t.rgb;
+  float cover = clamp(u_gColor.a * t.a + u_gAdd.a, 0.0, 1.0);
+  vec3 diffuse = base * (env(N) + u_keyColor * max(dot(N, u_light), 0.0) / PI + u_fillColor * max(dot(N, u_fill), 0.0) / PI) * u_gLight * u_glassDiffuse;
+  float nv = max(dot(N, V), 1e-4);
+  vec3 R = reflect(-V, N);
+  vec3 spec = mix(mix(u_glassGround, u_glassSky, smoothstep(-1.0, 1.0, R.y)), 0.5 * (u_glassSky + u_glassGround), roughness);
+  spec += glassSpec(u_keyColor, u_light, N, nv, V, a);
+  spec += glassSpec(u_fillColor, u_fill, N, nv, V, a);
+  float w = clamp(u_gRefl + u_gFresnel * pow(1.0 - nv, 5.0), 0.0, 1.0);
+  vec3 rgb = diffuse * cover + u_gAdd.rgb + spec * w;
+  float alpha = clamp(max(cover, w), 0.0, 1.0);
+  vec3 x = rgb / max(alpha, 1e-4) * u_exposure;
+  fragColor = vec4(toSrgb(vec3(tone(x.r), tone(x.g), tone(x.b))) * alpha, alpha);
 }
 `
 

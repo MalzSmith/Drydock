@@ -42,7 +42,6 @@ export function mountSceneTab(): HTMLElement {
   const colors = h('div', { class: 'colors' }, h('label', { class: 'field' }, 'Top', top), h('label', { class: 'field' }, 'Bottom', bot))
   const sun = h('input', { type: 'range', min: 0, max: 360, onInput: () => actions.setScene({ sun: +sun.value }) })
   const sunLabel = text()
-  const match = h('input', { type: 'checkbox', onChange: () => actions.setScene({ matchSun: match.checked }) })
 
   const el = h(
     'div',
@@ -55,7 +54,6 @@ export function mountSceneTab(): HTMLElement {
       kicker('Lighting'),
       h('div', { class: 'between', style: 'font-size:13px' }, h('span', null, 'Sun azimuth'), h('span', { class: 'acc7' }, sunLabel.el)),
       sun,
-      h('label', { class: 'chk', style: 'margin-top:4px' }, 'Match skybox sun', match),
     ),
   )
 
@@ -78,6 +76,5 @@ export function mountSceneTab(): HTMLElement {
     sun.value = String(v)
     sunLabel.set(`${v}°`)
   })
-  store.watch((s) => s.scene.matchSun, (v) => (match.checked = v))
   return el
 }

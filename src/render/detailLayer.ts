@@ -37,7 +37,7 @@ import {
 } from 'three'
 import type { PartData } from '../assets/build.ts'
 import { KIND_DECAL, KIND_GLASS } from '../assets/material.ts'
-import type { RenderModel, SkinRecord } from '../se/defs.ts'
+import type { GlassRecord, RenderModel, SkinRecord } from '../se/defs.ts'
 import { mul } from '../se/orient.ts'
 import { loadTileTable, type TileTable } from '../se/tiles.ts'
 import { createAssets, type AssetCounts, type MeshAttrs, type MeshEntry, type TexEntry } from './assets.ts'
@@ -45,7 +45,7 @@ import type { Caps } from '../assets/build.ts'
 import { cubeGeometry, gridGeometry } from './cube.ts'
 import { STRIDE, buildDetail, type DetailScene } from './detail.ts'
 import { compositeFrag, downFrag, glassFrag, lineFrag, lineVert, modelFrag, modelVert, quadVert, reduceFrag, refBoxFrag, refBoxVert } from './detailShaders.ts'
-import { PBR } from './pbr.ts'
+import { GLASS_INNER, GLASS_OUTER, PBR } from './pbr.ts'
 
 export type DetailOptions = {
   style: 'textured' | 'shaded' | 'clay' | 'line'
@@ -117,6 +117,9 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     u_groundColor: { value: new Vector3(...PBR.ground) },
     u_emissive: { value: PBR.emissive },
     u_exposure: { value: PBR.exposure },
+    u_glassDiffuse: { value: PBR.glassDiffuse },
+    u_glassSky: { value: new Vector3(...PBR.glassSky) },
+    u_glassGround: { value: new Vector3(...PBR.glassGround) },
     u_camPos: { value: new Vector3() },
     u_camDir: { value: new Vector3(0, 0, -1) },
     u_persp: { value: 1 },
@@ -252,6 +255,42 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     apply()
   }
 
+  function glassDef(part: PartData): GlassRecord | null {
+    const glass = model?.glass
+    const m = part.material.toLowerCase()
+    const found = glass?.[m] ?? (part.glass ? glass?.[part.glass.toLowerCase()] : undefined)
+    return found ?? (m.includes('inside') ? glass?.['glassinside'] : glass?.['glassoutside']) ?? null
+  }
+
+  function bindGlass(pm: PartMat, part: PartData, u: Record<string, IUniform>) {
+    const def = glassDef(part)
+    const inner = part.material.toLowerCase().includes('inside')
+    const f = inner ? GLASS_INNER : GLASS_OUTER
+    const d = def ?? f
+    u.u_gColor.value.set(...d.color)
+    u.u_gAdd.value.set(...d.add)
+    u.u_gRefl.value = d.reflectivity
+    u.u_gFresnel.value = d.fresnel
+    u.u_gGlossAdd.value = d.glossAdd
+    u.u_gLight.value = d.light ?? 1
+    u.u_inner.value = inner ? 1 : 0
+    pm.texKeys = []
+    if (!def) return
+    const mod = def.source !== 'vanilla' && def.source !== 'game' ? def.source : null
+    const c = (p: string) => (mod ? [`m:${mod}:${p}`, `c:${p}`] : [`c:${p}`])
+    const slots: Array<[string | undefined, string, boolean]> = [[def.tex, 'u_gTex', true], [def.gloss, 'u_gGloss', false]]
+    const entries: Array<[string, TexEntry | null]> = slots.map(([p, name, srgb]) => [name, p ? assets.texture(c(p), srgb) : null])
+    pm.texKeys = slots.flatMap(([p, , srgb]) => (p ? [c(p).join('|') + (srgb ? '#s' : '#l')] : []))
+    const apply = () => {
+      if (entries.some(([, e]) => e?.status === 'pending')) return
+      entries.forEach(([name, e]) => (u[name].value = e?.status === 'ok' ? (e.tex ?? null) : null))
+      u.u_gHas.value.set(entries[0][1]?.status === 'ok' ? 1 : 0, entries[1][1]?.status === 'ok' ? 1 : 0)
+      hooks.requestFrame()
+    }
+    for (const [, e] of entries) if (e?.status === 'pending') e.waiters.add(apply)
+    apply()
+  }
+
   function partMaterial(mesh: MeshEntry, part: PartData, pi: number, skin: SkinRecord | null): PartMat {
     const key = mesh.key + '\u0000' + (skin?.sub ?? '') + '\u0000' + pi
     let pm = mats.get(key)
@@ -287,7 +326,20 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
       })
     pm = { mat, texKeys: [] }
     if (part.kind === KIND_GLASS) {
-      const gu = { ...shared, u_pull: { value: 0 } }
+      const gu: Record<string, IUniform> = {
+        ...shared,
+        u_pull: { value: 0 },
+        u_gColor: { value: new Vector4() },
+        u_gAdd: { value: new Vector4() },
+        u_gRefl: { value: 0 },
+        u_gFresnel: { value: 0 },
+        u_gGlossAdd: { value: 0 },
+        u_gLight: { value: 1 },
+        u_inner: { value: 0 },
+        u_gTex: { value: null },
+        u_gGloss: { value: null },
+        u_gHas: { value: new Vector2() },
+      }
       pm.glassDepth = new ShaderMaterial({
         glslVersion: GLSL3,
         vertexShader: modelVert,
@@ -310,11 +362,12 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
         stencilZPass: IncrementStencilOp,
         transparent: true,
         blending: CustomBlending,
-        blendSrc: SrcAlphaFactor,
+        blendSrc: OneFactor,
         blendDst: OneMinusSrcAlphaFactor,
         blendSrcAlpha: ZeroFactor,
         blendDstAlpha: OneFactor,
       })
+      bindGlass(pm, part, gu)
     } else bindTextures(pm, part, skin)
     mats.set(key, pm)
     return pm

@@ -81,6 +81,7 @@ describe.skipIf(!have)('game assets', () => {
     expect(root.dummies.some((d) => d.name.includes('subpart_'))).toBe(true)
     expect(door.data!.pos.length).toBeGreaterThan(root.positions.length)
     expect(door.data!.parts.some((p) => p.kind === KIND_GLASS)).toBe(true)
+    expect(root.parts.filter((p) => p.technique === 'GLASS').every((p) => typeof p.glassCcw === 'string')).toBe(true)
   })
 
   it('decodes textures to rgba without gpu formats', async () => {
