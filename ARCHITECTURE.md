@@ -20,7 +20,8 @@ drydock/
   scripts/gen-tiles/         dotnet tool: loads Sandbox.Game.dll from SE_GAME_ROOT/Bin64, reads MyCubeGridDefinitions.GetTopologyInfo -> src/data/tile-table.json (committed)
   scripts/shot.mjs           playwright-core + msedge: screenshots of the built app
   src/
-    main.ts                  bootstrap: store, UI mounts, renderer, restore sources
+    main.ts                  entry: loads app.ts, or waits for "Continue anyway" when index.html flagged a window narrower than 1120 px
+    app.ts                   bootstrap: store, UI mounts, renderer, restore sources
     styles/industry.css      design system styles
     styles/app.css           app layout
     state/store.ts           tiny store: get / set / watch(selector, cb)

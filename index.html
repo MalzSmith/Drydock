@@ -4,11 +4,47 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Drydock</title>
+<script>
+{
+  let ok = false
+  try { ok = localStorage.getItem('drydock.narrowOk') === '1' } catch {}
+  if (!ok && matchMedia('(max-width: 1119px)').matches) document.documentElement.classList.add('narrow')
+}
+</script>
+<style>
+html.narrow #app, html:not(.narrow) #narrow { display: none; }
+#narrow {
+  min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  padding: 32px 24px; margin: 0 auto; max-width: 480px;
+  color: #1d1f20; font: 16px/1.5 Barlow, system-ui, sans-serif;
+}
+html.narrow body { margin: 0; background: #f2f2f3; }
+#narrow h1 { margin: 0; font: 600 32px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .02em; }
+#narrow .sub { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #5d5d60; }
+#narrow p { margin: 0; color: #424244; }
+#narrow a { color: #5980a6; }
+#narrow button {
+  align-self: flex-start; margin-top: 6px; padding: 8px 16px; cursor: pointer;
+  font: 600 16px 'Barlow Condensed', system-ui, sans-serif; color: #1d1f20;
+  background: transparent; border: 1px solid color-mix(in srgb, #1d1f20 16%, transparent);
+}
+#narrow button:active { background: color-mix(in srgb, #1d1f20 14%, transparent); }
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&family=Barlow+Condensed:wght@400;600&display=swap" media="print" onload="this.media='all'">
 </head>
 <body>
+<div id="narrow">
+  <div>
+    <h1>DRYDOCK</h1>
+    <div class="sub">Blueprint renderer</div>
+  </div>
+  <p>Your screen is too small for Drydock. It needs a browser window at least 1120 pixels wide, and on a smaller screen the layout will not fit.</p>
+  <p>Open this page on a larger screen, or continue anyway and scroll around the layout.</p>
+  <button type="button" id="narrow-continue">Continue anyway</button>
+  <p><a href="https://github.com/MalzSmith/Drydock">Drydock on GitHub</a></p>
+</div>
 <div id="app">
   <nav id="nav" class="nav"></nav>
   <div id="work">
