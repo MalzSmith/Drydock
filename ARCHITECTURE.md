@@ -188,8 +188,8 @@ Kinds: `game | workshop | torch | mods | blueprints`. Five link cards in the dia
 - `blueprints`: `local/` under the pick (or the pick itself) -> subfolders with `bp.sbc`.
 - Mod indexing (CubeBlocks, skins, glass materials and environment skyboxes) runs in the worker. Per-mod cache in IndexedDB keyed by `<sourceId>/<folder>`, fingerprint = hash of the sorted `relative path|size|lastModified` lines of its `.sbc` files, taken from the upload's file list (no file reads). Unchanged mods come from the cache, changed ones are re-parsed, vanished ones are pruned.
 - A source id is stable: adding a folder with the same kind and folder name as an existing source refreshes that source (same id, same cache keys).
-- Blueprint list entries: the name comes from `Id Subtype` (first 4 KB), the grid size from the first `GridSizeEnum` (first 64 KB; Large if not found). Meta is `Large grid · <file size>`, then `Large grid · <n> mods` from the `bpmeta` cache once opened.
-- List meta: `<Large|Small> grid · <n> mods` or `· vanilla`. The mod count comes from the `bpmeta` cache, or is filled in the background on the main thread by running `pickMods` over each cached parsed blueprint (`actions.fillMods`, after restore and after caching). Until then a row shows only `<grid> grid`.
+- Blueprint list entries: the name comes from `Id Subtype` (first 4 KB), the grid size from the first `GridSizeEnum` (first 64 KB; Large if not found). The row meta is described under List meta.
+- List meta: `<Large|Small> grid · <n> blocks · <n> mods` (or `· vanilla`). Block count (all grids) and mod count come from the `bpmeta` cache, or are filled in the background on the main thread from each cached parsed blueprint (`actions.fillMods`, after restore and after caching; `pickMods` only when the mod count is missing). Parts that are not known yet are left out, so a row may show only `<grid> grid`. The viewport card shows `<grid> grid · <n> blocks · X×Y×Z · <length> m long`.
 - Copy: `Link folders`, `N sources linked`; a source restored from a snapshot counts as linked.
 - Kind cannot be changed after adding (it would need a new upload); the dialog shows a kind tag instead of the retype control.
 - Drag & drop: a `bp.sbc` file, or a folder via `DataTransferItem.getAsFileSystemHandle()` read once. Without File System Access (Firefox), file inputs still work.
@@ -202,7 +202,7 @@ Goal: the app starts with everything it learned from earlier uploads, without an
 - `snap`: per source id, the scan result: game definition tuples, skins, glass materials and skies for the game source (older snapshots without `glass` have no glass materials until refreshed), blueprint list metadata (without `File`), mod list (`key, name, folder, subs`).
 - `mods`: per-mod `{ fp, name, subs, defs, skins, glass, skies }` (a record without `glass`, or whose glass lacks `light`, is re-parsed), loaded lazily by key when a blueprint resolves.
 - `bps`: per blueprint `<sourceId>/<folder>` -> `{ fp: "<size>|<lastModified>", v, parsed: ParsedBlueprint }` (typed arrays + string table, no XML). `v` is the parser version (2 adds `SkinSubtypeId`); older entries still open, and the next refresh re-parses them.
-- `bpmeta`: opened-blueprint mod counts for the list meta.
+- `bpmeta`: `{ mods, blocks }` per blueprint for the list meta (older entries hold only the mod count as a number; the block count is then filled in again).
 - `meshes`, `textures`: processed block models and texture levels by asset key (see the reference pipeline); a source's `m:<id>/` entries are dropped when it is unlinked.
 - `skies`, `skymeta`: cached skybox faces and their list entries by asset key (see Background); dropped with the source like meshes.
 

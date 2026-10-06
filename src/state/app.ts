@@ -18,7 +18,7 @@ import {
 import { identity } from '../se/orient.ts'
 import { buildModIndex, pickMods, type ModIndex, type Picks } from '../se/mods.ts'
 import { idbGet, idbPut } from '../sources/idb.ts'
-import type { SourceKind } from '../sources/scan.ts'
+import type { BpMeta, SourceKind } from '../sources/scan.ts'
 import { COMP_BLOCKS } from '../compose/blocks.ts'
 import { QUARTER, ROT_IDENTITY, rotMul, type VShape } from '../compose/csg.ts'
 import { compositionJson, parseComposition } from '../compose/file.ts'
@@ -50,6 +50,7 @@ export type ListEntry = {
   large: boolean
   size: number
   mods: number | null
+  blocks: number | null
   list: 'local' | 'workshop'
   modified: number
   file: File | null
@@ -335,35 +336,36 @@ export function formatSize(b: number): string {
 }
 
 export function entryMeta(e: ListEntry): string {
-  const grid = `${e.large ? 'Large' : 'Small'} grid`
-  if (e.mods === null) return grid
-  return `${grid} · ${e.mods === 0 ? 'vanilla' : plural(e.mods, 'mod')}`
+  const parts = [`${e.large ? 'Large' : 'Small'} grid`]
+  if (e.blocks !== null) parts.push(plural(e.blocks, 'block'))
+  if (e.mods !== null) parts.push(e.mods === 0 ? 'vanilla' : plural(e.mods, 'mod'))
+  return parts.join(' · ')
 }
 
 let fillRun = 0
 
 async function fillEntryMods() {
   const run = ++fillRun
-  const todo = store.get().entries.filter((e) => e.mods === null)
+  const todo = store.get().entries.filter((e) => e.mods === null || e.blocks === null)
   if (!todo.length) return
   const vanilla = await getVanilla()
   const base = buildLookup([vanilla, gameDefs])
   const version = indexVersion
-  const found = new Map<string, number>()
+  const found = new Map<string, BpMeta>()
   const flush = () => {
     if (!found.size) return
     const got = new Map(found)
     found.clear()
-    store.set((s) => ({ entries: s.entries.map((x) => (got.has(x.id) && x.mods === null ? { ...x, mods: got.get(x.id)! } : x)) }))
+    store.set((s) => ({ entries: s.entries.map((x) => (got.has(x.id) && (x.mods === null || x.blocks === null) ? { ...x, ...got.get(x.id)! } : x)) }))
   }
   for (const e of todo) {
     if (run !== fillRun || version !== indexVersion) break
     try {
       const rec = await idbGet<{ fp: string; parsed: ParsedBlueprint }>('bps', e.id)
       if (!rec || rec.fp !== `${e.size}|${e.modified}`) continue
-      const n = pickMods(rec.parsed, base, modIndex).picked.length
-      found.set(e.id, n)
-      void idbPut('bpmeta', `${e.id}|${e.modified}`, n).catch(() => undefined)
+      const meta: BpMeta = { mods: e.mods ?? pickMods(rec.parsed, base, modIndex).picked.length, blocks: rec.parsed.grids.reduce((a, g) => a + g.key.length, 0) }
+      found.set(e.id, meta)
+      void idbPut('bpmeta', `${e.id}|${e.modified}`, meta).catch(() => undefined)
     } catch {
       continue
     }
@@ -429,11 +431,12 @@ async function resolveCurrent() {
   if (perf.last) perf.last.resolve = performance.now() - t0
   const e = c.entry
   const pin = store.get().pinned
-  if (!e && pin && pin.mods !== picks.picked.length) store.set({ pinned: { ...pin, mods: picks.picked.length } })
-  if (e && e.mods !== picks.picked.length) {
-    const updated = { ...e, mods: picks.picked.length }
+  const bpMeta: BpMeta = { mods: picks.picked.length, blocks: m.blockCount }
+  if (!e && pin && (pin.mods !== bpMeta.mods || pin.blocks !== bpMeta.blocks)) store.set({ pinned: { ...pin, ...bpMeta } })
+  if (e && (e.mods !== bpMeta.mods || e.blocks !== bpMeta.blocks)) {
+    const updated = { ...e, ...bpMeta }
     c.entry = updated
-    idbPut('bpmeta', `${e.id}|${e.modified}`, picks.picked.length)
+    idbPut('bpmeta', `${e.id}|${e.modified}`, bpMeta)
     store.set((s) => ({ entries: s.entries.map((x) => (x.id === e.id ? updated : x)) }))
   }
   store.set((s) => ({ info, modRows: rows, unknownBlocks: picks.uncovered, missingOpen: s.missingOpen && picks.uncovered.length > 0, modelVersion: s.modelVersion + 1 }))
@@ -597,7 +600,7 @@ export const actions = {
       perf.last = { ...res.ms, resolve: 0, firstFrame: 0, total: 0, blocks: res.parsed.grids.reduce((n, g) => n + g.key.length, 0) }
       const pinned: ListEntry | null = entry
         ? null
-        : { id: 'open:' + arg.name, name: res.parsed.name || arg.name, large: res.parsed.grids[0]?.large ?? true, size: bytes, mods: null, list: 'local', modified: 0, file: null }
+        : { id: 'open:' + arg.name, name: res.parsed.name || arg.name, large: res.parsed.grids[0]?.large ?? true, size: bytes, mods: null, blocks: null, list: 'local', modified: 0, file: null }
       store.set((s) => ({ bp: entry ? entry.id : pinned!.id, pinned, loading: false, section: { ...s.section, pos: 0.5 } }))
       await resolveCurrent()
     } catch (err) {

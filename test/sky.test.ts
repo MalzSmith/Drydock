@@ -9,7 +9,7 @@ const env = (tex: string, orient = '') =>
 
 function memCache(): ScanCache {
   const mods = new Map<string, ModCacheRec>()
-  return { getMod: async (k) => mods.get(k), putMod: async (k, r) => void mods.set(k, r), getBpMods: async () => undefined }
+  return { getMod: async (k) => mods.get(k), putMod: async (k, r) => void mods.set(k, r), getBpMeta: async () => undefined }
 }
 
 function cubeDds(size: number, mips: number, color: (face: number, level: number) => number[]): File {

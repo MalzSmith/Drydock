@@ -24,7 +24,7 @@ function memCache(): ScanCache & { mods: Map<string, ModCacheRec>; bp: Map<strin
     bp,
     getMod: async (k) => mods.get(k),
     putMod: async (k, r) => void mods.set(k, r),
-    getBpMods: async (k) => bp.get(k),
+    getBpMeta: async (k) => bp.get(k),
   }
 }
 

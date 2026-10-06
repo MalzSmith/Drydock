@@ -44,6 +44,7 @@ function publish() {
         large: e.large,
         size: e.size,
         mods: e.mods,
+        blocks: e.blocks ?? null,
         list: r.kind === 'blueprints' ? 'local' : 'workshop',
         modified: e.modified,
         file: e.file,

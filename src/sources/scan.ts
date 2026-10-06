@@ -25,7 +25,15 @@ export type BpEntry = {
   size: number
   modified: number
   mods: number | null
+  blocks: number | null
   file: File | null
+}
+
+export type BpMeta = { mods: number; blocks: number }
+
+export function bpMetaOf(v: BpMeta | number | undefined): { mods: number | null; blocks: number | null } {
+  if (typeof v === 'number') return { mods: v, blocks: null }
+  return v ? { mods: v.mods, blocks: v.blocks } : { mods: null, blocks: null }
 }
 
 export type ModInfo = { key: string; sourceId: number; folder: string; name: string; subs: string[] }
@@ -37,7 +45,7 @@ export type ModSkies = { key: string; name: string; skies: SkyDef[] }
 export type ScanCache = {
   getMod(key: string): Promise<ModCacheRec | undefined>
   putMod(key: string, rec: ModCacheRec): Promise<void>
-  getBpMods(key: string): Promise<number | undefined>
+  getBpMeta(key: string): Promise<BpMeta | number | undefined>
 }
 
 export type ScanResult = {
@@ -104,8 +112,8 @@ async function readEntry(sourceId: number, dir: FsDir, cache: ScanCache): Promis
   const big = file.size > 4096 ? await file.slice(0, 65536).text() : head
   const g = /<GridSizeEnum>\s*(\w+)/.exec(big)
   const id = `${sourceId}/${dir.name}`
-  const mods = (await cache.getBpMods(`${id}|${file.lastModified}`)) ?? null
-  return { id, sourceId, folder: dir.name, name, large: g ? g[1] !== 'Small' : true, size: file.size, modified: file.lastModified, mods, file }
+  const { mods, blocks } = bpMetaOf(await cache.getBpMeta(`${id}|${file.lastModified}`))
+  return { id, sourceId, folder: dir.name, name, large: g ? g[1] !== 'Small' : true, size: file.size, modified: file.lastModified, mods, blocks, file }
 }
 
 export async function scanBlueprints(root: FsDir, kind: SourceKind, sourceId: number, cache: ScanCache, progress?: Progress): Promise<BpEntry[]> {

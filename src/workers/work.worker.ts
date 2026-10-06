@@ -1,7 +1,7 @@
 import { PARSE_VERSION, decodeBlueprint, parseBlueprint, type ParsedBlueprint } from '../se/blueprint.ts'
 import { idbDelete, idbGet, idbKeys, idbPut } from '../sources/idb.ts'
 import { mapPool, treeFromFiles } from '../sources/fs.ts'
-import { scanSource, type ModCacheRec, type ScanResult, type ScanCache, type SourceKind } from '../sources/scan.ts'
+import { scanSource, type BpMeta, type ModCacheRec, type ScanResult, type ScanCache, type SourceKind } from '../sources/scan.ts'
 import { MAX_EXPORT_BLOCKS, writeSbc } from '../se/sbcWrite.ts'
 import { surfaceInstances, voxelize, type CutSpec, type VShape } from '../compose/csg.ts'
 import { serve } from './rpc.ts'
@@ -25,7 +25,7 @@ async function prune(store: 'mods' | 'bps', sourceId: number, keep: Set<string>)
 const cache: ScanCache = {
   getMod: (key) => idbGet<ModCacheRec>('mods', key),
   putMod: (key, rec) => idbPut('mods', key, rec).then(() => undefined),
-  getBpMods: (key) => idbGet<number>('bpmeta', key),
+  getBpMeta: (key) => idbGet<BpMeta | number>('bpmeta', key),
 }
 
 export type ParseArg = { buffer?: ArrayBuffer; file?: File; name: string }

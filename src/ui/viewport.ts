@@ -1,7 +1,7 @@
 import { wrapAngle, type Rect, type View } from '../render/camera.ts'
 import { createRenderer, type FrameInfo } from '../render/renderer.ts'
 import { actions, perf, store } from '../state/app.ts'
-import { dimsText, titleText } from '../state/derive.ts'
+import { captionText, titleText } from '../state/derive.ts'
 import { h, icon, seg, text } from './dom.ts'
 
 const DARK_BG = new Set(['sky-default', 'sky-orbit', 'sky-nebula', 'steel'])
@@ -188,7 +188,7 @@ export function mountViewport(root: HTMLElement) {
   store.watch((s) => s.section.on, (on) => secBtn.classList.toggle('on', on))
   store.watch((s) => s.spin, (on) => spinBtn.classList.toggle('on', on))
   store.watch(titleText, (v) => (name.textContent = v))
-  store.watch(dimsText, (v) => (dims.textContent = v))
+  store.watch(captionText, (v) => (dims.textContent = v))
   store.watch(
     (s) => s.toast,
     (t) => {

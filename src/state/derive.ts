@@ -19,6 +19,12 @@ export function dimsText(s: AppState): string {
   return `${i.large ? 'Large' : 'Small'} grid · ${i.dims[0]}×${i.dims[1]}×${i.dims[2]} blocks · ${i.lengthM.toFixed(1)} m long`
 }
 
+export function captionText(s: AppState): string {
+  const i = s.info
+  if (s.mode === 'compose' || !i) return dimsText(s)
+  return `${i.large ? 'Large' : 'Small'} grid · ${n(i.blockCount)} ${i.blockCount === 1 ? 'block' : 'blocks'} · ${i.dims[0]}×${i.dims[1]}×${i.dims[2]} · ${i.lengthM.toFixed(1)} m long`
+}
+
 export function blocksText(s: AppState): string {
   const c = activeInfo(s)?.blockCount ?? 0
   return `${n(c)} ${c === 1 ? 'block' : 'blocks'}`
