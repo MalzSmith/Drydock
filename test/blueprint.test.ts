@@ -44,6 +44,16 @@ describe('parseBlueprint', () => {
     expect(bp.strings).toEqual(['Projector/P', 'CubeBlock/Q'])
   })
 
+  it('reads an empty subtype as empty instead of a nested inventory item', () => {
+    const xml = `<CubeGrids><CubeGrid><GridSizeEnum>Large</GridSizeEnum><CubeBlocks>
+<MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_LargeGatlingTurret"><SubtypeName /><EntityId>1</EntityId><Min x="0" y="0" z="0" /><ComponentContainer><Components><ComponentData><Component><Items><MyObjectBuilder_InventoryItem><PhysicalContent xsi:type="MyObjectBuilder_AmmoMagazine"><SubtypeName>NATO_25x184mm</SubtypeName></PhysicalContent></MyObjectBuilder_InventoryItem></Items></Component></ComponentData></Components></ComponentContainer></MyObjectBuilder_CubeBlock>
+<MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_OxygenGenerator"><EntityId>2</EntityId><Min x="1" y="0" z="0" /><Inventory><Items><SubtypeName>Ice</SubtypeName></Items></Inventory></MyObjectBuilder_CubeBlock>
+<MyObjectBuilder_CubeBlock><EntityId>3</EntityId><SubtypeName>Late</SubtypeName><Min x="2" y="0" z="0" /></MyObjectBuilder_CubeBlock>
+</CubeBlocks></CubeGrid></CubeGrids>`
+    const bp = parseBlueprint(xml)
+    expect(bp.strings).toEqual(['LargeGatlingTurret/', 'OxygenGenerator/', 'CubeBlock/Late'])
+  })
+
   it('sorts grids by weighted block count', () => {
     const blk = (x: number) => `<MyObjectBuilder_CubeBlock><SubtypeName>A</SubtypeName><Min x="${x}" y="0" z="0" /></MyObjectBuilder_CubeBlock>`
     const xml = `<CubeGrids><CubeGrid><GridSizeEnum>Small</GridSizeEnum><CubeBlocks>${blk(0)}${blk(1)}${blk(2)}</CubeBlocks></CubeGrid><CubeGrid><GridSizeEnum>Large</GridSizeEnum><CubeBlocks>${blk(0)}</CubeBlocks></CubeGrid></CubeGrids>`

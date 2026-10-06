@@ -18,7 +18,7 @@ export type ParsedBlueprint = {
   grids: ParsedGrid[]
 }
 
-export const PARSE_VERSION = 3
+export const PARSE_VERSION = 4
 
 export const PILOT_MAIN = 0
 export const PILOT_NAMED = 1
@@ -96,6 +96,40 @@ function readVec(t: string, tagAt: number, to: number, out: number[]) {
 
 function isTagEnd(c: number): boolean {
   return c === 32 || c === 62 || c === 47 || c === 10 || c === 13 || c === 9
+}
+
+function ownSubtype(t: string, gt: number, to: number): string {
+  let depth = 0
+  let i = gt + 1
+  for (;;) {
+    const lt = t.indexOf('<', i)
+    if (lt < 0 || lt >= to) return ''
+    const c = t.charCodeAt(lt + 1)
+    if (c === 47) {
+      if (--depth < 0) return ''
+      i = lt + 2
+      continue
+    }
+    const e = t.indexOf('>', lt)
+    if (e < 0 || e >= to) return ''
+    if (c === 33 || c === 63) {
+      i = e + 1
+      continue
+    }
+    const self = t.charCodeAt(e - 1) === 47
+    if (depth === 0) {
+      let ne = lt + 1
+      while (ne < e && !isTagEnd(t.charCodeAt(ne))) ne++
+      const name = t.slice(lt + 1, ne)
+      if (name === 'SubtypeName' || name === 'SubtypeId') {
+        if (self) return ''
+        const close = t.indexOf('<', e + 1)
+        return close < 0 ? '' : t.slice(e + 1, close)
+      }
+    }
+    if (!self) depth++
+    i = e + 1
+  }
 }
 
 function findTag(t: string, tag: string, from: number, to: number): number {
@@ -251,7 +285,7 @@ export function parseBlueprint(text: string, fallbackName = ''): ParsedBlueprint
         const e = b.indexOf('"', s)
         type = b.slice(b.startsWith(PREFIX, s) ? s + PREFIX.length : s, e)
       }
-      const sub = elementText(b, 'SubtypeName', gt, to) ?? elementText(b, 'SubtypeId', gt, to) ?? ''
+      const sub = ownSubtype(b, gt, to)
       const m = [0, 0, 0]
       const mi = findTag(b, 'Min', gt, to)
       if (mi >= 0) readVec(b, mi, to, m)
