@@ -80,6 +80,6 @@ It includes the Lucide icons (ISC, partly MIT from Feather), three.js (MIT) and 
 
 Drydock is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Keen Software House. Space Engineers is a trademark of Keen Software House.
 
-Drydock does not include any of the game's models, textures or other assets. They are read from the user's own installation of the game when the game folder is linked, and they stay in the browser.
+Drydock does not include any of the game's models, textures or other art. It ships only two small tables generated from the game (see Bundled data): vanilla block IDs, sizes and display names, and the armor tile layout per cube topology. Models and textures are read from the user's own installation of the game when the game folder is linked, and they stay in the browser.
 
 The website counts anonymous visits with [GoatCounter](https://www.goatcounter.com) to see whether people use it. It uses no cookies and sends only the page path, never file names, blueprint links or anything read from linked folders. The counter loads only after the welcome card is closed and can be switched off there; the setting is remembered in the browser. Browsers that send Do Not Track or Global Privacy Control are not counted unless the box is ticked. The counter script is served from this repository (`public/count.js`, ISC license, with the query string removed from what it sends), not loaded from GoatCounter.
