@@ -210,7 +210,7 @@ Flow: after a scan the worker writes `snap` and prunes removed mods, the list is
 
 ## Test seams
 
-- `?bp=<url>` loads a bp.sbc by URL on start, through the same path as a drop. Vite dev serves repo files under `/@fs/`.
+- `?bp=<path>` loads a bp.sbc from the same origin on start, through the same path as a drop. Other origins are ignored. Vite dev serves repo files under `/@fs/`.
 - `?view=iso|front|side|top|rear`, `?style=textured|shaded|clay|line`, `?light=directional|uniform` and `?w=..&h=..` exist for screenshot scripts.
 - `scripts/shot.mjs <url> <out.png>` drives `playwright-core` with `channel: 'msedge'` and waits for `document.body.dataset.ready === '1'`, which the app sets after the first frame of a loaded model.
 - Tests are self-contained (synthetic XML, in-memory trees) except the `game assets` suite in `test/assets.test.ts`, which builds real meshes and textures from the game's `Content` folder. It runs only when `SE_GAME_ROOT` points at a Space Engineers install and is skipped otherwise; there is no default path.

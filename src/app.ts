@@ -138,11 +138,25 @@ store.watch(
   },
 )
 
-const bpUrl = q.get('bp')
-if (bpUrl) {
+const bpParam = q.get('bp')
+let bpUrl: URL | null = null
+try {
+  if (bpParam) bpUrl = new URL(bpParam, location.href)
+} catch {}
+if (bpUrl && bpUrl.origin === location.origin) {
   fetch(bpUrl)
-    .then((r) => r.arrayBuffer())
-    .then((buffer) => actions.loadBlueprint({ buffer, name: decodeURIComponent(bpUrl.split('/').slice(-2, -1)[0] ?? 'blueprint') }))
+    .then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return r.arrayBuffer()
+    })
+    .then((buffer) => {
+      let name = bpUrl.pathname.split('/').slice(-2, -1)[0] || 'blueprint'
+      try {
+        name = decodeURIComponent(name)
+      } catch {}
+      return actions.loadBlueprint({ buffer, name })
+    })
+    .catch((err) => actions.toast('Blueprint load failed: ' + (err instanceof Error ? err.message : String(err))))
 }
 
 function bench(frames: number): { avgMs: number; frames: number } {
