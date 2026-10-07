@@ -16,7 +16,7 @@ export function mountRight(root: HTMLElement, renderer: Renderer) {
     export: mountExportTab(renderer),
   }
   const buttons = TABS.map(([id, label]) => h('button', { class: 'tab', onClick: () => actions.setTab(id) }, label))
-  root.append(h('div', { class: 'tabs' }, ...buttons), h('div', { class: 'rbody' }, ...Object.values(panes)))
+  root.append(h('div', { class: 'tabs', 'data-tour': 'tabs' }, ...buttons), h('div', { class: 'rbody' }, ...Object.values(panes)))
   store.watch(
     (s) => s.tab,
     (tab) => {

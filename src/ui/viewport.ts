@@ -129,7 +129,7 @@ export function mountViewport(root: HTMLElement) {
   root.append(
     gl,
     ov,
-    h('div', { class: 'vp-top' }, h('div', null, presets.el), h('div', null, proj.el, secBtn, spinBtn, fitBtn)),
+    h('div', { class: 'vp-top' }, h('div', null, presets.el), h('div', { 'data-tour': 'vptools' }, proj.el, secBtn, spinBtn, fitBtn)),
     h(
       'div',
       { class: 'vp-bot' },

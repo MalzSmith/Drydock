@@ -107,6 +107,7 @@ export type AppState = {
   compose: { shapes: Shape[]; selShape: number | null; grid: 'Large' | 'Small'; name: string }
   sources: Source[]
   srcOpen: boolean
+  tour: number
   toast: string
   busy: boolean
   spin: boolean
@@ -162,6 +163,7 @@ export const store = createStore<AppState>({
   compose: { shapes: shapes0, selShape: null, grid: 'Large', name: 'Drydock Hull' },
   sources: [],
   srcOpen: false,
+  tour: -1,
   toast: '',
   busy: false,
   spin: false,
@@ -484,6 +486,25 @@ export const actions = {
   closeSources: () => store.set({ srcOpen: false }),
   openMissing: () => store.set({ missingOpen: true }),
   closeMissing: () => store.set({ missingOpen: false }),
+
+  openTour() {
+    actions.setMode('blueprint')
+    store.set({ tab: 'view', srcOpen: false, missingOpen: false, tour: 0 })
+  },
+  setTour: (tour: number) => store.set({ tour }),
+  closeTour(reason: 'done' | 'skip' | 'close') {
+    store.set({ tour: -1 })
+    try {
+      localStorage.setItem('drydock.tourSeen', '1')
+    } catch {}
+    actions.toast(
+      reason === 'done'
+        ? 'All set · replay the tour any time from Tour in the header'
+        : reason === 'skip'
+          ? 'Replay the tour any time from Tour in the header'
+          : 'Tour closed · replay it any time from Tour in the header',
+    )
+  },
 
   setMode(mode: AppState['mode']) {
     store.set((s) => ({ mode, section: { ...s.section, pos: 0.5 } }))

@@ -13,6 +13,7 @@ import { mountNav } from './ui/nav.ts'
 import { mountRight } from './ui/right/tabs.ts'
 import { mountSourcesDialog } from './ui/sourcesDialog.ts'
 import { mountMissingDialog } from './ui/missingDialog.ts'
+import { mountTour } from './ui/tour.ts'
 import { mountViewport } from './ui/viewport.ts'
 
 const $ = (id: string) => document.getElementById(id)!
@@ -32,6 +33,7 @@ mountRight($('right'), renderer)
 mountFooter($('foot'))
 mountSourcesDialog(document.body)
 mountMissingDialog(document.body)
+mountTour($('app'))
 
 store.watch(
   (s) => s.mode,
@@ -116,6 +118,12 @@ if (q.get('mode') === 'compose') actions.setMode('compose')
 if (q.get('seams') === '0') actions.setRender({ edges: false })
 if (q.get('tint') === '1') actions.setRender({ tintMods: true })
 if (q.get('sources') === '1') actions.openSources()
+
+let tourSeen = false
+try {
+  tourSeen = localStorage.getItem('drydock.tourSeen') === '1'
+} catch {}
+if (q.get('tour') === '1' || !tourSeen) actions.openTour()
 
 const bpUrl = q.get('bp')
 if (bpUrl) {

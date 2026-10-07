@@ -36,7 +36,7 @@ export function mountBlueprintPanel(root: HTMLElement) {
 
   const aside = h(
     'aside',
-    { class: 'lib' },
+    { class: 'lib', 'data-tour': 'library' },
     h(
       'div',
       { class: 'lib-head' },

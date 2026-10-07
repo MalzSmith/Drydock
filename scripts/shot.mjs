@@ -30,6 +30,7 @@ const browser = await chromium.launch({
   args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--use-angle=d3d11'],
 })
 const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: +(opt.dpr ?? 1) })
+await page.addInitScript(() => localStorage.setItem('drydock.tourSeen', '1'))
 page.on('console', (m) => console.log('[page]', m.text()))
 page.on('pageerror', (e) => console.log('[pageerror]', e.message))
 

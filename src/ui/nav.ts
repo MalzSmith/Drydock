@@ -12,10 +12,10 @@ export function mountNav(root: HTMLElement) {
   const dot = h('span', { class: 'dot7' })
   const status = text()
   const link = text()
-  const sourcesBtn = h('button', { class: 'btn btn-secondary', style: 'gap:6px', onClick: actions.openSources }, icon('folder', 14), link.el)
+  const sourcesBtn = h('button', { class: 'btn btn-secondary', style: 'gap:6px', 'data-tour': 'sources', onClick: actions.openSources }, icon('folder', 14), link.el)
   const exportBtn = h(
     'button',
-    { class: 'btn btn-primary blueprint', style: 'gap:6px;border:1px solid var(--color-accent)', onClick: () => actions.setTab('export') },
+    { class: 'btn btn-primary blueprint', style: 'gap:6px;border:1px solid var(--color-accent)', 'data-tour': 'export', onClick: () => actions.setTab('export') },
     ...corners(),
     icon('download', 14),
     'Export image',
@@ -29,9 +29,11 @@ export function mountNav(root: HTMLElement) {
     ),
     mode.el,
     h('div', { class: 'navstat' }, dot, status.el),
+    h('button', { class: 'btn btn-ghost', title: 'Show the feature tour', style: 'gap:6px', onClick: actions.openTour }, icon('circle-help', 14), 'Tour'),
     sourcesBtn,
     exportBtn,
   )
+  mode.el.dataset.tour = 'mode'
   store.watch((s) => s.mode, (m) => mode.set(m))
   store.watch(
     (s) => sourceStatus(s),
