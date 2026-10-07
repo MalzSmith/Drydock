@@ -64,7 +64,7 @@ export function capsOf(gl: WebGLRenderer): Caps {
   }
 }
 
-export function createAssets(caps: Caps, onMesh: () => void, onTexture: () => void, onCounts: (c: AssetCounts) => void) {
+export function createAssets(caps: Caps, upload: (t: Texture) => void, onMesh: () => void, onTexture: () => void, onCounts: (c: AssetCounts) => void) {
   const meshes = new Map<string, MeshEntry>()
   const textures = new Map<string, TexEntry>()
   const queue: Array<() => Promise<void>> = []
@@ -72,6 +72,8 @@ export function createAssets(caps: Caps, onMesh: () => void, onTexture: () => vo
   let gen = 0
   let meshTimer = 0
   let countTimer = 0
+  const uploads: Array<() => void> = []
+  let uploadRaf = 0
 
   const counts = (): AssetCounts => {
     let meshesDone = 0
@@ -108,13 +110,31 @@ export function createAssets(caps: Caps, onMesh: () => void, onTexture: () => vo
     }
   }
 
+  const fireMesh = () => {
+    meshTimer = 0
+    onMesh()
+  }
+
   const meshChanged = () => {
     report()
-    if (meshTimer) return
-    meshTimer = window.setTimeout(() => {
-      meshTimer = 0
-      onMesh()
-    }, 120)
+    for (const m of meshes.values())
+      if (m.status === 'pending') {
+        if (!meshTimer) meshTimer = window.setTimeout(fireMesh, 400)
+        return
+      }
+    clearTimeout(meshTimer)
+    meshTimer = window.setTimeout(fireMesh, 0)
+  }
+
+  const drainUploads = () => {
+    uploadRaf = 0
+    const t0 = performance.now()
+    while (uploads.length && performance.now() - t0 < 6) uploads.shift()!()
+    if (uploads.length) scheduleUploads()
+  }
+
+  const scheduleUploads = () => {
+    uploadRaf = document.hidden ? window.setTimeout(drainUploads, 0) : requestAnimationFrame(drainUploads)
   }
 
   function mesh(cands: string[]): MeshEntry {
@@ -161,12 +181,21 @@ export function createAssets(caps: Caps, onMesh: () => void, onTexture: () => vo
         r = { data: null, status: 'error', error: String(err) }
       }
       if (textures.get(key) !== entry) return
-      entry.status = r.status
-      if (r.data) entry.tex = makeTexture(r.data, srgb)
-      for (const w of entry.waiters) w()
-      entry.waiters.clear()
-      report()
-      onTexture()
+      const finish = () => {
+        if (textures.get(key) !== entry) return
+        entry.status = r.status
+        if (r.data) {
+          entry.tex = makeTexture(r.data, srgb)
+          upload(entry.tex)
+        }
+        for (const w of entry.waiters) w()
+        entry.waiters.clear()
+        report()
+        onTexture()
+      }
+      if (!r.data) return finish()
+      uploads.push(finish)
+      if (!uploadRaf) scheduleUploads()
     })
     report()
     pump()

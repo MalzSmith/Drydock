@@ -1,6 +1,6 @@
 import { modelCandidates } from '../assets/keys.ts'
 import type { MeshData, Status } from '../assets/build.ts'
-import { FLAG_MODDED, FLAG_PLACEHOLDER, FLAG_SELECTED, FLAG_SHRINK, TOPO_BOX, type DefRecord, type RenderModel, type SkinRecord } from '../se/defs.ts'
+import { FLAG_MODDED, FLAG_PLACEHOLDER, FLAG_SELECTED, FLAG_SHRINK, TOPO_BOX, type DefRecord, type RenderModel, type SideDef, type SkinRecord } from '../se/defs.ts'
 import { BASE6_VEC, createWorld } from '../se/orient.ts'
 import { TILE_FULL, patternOffset, type TileTable } from '../se/tiles.ts'
 
@@ -40,6 +40,39 @@ class Grow {
   }
 }
 
+class SegSet {
+  keys = new Int32Array(6 * 4096)
+  used = new Uint8Array(4096)
+  size = 0
+  add(k: Int32Array): boolean {
+    if ((this.size + 1) * 2 > this.used.length) this.grow()
+    const mask = this.used.length - 1
+    let h = 0x811c9dc5
+    for (let i = 0; i < 6; i++) h = Math.imul(h ^ k[i], 0x01000193)
+    h = (h ^ (h >>> 16)) & mask
+    const a = this.keys
+    for (;;) {
+      const o = h * 6
+      if (!this.used[h]) {
+        this.used[h] = 1
+        a.set(k, o)
+        this.size++
+        return true
+      }
+      if (a[o] === k[0] && a[o + 1] === k[1] && a[o + 2] === k[2] && a[o + 3] === k[3] && a[o + 4] === k[4] && a[o + 5] === k[5]) return false
+      h = (h + 1) & mask
+    }
+  }
+  grow() {
+    const keys = this.keys
+    const used = this.used
+    this.keys = new Int32Array(keys.length * 2)
+    this.used = new Uint8Array(used.length * 2)
+    this.size = 0
+    for (let i = 0; i < used.length; i++) if (used[i]) this.add(keys.subarray(i * 6, i * 6 + 6))
+  }
+}
+
 const ORIENT: Float32Array[] = []
 for (let f = 0; f < 6; f++)
   for (let u = 0; u < 6; u++) {
@@ -61,10 +94,28 @@ const isMod = (d: DefRecord) => d.source !== 'vanilla' && d.source !== 'game'
 export type MeshLookup = (cands: string[]) => MeshState
 
 export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLookup): DetailScene {
-  const groups = new Map<string, { mesh: MeshState; skin: SkinRecord | null; buf: Grow; behind: boolean }>()
+  type Group = { mesh: MeshState; skin: SkinRecord | null; buf: Grow; behind: boolean }
+  const groups: Group[] = []
+  const groupIndex = new Map<string, Map<string, Array<Group | undefined>>>()
+  const groupOf = (mesh: MeshState, skin: SkinRecord | null, behind: boolean) => {
+    let bySkin = groupIndex.get(mesh.key)
+    if (!bySkin) groupIndex.set(mesh.key, (bySkin = new Map()))
+    const sub = skin?.sub ?? ''
+    let pair = bySkin.get(sub)
+    if (!pair) bySkin.set(sub, (pair = [undefined, undefined]))
+    let gr = pair[behind ? 1 : 0]
+    if (!gr) {
+      gr = { mesh, skin, buf: new Grow(), behind }
+      pair[behind ? 1 : 0] = gr
+      groups.push(gr)
+    }
+    return gr
+  }
   const boxes: DetailBox[] = []
   const lines = new Grow()
-  const seen = new Set<string>()
+  const seen = new SegSet()
+  const wv = new Float64Array(6)
+  const qk = new Int32Array(6)
   const used = new Map<string, MeshState>()
   const defs = model.defs ?? []
   const skins = model.skins ?? []
@@ -77,6 +128,22 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
     const m = lookup(c)
     used.set(m.key, m)
     return m
+  }
+  const modelCache = new Map<DefRecord, MeshState>()
+  const modelOf = (path: string, def: DefRecord) => {
+    let m = modelCache.get(def)
+    if (!m) modelCache.set(def, (m = meshOf(path, def)))
+    return m
+  }
+  const sideCache = new Map<DefRecord, { meshes: MeshState[]; pending: boolean; ok: boolean }>()
+  const sidesOf = (def: DefRecord, sides: SideDef[], n: number) => {
+    let s = sideCache.get(def)
+    if (!s) {
+      const meshes: MeshState[] = []
+      for (let t = 0; t < n; t++) meshes.push(meshOf(sides[t][0], def))
+      sideCache.set(def, (s = { meshes, pending: meshes.some((m) => m.status === 'pending'), ok: meshes.every((m) => m.status === 'ok') }))
+    }
+    return s
   }
 
   model.grids.forEach((g, gi) => {
@@ -107,32 +174,32 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
     const hi = [0, 0, 0]
     const nlo = [0, 0, 0]
     const nhi = [0, 0, 0]
+    const point = (o: number, px: number, py: number, pz: number, R: Float32Array, tx: number, ty: number, tz: number) => {
+      const x = px * half, y = py * half, z = pz * half
+      const lx = x * R[0] + y * R[3] + z * R[6] + tx
+      const ly = x * R[1] + y * R[4] + z * R[7] + ty
+      const lz = x * R[2] + y * R[5] + z * R[8] + tz
+      wv[o] = lx * T[0] + ly * T[4] + lz * T[8] + T[12]
+      wv[o + 1] = lx * T[1] + ly * T[5] + lz * T[9] + T[13]
+      wv[o + 2] = lx * T[2] + ly * T[6] + lz * T[10] + T[14]
+    }
     const line = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, R: Float32Array, tx: number, ty: number, tz: number) => {
-      const p = [ax, ay, az, bx, by, bz]
-      const w: number[] = []
-      for (let k = 0; k < 2; k++) {
-        const x = p[k * 3] * half, y = p[k * 3 + 1] * half, z = p[k * 3 + 2] * half
-        const lx = x * R[0] + y * R[3] + z * R[6] + tx
-        const ly = x * R[1] + y * R[4] + z * R[7] + ty
-        const lz = x * R[2] + y * R[5] + z * R[8] + tz
-        w.push(lx * T[0] + ly * T[4] + lz * T[8] + T[12], lx * T[1] + ly * T[5] + lz * T[9] + T[13], lx * T[2] + ly * T[6] + lz * T[10] + T[14])
-      }
-      const q = w.map((v) => Math.round(v * 1000))
-      const a = `${q[0]},${q[1]},${q[2]}`
-      const b = `${q[3]},${q[4]},${q[5]}`
-      const k = a < b ? a + '|' + b : b + '|' + a
-      if (seen.has(k)) return
-      seen.add(k)
+      point(0, ax, ay, az, R, tx, ty, tz)
+      point(3, bx, by, bz, R, tx, ty, tz)
+      for (let i = 0; i < 6; i++) qk[i] = Math.round(wv[i] * 1000)
+      if (qk[0] > qk[3] || (qk[0] === qk[3] && (qk[1] > qk[4] || (qk[1] === qk[4] && qk[2] > qk[5]))))
+        for (let i = 0; i < 3; i++) {
+          const t = qk[i]
+          qk[i] = qk[i + 3]
+          qk[i + 3] = t
+        }
+      if (!seen.add(qk)) return
       lines.reserve(6)
-      lines.a.set(w, lines.n)
+      lines.a.set(wv, lines.n)
       lines.n += 6
     }
-    const emit = (mesh: MeshState, skin: SkinRecord | null, M: ArrayLike<number>, tx: number, ty: number, tz: number, hsv: ArrayLike<number>, paint: number, u: number, v: number, flags: number) => {
-      const behind = (flags & FLAG_BEHIND) !== 0
-      const key = mesh.key + '\u0000' + (skin?.sub ?? '') + (behind ? '\u0000b' : '')
-      let gr = groups.get(key)
-      if (!gr) groups.set(key, (gr = { mesh, skin, buf: new Grow(), behind }))
-      const b = gr.buf
+    const emit = (mesh: MeshState, skin: SkinRecord | null, M: ArrayLike<number>, tx: number, ty: number, tz: number, hsv: ArrayLike<number>, ho: number, paint: number, u: number, v: number, flags: number) => {
+      const b = groupOf(mesh, skin, (flags & FLAG_BEHIND) !== 0).buf
       b.reserve(STRIDE)
       const o = b.n
       const a = b.a
@@ -144,9 +211,9 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
       a[o + 9] = tx * T[0] + ty * T[4] + tz * T[8] + T[12]
       a[o + 10] = tx * T[1] + ty * T[5] + tz * T[9] + T[13]
       a[o + 11] = tx * T[2] + ty * T[6] + tz * T[10] + T[14]
-      a[o + 12] = hsv[0]
-      a[o + 13] = hsv[1]
-      a[o + 14] = hsv[2]
+      a[o + 12] = hsv[ho]
+      a[o + 13] = hsv[ho + 1]
+      a[o + 14] = hsv[ho + 2]
       a[o + 15] = paint
       a[o + 16] = u
       a[o + 17] = v
@@ -182,8 +249,8 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
       const flags = box[o + 7] & (FLAG_MODDED | FLAG_SELECTED)
       const R = ORIENT[d.orient[i]]
       const sk = d.skin[i] ? (skins[d.skin[i] - 1] ?? null) : null
-      const bh = d.hsv.subarray(i * 3, i * 3 + 3)
-      const key = sk?.hsv ?? bh
+      const key = sk?.hsv ?? d.hsv
+      const ko = sk?.hsv ? 0 : i * 3
       const cx = (mx + Mx) * 0.5 * cell, cy = (my + My) * 0.5 * cell, cz = (mz + Mz) * 0.5 * cell
       for (let ax = 0; ax < 3; ax++) {
         const c = cx * T[ax] + cy * T[4 + ax] + cz * T[8 + ax] + T[12 + ax]
@@ -195,14 +262,8 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
         const topo = table.topologies[r.topo]
         const U = ORIENT[topo.uniq?.[d.orient[i]] ?? d.orient[i]]
         const n = Math.min(topo.tiles.length, r.sides.length)
-        const meshes: MeshState[] = []
-        let pending = false
-        for (let t = 0; t < n; t++) {
-          const m = meshOf(r.sides[t][0], def)
-          meshes.push(m)
-          if (m.status === 'pending') pending = true
-        }
-        if (pending || meshes.some((m) => m.status !== 'ok')) {
+        const { meshes, pending, ok } = sidesOf(def, r.sides, n)
+        if (!ok) {
           pushBox(i, !pending)
           continue
         }
@@ -210,7 +271,12 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
           for (let y = my; y <= My; y++)
             for (let z = mz; z <= Mz; z++) {
               const tx = x * cell, ty = y * cell, tz = z * cell
-              for (const [a, b] of topo.edges) line(a[0], a[1], a[2], b[0], b[1], b[2], R, tx, ty, tz)
+              const edges = topo.edges
+              for (let e = 0; e < edges.length; e++) {
+                const a = edges[e][0]
+                const b = edges[e][1]
+                line(a[0], a[1], a[2], b[0], b[1], b[2], R, tx, ty, tz)
+              }
               for (let t = 0; t < n; t++) {
                 const tile = topo.tiles[t]
                 const tn = tile.n
@@ -232,12 +298,21 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
                   }
                 }
                 const m = meshes[t]
-                const fixed = tile.id ? table.grid[tile.id]?.find((g) => g.s[0] === sgn(nx) && g.s[1] === sgn(ny) && g.s[2] === sgn(nz)) : undefined
-                if (fixed) for (let k = 0; k < 9; k++) tileM[k] = fixed.m[k]
-                else mul3([tile.m[0], tile.m[1], tile.m[2], tile.m[3], tile.m[4], tile.m[5], tile.m[6], tile.m[7], tile.m[8]], U, tileM)
+                let fixed: number[] | null = null
+                const fixes = tile.id ? table.grid[tile.id] : undefined
+                if (fixes) {
+                  const snx = sgn(nx), sny = sgn(ny), snz = sgn(nz)
+                  for (let k = 0; k < fixes.length; k++)
+                    if (fixes[k].s[0] === snx && fixes[k].s[1] === sny && fixes[k].s[2] === snz) {
+                      fixed = fixes[k].m
+                      break
+                    }
+                }
+                if (fixed) for (let k = 0; k < 9; k++) tileM[k] = fixed[k]
+                else mul3(tile.m, U, tileM)
                 const side = r.sides[t]
                 patternOffset(r.topo, tile, nx, ny, nz, x, y, z, side[1], side[2], side[3], side[4], m.data!.patternScale, uvo, 0)
-                emit(m, sk, tileM, tx, ty, tz, key, paint, uvo[0], uvo[1], tf)
+                emit(m, sk, tileM, tx, ty, tz, key, ko, paint, uvo[0], uvo[1], tf)
               }
             }
         continue
@@ -246,7 +321,7 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
         pushBox(i, true)
         continue
       }
-      const m = meshOf(r.model, def)
+      const m = modelOf(r.model, def)
       if (m.status !== 'ok') {
         pushBox(i, m.status !== 'pending')
         continue
@@ -260,6 +335,7 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
         cy + off[0] * R[1] + off[1] * R[4] + off[2] * R[7],
         cz + off[0] * R[2] + off[1] * R[5] + off[2] * R[8],
         key,
+        ko,
         paint,
         0,
         0,
@@ -278,7 +354,7 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
     else if (m.status !== 'ok') missing++
   }
   return {
-    groups: [...groups.values()].map((g) => ({ mesh: g.mesh, skin: g.skin, inst: g.buf.done(), count: g.buf.n / STRIDE, behind: g.behind })),
+    groups: groups.map((g) => ({ mesh: g.mesh, skin: g.skin, inst: g.buf.done(), count: g.buf.n / STRIDE, behind: g.behind })),
     boxes,
     lines: lines.done(),
     used: [...used.keys()],

@@ -3,7 +3,8 @@ import { actions, store, type ListEntry, type ModMeta, type Source, type SourceK
 import { assetRpc, scanRpc } from '../workers/client.ts'
 import type { CacheArg, CacheReply, ScanReply, SnapRec } from '../workers/work.worker.ts'
 import { isRelevantFile } from './fs.ts'
-import { isAssetFile } from '../assets/keys.ts'
+import { assetKeys, isAssetFile } from '../assets/keys.ts'
+import { dropAssetFiles, setAssetFiles } from '../assets/files.ts'
 import { idbAll, idbDelete, idbGet, idbKeys, idbPut } from './idb.ts'
 import type { ScanResult } from './scan.ts'
 import type { SkyMeta } from '../assets/sky.ts'
@@ -119,7 +120,9 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
   setStatus()
   try {
     if (kind !== 'blueprints') {
-      await assetRpc().call<number>('registerAssets', { sourceId: id, kind, files: assets })
+      const keyed = assetKeys(kind, id, assets)
+      setAssetFiles(id, new Map(keyed))
+      await assetRpc().call<number>('registerAssets', { sourceId: id, keys: keyed.map((k) => k[0]) })
       actions.assetsChanged()
     }
     const rep = await scanRpc().call<ScanReply>('scanSource', { files, kind, sourceId: id })
@@ -185,6 +188,7 @@ export async function linkSource(kind: SourceKind, replaceId?: number) {
 export async function unlinkSource(id: number) {
   store.set((s) => ({ sources: s.sources.filter((x) => x.id !== id) }))
   results.delete(id)
+  dropAssetFiles(id)
   void assetRpc()
     .call('dropAssets', { sourceId: id })
     .then(() => actions.assetsChanged())

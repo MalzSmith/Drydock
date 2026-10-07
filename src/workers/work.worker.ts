@@ -4,9 +4,9 @@ import { mapPool, treeFromFiles } from '../sources/fs.ts'
 import { scanSource, type BpMeta, type ModCacheRec, type ScanResult, type ScanCache, type SourceKind } from '../sources/scan.ts'
 import { MAX_EXPORT_BLOCKS, writeSbc } from '../se/sbcWrite.ts'
 import { surfaceInstances, voxelize, type CutSpec, type VShape } from '../compose/csg.ts'
-import { serve } from './rpc.ts'
+import { request, serve } from './rpc.ts'
 import { loadMesh, loadTexture, type AssetEnv, type Caps } from '../assets/build.ts'
-import { assetKeys, defModels } from '../assets/keys.ts'
+import { defModels } from '../assets/keys.ts'
 import { SKY_FACE, SKY_THUMB, SKY_V, panorama, readSky, skyForCaps, type SkyMeta, type SkyOrient, type SkyRec } from '../assets/sky.ts'
 import type { SkyDef } from '../se/env.ts'
 
@@ -34,13 +34,22 @@ export type ParseResult = { parsed: ParsedBlueprint; ms: { read: number; decode:
 export type VoxelizeResult = { inst: ArrayBuffer; types: Uint8Array; count: number; dims: [number, number, number]; total: number; counts: number[]; ms: number }
 export type WriteResult = { blob: Blob; total: number }
 
-const assetFiles = new Map<number, Map<string, File>>()
+const assetFiles = new Map<number, Set<string>>()
 const prefixes = new Map<number, Set<string>>()
+const fetched = new Map<string, Promise<File | undefined>>()
 
 const assetEnv: AssetEnv = {
+  has(key) {
+    for (const s of assetFiles.values()) if (s.has(key)) return true
+    return false
+  },
   file(key) {
-    let f: File | undefined
-    for (const m of assetFiles.values()) f = m.get(key) ?? f
+    if (!assetEnv.has(key)) return Promise.resolve(undefined)
+    let f = fetched.get(key)
+    if (!f) {
+      f = request<File | undefined>('assetFile', key)
+      fetched.set(key, f)
+    }
     return f
   },
   hasPrefix(prefix) {
@@ -51,7 +60,7 @@ const assetEnv: AssetEnv = {
   cachePut: (store, key, v) => idbPut(store, key, v).then(() => undefined),
 }
 
-export type AssetArg = { sourceId: number; kind: SourceKind; files: File[] }
+export type AssetArg = { sourceId: number; keys: string[] }
 
 export type SkyLoad = { data: SkyRec['data']; orient: SkyOrient } | null
 
@@ -70,17 +79,19 @@ async function thumbnail(f: File, orient: SkyOrient): Promise<Blob | null> {
 
 serve({
   registerAssets(arg: AssetArg) {
-    const m = new Map(assetKeys(arg.kind, arg.sourceId, arg.files))
+    const m = new Set(arg.keys)
     const p = new Set<string>()
-    for (const k of m.keys()) p.add(k.startsWith('c:') ? 'c:' : k.slice(0, k.indexOf(':', 2) + 1))
+    for (const k of m) p.add(k.startsWith('c:') ? 'c:' : k.slice(0, k.indexOf(':', 2) + 1))
     assetFiles.delete(arg.sourceId)
     assetFiles.set(arg.sourceId, m)
     prefixes.set(arg.sourceId, p)
+    fetched.clear()
     return { result: m.size }
   },
   dropAssets(arg: { sourceId: number }) {
     assetFiles.delete(arg.sourceId)
     prefixes.delete(arg.sourceId)
+    fetched.clear()
     return { result: true }
   },
   async cacheModels(arg: { sourceId: number }, emit) {
@@ -117,10 +128,11 @@ serve({
     for (let i = 0; i < todo.length; i++) {
       emit('progress', { sourceId: arg.sourceId, text: `Caching skyboxes ${i + 1}/${todo.length}`, frac: (i + 1) / todo.length })
       const t = todo[i]
-      const key = t.cands.find((c) => assetEnv.file(c))
+      const key = t.cands.find((c) => assetEnv.has(c))
       if (!key || seen.has(key)) continue
       seen.add(key)
-      const f = assetEnv.file(key)!
+      const f = await assetEnv.file(key)
+      if (!f) continue
       const fp = `${f.size}|${f.lastModified}`
       const orient: SkyOrient = [t.def.yaw, t.def.pitch, t.def.roll]
       try {

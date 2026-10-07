@@ -15,7 +15,8 @@ function diskEnv(): AssetEnv & { cache: Map<string, unknown> } {
   const cache = new Map<string, unknown>()
   return {
     cache,
-    file(key) {
+    has: (key) => key.startsWith('c:') && existsSync(join(content, key.slice(2))),
+    async file(key) {
       if (!key.startsWith('c:')) return undefined
       const p = join(content, key.slice(2))
       if (!existsSync(p)) return undefined

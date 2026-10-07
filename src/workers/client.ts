@@ -1,11 +1,12 @@
-import { createRpc, type Rpc } from './rpc.ts'
+import { assetFile } from '../assets/files.ts'
+import { createRpc, type Handlers, type Rpc } from './rpc.ts'
 
 let parse: Rpc | null = null
 let scan: Rpc | null = null
 let compose: Rpc | null = null
 let assets: Rpc | null = null
 
-const spawn = () => createRpc(new Worker(new URL('./work.worker.ts', import.meta.url), { type: 'module' }))
+const spawn = (handlers?: Handlers) => createRpc(new Worker(new URL('./work.worker.ts', import.meta.url), { type: 'module' }), handlers)
 
 export function parseRpc(): Rpc {
   parse ??= spawn()
@@ -23,6 +24,6 @@ export function composeRpc(): Rpc {
 }
 
 export function assetRpc(): Rpc {
-  assets ??= spawn()
+  assets ??= spawn({ assetFile: (key: string) => assetFile(key) })
   return assets
 }

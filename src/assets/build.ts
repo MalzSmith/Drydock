@@ -42,7 +42,8 @@ export type AssetResult<T> = { data: T | null; status: Status; key?: string; err
 export type Caps = { s3tc: boolean; bptc: boolean }
 
 export type AssetEnv = {
-  file(key: string): File | undefined
+  has(key: string): boolean
+  file(key: string): Promise<File | undefined>
   hasPrefix(prefix: string): boolean
   cacheGet<T>(store: 'meshes' | 'textures', key: string): Promise<T | undefined>
   cachePut(store: 'meshes' | 'textures', key: string, value: unknown): Promise<void>
@@ -58,7 +59,7 @@ const fpOf = (f: File) => `${f.size}|${f.lastModified}`
 async function resolve<T>(env: AssetEnv, store: 'meshes' | 'textures', cands: string[], v: number, build: (key: string, f: File) => Promise<T | null>): Promise<AssetResult<T>> {
   let anyFiles = false
   for (const key of cands) {
-    const f = env.file(key)
+    const f = env.has(key) ? await env.file(key) : undefined
     const hit = await env.cacheGet<CacheRec<T | null>>(store, key).catch(() => undefined)
     if (f) {
       if (hit && hit.v === v && hit.fp === fpOf(f)) return hit.data ? { data: hit.data, status: 'ok', key } : { data: null, status: 'error', key }
@@ -142,7 +143,8 @@ async function append(env: AssetEnv, key: string, file: File, transform: Float32
     if (!model.includes('.mwm')) model += '.mwm'
     const i = rel.indexOf('models')
     const cands = i >= 0 ? [prefix + rel.slice(0, i) + model, 'c:' + model] : ['c:' + model]
-    const f = cands.map((c) => env.file(c)).find((x) => x)
+    const c = cands.find((x) => env.has(x))
+    const f = c ? await env.file(c) : undefined
     if (f) geo = parseMwm(await f.arrayBuffer())
   }
   const n = geo.positions.length / 3
@@ -206,7 +208,7 @@ async function append(env: AssetEnv, key: string, file: File, transform: Float32
     const sub = d.data['file']
     if (!d.name.includes('subpart_') || sub === undefined) continue
     const sk = prefix + (dirOf(rel) + sub.replace(/[\\/]+/g, '/') + '.mwm').toLowerCase()
-    const f = env.file(sk)
+    const f = env.has(sk) ? await env.file(sk) : undefined
     if (!f) continue
     try {
       await append(env, sk, f, mul(normalizeRows(d.matrix), transform), acc, depth + 1)

@@ -23,6 +23,7 @@ import {
   OrthographicCamera,
   Scene,
   ShaderMaterial,
+  Sphere,
   SrcAlphaFactor,
   Vector2,
   Vector3,
@@ -68,6 +69,32 @@ export type DetailPass = {
 
 const STYLE = { textured: 0, shaded: 1, clay: 2, line: 3 } as const
 
+const spheres = new WeakMap<MeshAttrs, Sphere>()
+
+function sphereOf(a: MeshAttrs): Sphere {
+  let s = spheres.get(a)
+  if (!s) {
+    s = new Sphere()
+    const n = a.position.count
+    if (n) {
+      const p = a.position.array
+      let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity
+      for (let i = 0; i < n * 3; i += 3) {
+        if (p[i] < x0) x0 = p[i]
+        if (p[i] > x1) x1 = p[i]
+        if (p[i + 1] < y0) y0 = p[i + 1]
+        if (p[i + 1] > y1) y1 = p[i + 1]
+        if (p[i + 2] < z0) z0 = p[i + 2]
+        if (p[i + 2] > z1) z1 = p[i + 2]
+      }
+      s.center.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
+      s.radius = Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2
+    }
+    spheres.set(a, s)
+  }
+  return s
+}
+
 type PartMat = { mat: ShaderMaterial; glassDepth?: ShaderMaterial; glassColor?: ShaderMaterial; texKeys: string[] }
 
 function quadGeometry(): BufferGeometry {
@@ -104,6 +131,80 @@ function disposeAttrs(a: MeshAttrs) {
   g.setAttribute('uv', a.uv)
   g.setIndex(a.index)
   g.dispose()
+}
+
+function modelMaterial(uniforms: Record<string, IUniform>, decal: boolean): ShaderMaterial {
+  const mat = new ShaderMaterial({ glslVersion: GLSL3, vertexShader: modelVert, fragmentShader: modelFrag, uniforms, side: DoubleSide })
+  if (decal)
+    Object.assign(mat, {
+      transparent: true,
+      depthWrite: false,
+      depthFunc: LessEqualDepth,
+      blending: CustomBlending,
+      blendSrc: SrcAlphaFactor,
+      blendDst: OneMinusSrcAlphaFactor,
+      blendSrcAlpha: ZeroFactor,
+      blendDstAlpha: OneFactor,
+    })
+  return mat
+}
+
+function glassMaterials(uniforms: Record<string, IUniform>): { depth: ShaderMaterial; color: ShaderMaterial } {
+  return {
+    depth: new ShaderMaterial({
+      glslVersion: GLSL3,
+      vertexShader: modelVert,
+      fragmentShader: glassFrag,
+      uniforms,
+      side: DoubleSide,
+      colorWrite: false,
+    }),
+    color: new ShaderMaterial({
+      glslVersion: GLSL3,
+      vertexShader: modelVert,
+      fragmentShader: glassFrag,
+      uniforms,
+      side: DoubleSide,
+      depthWrite: false,
+      depthFunc: EqualDepth,
+      stencilWrite: true,
+      stencilRef: 0,
+      stencilFunc: EqualStencilFunc,
+      stencilZPass: IncrementStencilOp,
+      transparent: true,
+      blending: CustomBlending,
+      blendSrc: OneFactor,
+      blendDst: OneMinusSrcAlphaFactor,
+      blendSrcAlpha: ZeroFactor,
+      blendDstAlpha: OneFactor,
+    }),
+  }
+}
+
+const keepWarm: ShaderMaterial[] = []
+
+function warmPrograms(gl: WebGLRenderer, quad: BufferGeometry, cam: Camera, solid: ShaderMaterial[], flat: ShaderMaterial[], onscreen: ShaderMaterial) {
+  const glass = glassMaterials({})
+  keepWarm.push(modelMaterial({}, false), modelMaterial({}, true), glass.depth, glass.color)
+  const shaded = quad.clone()
+  shaded.setAttribute('normal', new BufferAttribute(new Float32Array(9), 3))
+  const scene = (list: Array<[BufferGeometry, ShaderMaterial[]]>) => {
+    const s = new Scene()
+    for (const [g, mats] of list)
+      for (const m of mats) {
+        const q = new Mesh(g, m)
+        q.frustumCulled = false
+        s.add(q)
+      }
+    return s
+  }
+  const rt = new WebGLRenderTarget(1, 1)
+  gl.setRenderTarget(rt)
+  gl.compile(scene([[shaded, [...keepWarm, ...solid]], [quad, flat]]), cam)
+  gl.setRenderTarget(null)
+  gl.compile(scene([[quad, [onscreen]]]), cam)
+  rt.dispose()
+  shaded.dispose()
 }
 
 export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { requestFrame: () => void; onCounts: (c: AssetCounts) => void }) {
@@ -200,8 +301,9 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   const passMesh = new Mesh(quad, reduceMat)
   passMesh.frustumCulled = false
   passScene.add(passMesh)
+  if (gl.extensions.has('KHR_parallel_shader_compile')) setTimeout(() => warmPrograms(gl, quad, quadCam, [refBoxMat], [lineMat, reduceMat, compMat], downMat), 0)
 
-  const assets = createAssets(caps, () => rebuild(), () => hooks.requestFrame(), hooks.onCounts)
+  const assets = createAssets(caps, (t) => gl.initTexture(t), () => rebuild(), () => hooks.requestFrame(), hooks.onCounts)
   let table: TileTable | null = null
   void loadTileTable().then((t) => {
     table = t
@@ -318,19 +420,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
       u_add: { value: null },
       u_am: { value: null },
     }
-    const mat = new ShaderMaterial({ glslVersion: GLSL3, vertexShader: modelVert, fragmentShader: modelFrag, uniforms, side: DoubleSide })
-    if (decal)
-      Object.assign(mat, {
-        transparent: true,
-        depthWrite: false,
-        depthFunc: LessEqualDepth,
-        blending: CustomBlending,
-        blendSrc: SrcAlphaFactor,
-        blendDst: OneMinusSrcAlphaFactor,
-        blendSrcAlpha: ZeroFactor,
-        blendDstAlpha: OneFactor,
-      })
-    pm = { mat, texKeys: [] }
+    pm = { mat: modelMaterial(uniforms, decal), texKeys: [] }
     if (part.kind === KIND_GLASS) {
       const gu: Record<string, IUniform> = {
         ...shared,
@@ -346,33 +436,9 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
         u_gGloss: { value: null },
         u_gHas: { value: new Vector2() },
       }
-      pm.glassDepth = new ShaderMaterial({
-        glslVersion: GLSL3,
-        vertexShader: modelVert,
-        fragmentShader: glassFrag,
-        uniforms: gu,
-        side: DoubleSide,
-        colorWrite: false,
-      })
-      pm.glassColor = new ShaderMaterial({
-        glslVersion: GLSL3,
-        vertexShader: modelVert,
-        fragmentShader: glassFrag,
-        uniforms: gu,
-        side: DoubleSide,
-        depthWrite: false,
-        depthFunc: EqualDepth,
-        stencilWrite: true,
-        stencilRef: 0,
-        stencilFunc: EqualStencilFunc,
-        stencilZPass: IncrementStencilOp,
-        transparent: true,
-        blending: CustomBlending,
-        blendSrc: OneFactor,
-        blendDst: OneMinusSrcAlphaFactor,
-        blendSrcAlpha: ZeroFactor,
-        blendDstAlpha: OneFactor,
-      })
+      const g = glassMaterials(gu)
+      pm.glassDepth = g.depth
+      pm.glassColor = g.color
       bindGlass(pm, part, gu)
     } else bindTextures(pm, part, skin)
     mats.set(key, pm)
@@ -444,6 +510,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
         g.setAttribute('i_nhi', at(3, 28))
         g.instanceCount = gr.count
         g.setDrawRange(part.start, part.count)
+        g.boundingSphere = sphereOf(me.attrs!)
         groupGeos.push(g)
         const pm = partMaterial(me, part, pi, gr.skin)
         usedMats.add(pm)

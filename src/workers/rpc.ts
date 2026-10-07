@@ -7,20 +7,35 @@ export type Rpc = {
 
 export type Emit = (event: string, data: unknown) => void
 
-export function createRpc(worker: Worker): Rpc {
+export type Handlers = Record<string, (arg: any) => unknown>
+
+type Msg = { id: number; result?: unknown; error?: string; event?: string; data?: unknown; req?: string; rid?: number; arg?: unknown }
+
+export function createRpc(worker: Worker, handlers: Handlers = {}): Rpc {
   let next = 1
   const listeners = new Map<string, Array<(d: any) => void>>()
   const pending = new Map<number, { ok: (v: never) => void; fail: (e: Error) => void }>()
-  worker.onmessage = (e: MessageEvent<{ id: number; result?: unknown; error?: string; event?: string; data?: unknown }>) => {
-    if (e.data.event !== undefined) {
-      for (const cb of listeners.get(e.data.event) ?? []) cb(e.data.data)
+  worker.onmessage = (e: MessageEvent<Msg>) => {
+    const d = e.data
+    if (d.event !== undefined) {
+      for (const cb of listeners.get(d.event) ?? []) cb(d.data)
       return
     }
-    const p = pending.get(e.data.id)
+    if (d.req !== undefined) {
+      const req = d.req
+      void Promise.resolve()
+        .then(() => handlers[req](d.arg))
+        .then(
+          (result) => worker.postMessage({ rid: d.rid, result }),
+          (err) => worker.postMessage({ rid: d.rid, error: err instanceof Error ? err.message : String(err) }),
+        )
+      return
+    }
+    const p = pending.get(d.id)
     if (!p) return
-    pending.delete(e.data.id)
-    if (e.data.error !== undefined) p.fail(new Error(e.data.error))
-    else p.ok(e.data.result as never)
+    pending.delete(d.id)
+    if (d.error !== undefined) p.fail(new Error(d.error))
+    else p.ok(d.result as never)
   }
   return {
     on(event, cb) {
@@ -38,8 +53,27 @@ export function createRpc(worker: Worker): Rpc {
   }
 }
 
+let nextReq = 1
+const requests = new Map<number, { ok: (v: never) => void; fail: (e: Error) => void }>()
+
+export function request<T>(method: string, arg: unknown): Promise<T> {
+  const rid = nextReq++
+  return new Promise((ok, fail) => {
+    requests.set(rid, { ok: ok as (v: never) => void, fail })
+    ;(self as unknown as Worker).postMessage({ req: method, rid, arg })
+  })
+}
+
 export function serve(handlers: Record<string, (arg: any, emit: Emit) => Reply | Promise<Reply>>) {
-  self.onmessage = async (e: MessageEvent<{ id: number; method: string; arg: unknown }>) => {
+  self.onmessage = async (e: MessageEvent<Msg & { method: string }>) => {
+    if (e.data.rid !== undefined) {
+      const r = requests.get(e.data.rid)
+      if (!r) return
+      requests.delete(e.data.rid)
+      if (e.data.error !== undefined) r.fail(new Error(e.data.error))
+      else r.ok(e.data.result as never)
+      return
+    }
     const { id, method, arg } = e.data
     try {
       const emit: Emit = (event, data) => (self as unknown as Worker).postMessage({ event, data })
