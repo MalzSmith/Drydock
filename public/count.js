@@ -1,5 +1,27 @@
 // GoatCounter: https://www.goatcounter.com
 // This file is released under the ISC license: https://opensource.org/licenses/ISC
+//
+// Copyright © Martin Tournoij <martin@arp242.net>
+//
+// Permission to use, copy, modify, and/or distribute this software for any purpose
+// with or without fee is hereby granted, provided that the above copyright notice
+// and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+// REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+// FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+// INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+// OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+// TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+// THIS SOFTWARE.
+//
+// Modified for Drydock from https://gc.zgo.at/count.js (upstream commit
+// 478f026eb9deacb9378a46b96db72e11e9f20557) to send as little as possible:
+// - The query string is never sent: the q field is removed and get_path()
+//   returns only the pathname.
+// - The referrer (r) and page title (t) are always sent empty, ignoring
+//   settings and per-call values.
+// - The screen width (s) is always sent as 0.
 ;(function() {
 	'use strict';
 
@@ -22,25 +44,19 @@
 		vars = vars || {}
 		var data = {
 			p: (vars.path     === undefined ? goatcounter.path     : vars.path),
-			r: (vars.referrer === undefined ? goatcounter.referrer : vars.referrer),
-			t: (vars.title    === undefined ? goatcounter.title    : vars.title),
+			r: '',
+			t: '',
 			e: !!(vars.event || goatcounter.event),
-			s: window.screen.width,
+			s: 0,
 			b: is_bot(),
 		}
 
-		var rcb, pcb, tcb  // Save callbacks to apply later.
-		if (typeof(data.r) === 'function') rcb = data.r
-		if (typeof(data.t) === 'function') tcb = data.t
+		var pcb  // Save callback to apply later.
 		if (typeof(data.p) === 'function') pcb = data.p
 
-		if (is_empty(data.r)) data.r = document.referrer
-		if (is_empty(data.t)) data.t = document.title
 		if (is_empty(data.p)) data.p = get_path()
 		if (vars.no_session) data.ns = (typeof(vars.no_session) === 'function' ? vars.no_session(false) : vars.no_session)
 
-		if (rcb) data.r = rcb(data.r)
-		if (tcb) data.t = tcb(data.t)
 		if (pcb) data.p = pcb(data.p)
 		return data
 	}
@@ -95,7 +111,7 @@
 			if (a.hostname.replace(/^www\./, '') === location.hostname.replace(/^www\./, ''))
 				loc = a
 		}
-		return (loc.pathname + loc.search) || '/'
+		return loc.pathname || '/'
 	}
 
 	// Run function after DOM is loaded.
