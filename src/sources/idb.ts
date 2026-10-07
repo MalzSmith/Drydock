@@ -35,4 +35,5 @@ export const idbPut = (store: Store, key: IDBValidKey | undefined, value: unknow
   run(store, 'readwrite', (s) => (key === undefined ? s.put(value) : s.put(value, key)))
 export const idbDelete = (store: Store, key: IDBValidKey) => run(store, 'readwrite', (s) => s.delete(key))
 export const idbAll = <T>(store: Store) => run<T[]>(store, 'readonly', (s) => s.getAll())
+export const idbClear = (store: Store) => run(store, 'readwrite', (s) => s.clear())
 export const idbKeys = (store: Store) => run<IDBValidKey[]>(store, 'readonly', (s) => s.getAllKeys())

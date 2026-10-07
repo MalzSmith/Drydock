@@ -60,15 +60,23 @@ describe('skyboxes', () => {
     expect(again.modSkies).toEqual(m.modSkies)
   })
 
-  it('reads one smaller mip level of each cube face', async () => {
+  it('reads a smaller mip level of each cube face with the rest of its chain', async () => {
     const f = cubeDds(8, 4, (face, level) => [face * 40, level * 60, 7, 255])
     const d = (await readSky(f, 2, true))!
     expect(d.size).toBe(2)
     expect(d.fmt).toBe('rgba')
-    expect(d.faces.map((x) => [x[0], x[1], x[2]])).toEqual([0, 1, 2, 3, 4, 5].map((i) => [i * 40, 120, 7]))
+    expect(d.faces.map((l) => [l[0][0], l[0][1], l[0][2]])).toEqual([0, 1, 2, 3, 4, 5].map((i) => [i * 40, 120, 7]))
+    expect(d.faces.every((l) => l.length === 2 && l[1].length === 4)).toBe(true)
     const flat = (await readSky(cubeDds(8, 1, (face) => [face, 0, 0, 255]), 2, true))!
     expect(flat.size).toBe(2)
-    expect(flat.faces[5][0]).toBe(5)
+    expect(flat.faces[5][0][0]).toBe(5)
+    expect(flat.faces[5].map((l) => l.length)).toEqual([16, 4])
+  })
+
+  it('reads the top level and the full chain when there is no size limit', async () => {
+    const d = (await readSky(cubeDds(8, 4, (face, level) => [face, level, 0, 255]), Infinity, true))!
+    expect(d.size).toBe(8)
+    expect(d.faces[3].map((l) => l.length)).toEqual([256, 64, 16, 4])
   })
 
   it('samples the face that the major axis points at', () => {

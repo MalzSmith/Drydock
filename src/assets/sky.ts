@@ -1,21 +1,28 @@
 import { decodeLevel, downsample, levelBytes, parseDdsHeader, type DdsFormat } from '../se/dds.ts'
 import type { Caps } from './build.ts'
 
-export const SKY_V = 1
-export const SKY_FACE = 1024
 export const SKY_THUMB = { w: 192, h: 96, face: 64 }
 
 export type SkyFormat = 'bc1' | 'bc2' | 'bc3' | 'bc7' | 'rgba'
 
-export type SkyData = { size: number; fmt: SkyFormat; faces: Uint8Array[] }
+export type SkyData = { size: number; fmt: SkyFormat; faces: Uint8Array[][] }
 
 export type SkyOrient = [number, number, number]
 
-export type SkyMeta = { key: string; name: string; src: string; orient: SkyOrient; thumb: Blob | null }
-
-export type SkyRec = { v: number; fp: string; data: SkyData }
+export type SkyMeta = { key: string; name: string; src: string; orient: SkyOrient; fp?: string; thumb: Blob | null }
 
 const KEEP = new Set<DdsFormat>(['bc1', 'bc2', 'bc3', 'bc7'])
+
+function mipChain(top: Uint8Array, size: number): Uint8Array[] {
+  const out = [top]
+  let s = size
+  while (s > 1) {
+    const d = downsample(out[out.length - 1], s, s)
+    out.push(d.data)
+    s = d.w
+  }
+  return out
+}
 
 export async function readSky(f: File, target: number, compressed: boolean): Promise<SkyData | null> {
   const head = await f.slice(0, 148).arrayBuffer()
@@ -31,26 +38,34 @@ export async function readSky(f: File, target: number, compressed: boolean): Pro
   let level = 0
   while (level < mips - 1 && info.width >> level > target) level++
   const size = Math.max(1, info.width >> level)
-  const lb = levelBytes(info.format, size, size)
+  const sizes: number[] = []
+  for (let l = level; l < mips; l++) sizes.push(Math.max(1, info.width >> l))
+  const last = sizes[sizes.length - 1]
+  const span = info.offsets[mips - 1] + levelBytes(info.format, last, last) - info.offsets[level]
   const faces = await Promise.all(
     [0, 1, 2, 3, 4, 5].map(async (i) => {
       const at = info.offsets[level] + i * stride
-      return new Uint8Array(await f.slice(at, at + lb).arrayBuffer())
+      const buf = new Uint8Array(await f.slice(at, at + span).arrayBuffer())
+      return sizes.map((s, j) => {
+        const o = info.offsets[level + j] - info.offsets[level]
+        return buf.subarray(o, o + levelBytes(info.format, s, s))
+      })
     }),
   )
-  if (compressed && KEEP.has(info.format) && size <= target) return { size, fmt: info.format as SkyFormat, faces }
+  if (compressed && KEEP.has(info.format) && size <= target && last === 1) return { size, fmt: info.format as SkyFormat, faces }
   let s = size
-  let out = faces.map((d) => (info.format === 'rgba8' ? d : decodeLevel(info.format, d, s, s)))
+  let top = faces.map((l) => (info.format === 'rgba8' ? l[0].slice() : decodeLevel(info.format, l[0], s, s)))
   while (s > target) {
-    out = out.map((d) => downsample(d, s, s).data)
+    top = top.map((d) => downsample(d, s, s).data)
     s = Math.max(1, s >> 1)
   }
-  return { size: s, fmt: 'rgba', faces: out }
+  return { size: s, fmt: 'rgba', faces: top.map((d) => mipChain(d, s)) }
 }
 
 export function skyForCaps(d: SkyData, caps: Caps): SkyData {
   if (d.fmt === 'rgba' || (d.fmt === 'bc7' ? caps.bptc : caps.s3tc)) return d
-  return { size: d.size, fmt: 'rgba', faces: d.faces.map((f) => decodeLevel(d.fmt as DdsFormat, f, d.size, d.size)) }
+  const fmt = d.fmt as DdsFormat
+  return { size: d.size, fmt: 'rgba', faces: d.faces.map((l) => mipChain(decodeLevel(fmt, l[0], d.size, d.size), d.size)) }
 }
 
 export function skyMatrix(o: SkyOrient): number[] {
@@ -105,6 +120,7 @@ export function cubeTexel(faces: Uint8Array[], size: number, x: number, y: numbe
 
 export function panorama(d: SkyData, o: SkyOrient, w: number, h: number): Uint8Array {
   const m = skyMatrix(o)
+  const faces = d.faces.map((l) => l[0])
   const out = new Uint8Array(w * h * 4)
   for (let py = 0; py < h; py++) {
     const lat = (0.5 - (py + 0.5) / h) * Math.PI
@@ -113,7 +129,7 @@ export function panorama(d: SkyData, o: SkyOrient, w: number, h: number): Uint8A
       const x = Math.cos(lat) * Math.sin(lon)
       const y = Math.sin(lat)
       const z = -Math.cos(lat) * Math.cos(lon)
-      cubeTexel(d.faces, d.size, m[0] * x + m[1] * y + m[2] * z, m[3] * x + m[4] * y + m[5] * z, m[6] * x + m[7] * y + m[8] * z, out, (py * w + px) * 4)
+      cubeTexel(faces, d.size, m[0] * x + m[1] * y + m[2] * z, m[3] * x + m[4] * y + m[5] * z, m[6] * x + m[7] * y + m[8] * z, out, (py * w + px) * 4)
     }
   }
   return out

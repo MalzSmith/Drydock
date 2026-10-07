@@ -23,10 +23,10 @@ const GRAD = [
 
 export function mountSceneTab(): HTMLElement {
   const buttons = new Map<string, HTMLElement>()
-  const swatch = (o: { id: string; label: string; css: string; src?: string }, height: number) => {
+  const swatch = (o: { id: string; label: string; css: string; src?: string; off?: boolean }, height: number) => {
     const b = h(
       'button',
-      { class: 'sw' + (o.src ? ' blueprint' : ''), onClick: () => actions.setScene({ bg: o.id }) },
+      { class: 'sw' + (o.src ? ' blueprint' : ''), disabled: o.off, title: o.off ? 'Link the game folder to use this skybox' : undefined, onClick: () => actions.setScene({ bg: o.id }) },
       h('span', { class: 'pv', style: `height:${height}px;background:${o.css}` }),
       h('span', { class: 'lb' }, o.label),
       o.src ? h('span', { class: 'sr' }, o.src) : null,
@@ -37,6 +37,7 @@ export function mountSceneTab(): HTMLElement {
   const nebula = swatch(SKY[2], 58)
   const skyGrid = h('div', { class: 'sw-grid2' }, swatch(SKY[0], 58), swatch(SKY[1], 58), nebula)
   const realGrid = h('div', { class: 'sw-grid2' })
+  const offNote = h('div', { class: 'hint' }, 'Greyed-out skyboxes load from the game files. Link the game folder to use them.')
   const top = h('input', { type: 'color', onChange: () => actions.setScene({ gradTop: top.value }) })
   const bot = h('input', { type: 'color', onChange: () => actions.setScene({ gradBot: bot.value }) })
   const colors = h('div', { class: 'colors' }, h('label', { class: 'field' }, 'Top', top), h('label', { class: 'field' }, 'Bottom', bot))
@@ -60,7 +61,7 @@ export function mountSceneTab(): HTMLElement {
   const el = h(
     'div',
     { class: 'col g18' },
-    h('div', { class: 'col g8' }, kicker('Skyboxes · game & mods'), realGrid, skyGrid),
+    h('div', { class: 'col g8' }, kicker('Skyboxes · game & mods'), realGrid, offNote, skyGrid),
     h('div', { class: 'col g8' }, kicker('Gradients & studio'), h('div', { class: 'sw-grid3' }, ...GRAD.map((g) => swatch(g, 40))), colors),
     h(
       'div',
@@ -75,8 +76,9 @@ export function mountSceneTab(): HTMLElement {
     (s) => s.skies,
     (skies) => {
       for (const id of [...buttons.keys()]) if (id.startsWith('sky:')) buttons.delete(id)
-      realGrid.replaceChildren(...skies.map((k) => swatch({ id: k.id, label: k.name, src: k.src, css: k.thumb ? `url(${k.thumb}) center/cover, #07090c` : '#07090c' }, 58)))
+      realGrid.replaceChildren(...skies.map((k) => swatch({ id: k.id, label: k.name, src: k.src, css: k.thumb ? `url(${k.thumb}) center/cover, #07090c` : '#07090c', off: !k.ready }, 58)))
       realGrid.hidden = !skies.length
+      offNote.hidden = skies.every((k) => k.ready)
       const bg = store.get().scene.bg
       buttons.forEach((b, id) => b.classList.toggle('sel', id === bg))
     },

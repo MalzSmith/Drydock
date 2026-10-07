@@ -153,7 +153,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     bgMat.uniforms.u_sky.value = null
     if (!id) return
     void assetRpc()
-      .call<SkyLoad>('loadSky', { key: id.slice(4), caps })
+      .call<SkyLoad>('loadSky', { key: id.slice(4), caps, max: gl.capabilities.maxCubemapSize })
       .then((r) => {
         if (skyKey !== id || !r) return
         skyTex = makeSkyTexture(r.data)

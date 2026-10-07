@@ -4,8 +4,8 @@ import { assetRpc, scanRpc } from '../workers/client.ts'
 import type { CacheArg, CacheReply, ScanReply, SnapRec } from '../workers/work.worker.ts'
 import { isRelevantFile } from './fs.ts'
 import { assetKeys, isAssetFile } from '../assets/keys.ts'
-import { dropAssetFiles, setAssetFiles } from '../assets/files.ts'
-import { idbAll, idbDelete, idbGet, idbKeys, idbPut } from './idb.ts'
+import { assetFile, dropAssetFiles, setAssetFiles } from '../assets/files.ts'
+import { idbAll, idbClear, idbDelete, idbGet, idbKeys, idbPut } from './idb.ts'
 import type { ScanResult } from './scan.ts'
 import type { SkyMeta } from '../assets/sky.ts'
 
@@ -63,7 +63,9 @@ async function publishSkies() {
   for (const u of thumbUrls) URL.revokeObjectURL(u)
   thumbUrls = metas.flatMap((m) => (m.thumb ? [URL.createObjectURL(m.thumb)] : []))
   let t = 0
-  const skies = metas.map((m) => ({ id: 'sky:' + m.key, name: m.name, src: m.src, thumb: m.thumb ? thumbUrls[t++] : '' }))
+  const skies = metas
+    .map((m) => ({ id: 'sky:' + m.key, name: m.name, src: m.src, thumb: m.thumb ? thumbUrls[t++] : '', ready: !!assetFile(m.key) }))
+    .filter((k) => k.ready || k.src === 'Vanilla')
   skies.sort((a, b) => Number(a.src !== 'Vanilla') - Number(b.src !== 'Vanilla') || a.name.localeCompare(b.name) || a.src.localeCompare(b.src))
   actions.setSkies(skies)
 }
@@ -143,7 +145,7 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
       void actions.fillMods()
     }
     if (rep.persisted && kind !== 'blueprints') {
-      await assetRpc().call<number>('cacheSkies', { sourceId: id })
+      await assetRpc().call<number>('indexSkies', { sourceId: id })
       await publishSkies()
       await assetRpc().call<number>('cacheModels', { sourceId: id })
     }
@@ -167,6 +169,7 @@ export async function restoreSources() {
     await publish()
     await publishSkies()
     void actions.fillMods()
+    void idbClear('skies').catch(() => undefined)
   } catch {
     return
   }
@@ -197,7 +200,7 @@ export async function unlinkSource(id: number) {
     await idbDelete('snap', id)
     const prefix = `${id}/`
     for (const st of ['mods', 'bps'] as const) for (const k of await idbKeys(st)) if (typeof k === 'string' && k.startsWith(prefix)) await idbDelete(st, k)
-    for (const st of ['meshes', 'textures', 'skies', 'skymeta'] as const) for (const k of await idbKeys(st)) if (typeof k === 'string' && k.startsWith('m:' + prefix)) await idbDelete(st, k)
+    for (const st of ['meshes', 'textures', 'skymeta'] as const) for (const k of await idbKeys(st)) if (typeof k === 'string' && k.startsWith('m:' + prefix)) await idbDelete(st, k)
   } catch {
     actions.toast('Could not clear the stored snapshot.')
   }

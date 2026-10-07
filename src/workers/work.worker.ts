@@ -7,7 +7,7 @@ import { surfaceInstances, voxelize, type CutSpec, type VShape } from '../compos
 import { request, serve } from './rpc.ts'
 import { loadMesh, loadTexture, type AssetEnv, type Caps } from '../assets/build.ts'
 import { defModels } from '../assets/keys.ts'
-import { SKY_FACE, SKY_THUMB, SKY_V, panorama, readSky, skyForCaps, type SkyMeta, type SkyOrient, type SkyRec } from '../assets/sky.ts'
+import { SKY_THUMB, panorama, readSky, skyForCaps, type SkyData, type SkyMeta, type SkyOrient } from '../assets/sky.ts'
 import type { SkyDef } from '../se/env.ts'
 
 export type ScanArg = { files: File[]; kind: SourceKind; sourceId: number }
@@ -62,7 +62,7 @@ const assetEnv: AssetEnv = {
 
 export type AssetArg = { sourceId: number; keys: string[] }
 
-export type SkyLoad = { data: SkyRec['data']; orient: SkyOrient } | null
+export type SkyLoad = { data: SkyData; orient: SkyOrient } | null
 
 const skyPath = (p: string) => p.replace(/\\/g, '/').toLowerCase()
 const skyStem = (p: string) => p.replace(/\\/g, '/').split('/').pop()!.replace(/\.dds$/i, '')
@@ -115,7 +115,7 @@ serve({
     })
     return { result: cached }
   },
-  async cacheSkies(arg: { sourceId: number }, emit) {
+  async indexSkies(arg: { sourceId: number }, emit) {
     const files = assetFiles.get(arg.sourceId)
     const snap = await idbGet<SnapRec>('snap', arg.sourceId)
     if (!files || !snap) return { result: 0 }
@@ -124,9 +124,9 @@ serve({
     for (const m of snap.modSkies ?? [])
       for (const def of m.skies) todo.push({ cands: [`m:${m.key}:${skyPath(def.path)}`, 'c:' + skyPath(def.path)], name: m.name, src: 'Mod · ' + skyStem(def.path), def })
     const seen = new Set<string>()
-    let cached = 0
+    let indexed = 0
     for (let i = 0; i < todo.length; i++) {
-      emit('progress', { sourceId: arg.sourceId, text: `Caching skyboxes ${i + 1}/${todo.length}`, frac: (i + 1) / todo.length })
+      emit('progress', { sourceId: arg.sourceId, text: `Indexing skyboxes ${i + 1}/${todo.length}`, frac: (i + 1) / todo.length })
       const t = todo[i]
       const key = t.cands.find((c) => assetEnv.has(c))
       if (!key || seen.has(key)) continue
@@ -136,29 +136,30 @@ serve({
       const fp = `${f.size}|${f.lastModified}`
       const orient: SkyOrient = [t.def.yaw, t.def.pitch, t.def.roll]
       try {
-        const have = await idbGet<SkyRec>('skies', key)
-        if (!have || have.v !== SKY_V || have.fp !== fp) {
-          const data = await readSky(f, SKY_FACE, true)
-          if (!data) continue
-          await idbPut('skies', key, { v: SKY_V, fp, data } satisfies SkyRec)
-        }
         const old = await idbGet<SkyMeta>('skymeta', key)
-        if (!old || old.src !== t.src || old.name !== t.name || old.orient.some((x, j) => x !== orient[j]) || !old.thumb || have?.fp !== fp)
-          await idbPut('skymeta', key, { key, name: t.name, src: t.src, orient, thumb: await thumbnail(f, orient).catch(() => null) } satisfies SkyMeta)
-        cached++
+        if (!old || old.src !== t.src || old.name !== t.name || old.orient.some((x, j) => x !== orient[j]) || !old.thumb || old.fp !== fp) {
+          const thumb = await thumbnail(f, orient).catch(() => null)
+          if (!thumb) continue
+          await idbPut('skymeta', key, { key, name: t.name, src: t.src, orient, fp, thumb } satisfies SkyMeta)
+        }
+        indexed++
       } catch {
         continue
       }
     }
-    return { result: cached }
+    return { result: indexed }
   },
-  async loadSky(arg: { key: string; caps: Caps }) {
-    const rec = await idbGet<SkyRec>('skies', arg.key)
+  async loadSky(arg: { key: string; caps: Caps; max: number }) {
     const meta = await idbGet<SkyMeta>('skymeta', arg.key)
-    if (!rec || !meta || rec.v !== SKY_V) return { result: null }
-    const data = skyForCaps(rec.data, arg.caps)
+    const f = meta && (await assetEnv.file(arg.key))
+    if (!meta || !f) return { result: null }
+    const d = await readSky(f, arg.max, true)
+    if (!d) return { result: null }
+    const data = skyForCaps(d, arg.caps)
     const result: SkyLoad = { data, orient: meta.orient }
-    return { result, transfer: data.faces.map((f) => f.buffer as ArrayBuffer) }
+    const buffers = new Set<ArrayBuffer>()
+    for (const l of data.faces) for (const m of l) buffers.add(m.buffer as ArrayBuffer)
+    return { result, transfer: [...buffers] }
   },
   async loadMesh(arg: { cands: string[] }) {
     const r = await loadMesh(assetEnv, arg.cands)

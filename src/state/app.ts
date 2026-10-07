@@ -68,7 +68,7 @@ export type Info = {
 
 export type Tab = 'view' | 'section' | 'scene' | 'export'
 
-export type SkyItem = { id: string; name: string; src: string; thumb: string }
+export type SkyItem = { id: string; name: string; src: string; thumb: string; ready: boolean }
 
 export type Lighting = 'directional' | 'uniform'
 export type RenderStyle = 'textured' | 'shaded' | 'clay' | 'line'
@@ -456,7 +456,7 @@ export const actions = {
   setSection: (p: Partial<AppState['section']>) => store.set((s) => ({ section: { ...s.section, ...p } })),
   setScene: (p: Partial<AppState['scene']>) => store.set((s) => ({ scene: { ...s.scene, ...p } })),
   setSkies: (skies: SkyItem[]) =>
-    store.set((s) => ({ skies, scene: s.scene.bg.startsWith('sky:') && !skies.some((k) => k.id === s.scene.bg) ? { ...s.scene, bg: 'sky-default' } : s.scene })),
+    store.set((s) => ({ skies, scene: s.scene.bg.startsWith('sky:') && !skies.some((k) => k.id === s.scene.bg && k.ready) ? { ...s.scene, bg: 'sky-default' } : s.scene })),
   setExport: (p: Partial<AppState['export']>) => store.set((s) => ({ export: { ...s.export, ...p } })),
   setCompose: (p: Partial<AppState['compose']>) => store.set((s) => ({ compose: { ...s.compose, ...p } })),
   setAssets(c: AssetStatus) {
