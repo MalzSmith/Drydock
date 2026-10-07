@@ -74,7 +74,9 @@ Copyright (C) 2026 MalzSmith
 
 Drydock is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed without any warranty. See `LICENSE` for the full text.
 
-It includes the Lucide icons (ISC, partly MIT from Feather), three.js (MIT) and the Barlow fonts (SIL Open Font License 1.1). Their notices are in `public/THIRD_PARTY_NOTICES.txt`, which the build copies to the site root.
+The data files in `src/data/` (`vanilla-blocks.json` and `tile-table.json`) are derived from Space Engineers © Keen Software House. They are included for interoperability and are not covered by this license.
+
+Drydock also includes the Lucide icons (ISC, partly MIT from Feather), three.js (MIT), the Barlow fonts (SIL Open Font License 1.1) and a modified copy of the GoatCounter counter script (ISC, changes listed at the top of `public/count.js`). Their notices are in `public/THIRD_PARTY_NOTICES.txt`, which the build copies to the site root.
 
 ## Disclaimer
 
@@ -82,4 +84,4 @@ Drydock is an unofficial fan project. It is not affiliated with, endorsed by or 
 
 Drydock does not include any of the game's models, textures or other art. It ships only two small tables generated from the game (see Bundled data): vanilla block IDs, sizes and display names, and the armor tile layout per cube topology. Models and textures are read from the user's own installation of the game when the game folder is linked, and they stay in the browser.
 
-The website counts anonymous visits with [GoatCounter](https://www.goatcounter.com) to see whether people use it. It uses no cookies and sends only the page path, never file names, blueprint links or anything read from linked folders. The counter loads only after the welcome card is closed and can be switched off there; the setting is remembered in the browser. Browsers that send Do Not Track or Global Privacy Control are not counted unless the box is ticked. The counter script is served from this repository (`public/count.js`, ISC license, with the query string removed from what it sends), not loaded from GoatCounter.
+The website counts anonymous visits with [GoatCounter](https://www.goatcounter.com) to see whether people use it. It uses no cookies and sends the page path and a bot flag, never file names, blueprint links or anything read from linked folders. GoatCounter sees the IP address and browser user agent of the request, as with any web request (see its [privacy policy](https://www.goatcounter.com/help/privacy)). The counter loads only after the welcome card is closed and can be switched off there; the setting is remembered in the browser. Browsers that send Do Not Track or Global Privacy Control are not counted unless the box is ticked. The counter script is served from this repository (`public/count.js`, ISC license, with the query string removed from what it sends), not loaded from GoatCounter.
