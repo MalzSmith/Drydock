@@ -15,6 +15,7 @@ import { mountSourcesDialog } from './ui/sourcesDialog.ts'
 import { mountMissingDialog } from './ui/missingDialog.ts'
 import { mountTour } from './ui/tour.ts'
 import { mountViewport } from './ui/viewport.ts'
+import { loadCounter } from './util/count.ts'
 
 const $ = (id: string) => document.getElementById(id)!
 
@@ -124,6 +125,13 @@ try {
   tourSeen = localStorage.getItem('drydock.tourSeen') === '1'
 } catch {}
 if (q.get('tour') === '1' || !tourSeen) actions.openTour()
+else loadCounter()
+store.watch(
+  (s) => s.tour,
+  (n, prev) => {
+    if (prev === 0 && n !== 0) loadCounter()
+  },
+)
 
 const bpUrl = q.get('bp')
 if (bpUrl) {

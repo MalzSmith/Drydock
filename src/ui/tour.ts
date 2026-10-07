@@ -1,5 +1,6 @@
 import { actions, store } from '../state/app.ts'
-import { corners, h, icon, kicker } from './dom.ts'
+import { check, corners, h, icon, kicker } from './dom.ts'
+import { countEnabled, setCountEnabled } from '../util/count.ts'
 
 type Place = 'bottom' | 'right' | 'left'
 
@@ -49,6 +50,7 @@ const W = 300
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
 export function mountTour(app: HTMLElement) {
+  const count = check('Count my visit anonymously', setCountEnabled, 'chk tour-count')
   const start = h('button', { class: 'btn btn-primary tour-big', style: 'justify-content:space-between', onClick: () => actions.setTour(1) }, 'Show me around', h('span', null, '→'))
   const welcome = h(
     'div',
@@ -71,6 +73,12 @@ export function mountTour(app: HTMLElement) {
         h('button', { class: 'btn btn-secondary tour-big', onClick: () => actions.closeTour('skip') }, "I'll explore on my own"),
       ),
       h('span', { class: 's11 muted' }, 'Files are read locally and never uploaded. Replay this tour any time from ', h('b', { class: 'acc7' }, 'Tour'), ' in the header.'),
+      h(
+        'div',
+        null,
+        count.el,
+        h('span', { class: 's11 muted' }, 'Drydock counts visits with GoatCounter: no cookies, nothing from your files. This helps me gauge interest in the project.'),
+      ),
     ),
   )
 
@@ -164,6 +172,7 @@ export function mountTour(app: HTMLElement) {
     (s) => s.tour,
     (n, prev) => {
       welcome.hidden = n !== 0
+      if (n === 0) count.set(countEnabled())
       for (const e of spot) e.hidden = n < 1
       if (n === 0) start.focus()
       if (n < 1) return

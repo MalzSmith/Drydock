@@ -73,3 +73,5 @@ Two data files in `src/data/` are generated and committed. They only need to be 
 Drydock is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Keen Software House. Space Engineers is a trademark of Keen Software House.
 
 Drydock does not include any of the game's models, textures or other assets. They are read from the user's own installation of the game when the game folder is linked, and they stay in the browser.
+
+The website counts anonymous visits with [GoatCounter](https://www.goatcounter.com) to see whether people use it. It uses no cookies and sends only the page path, never file names, blueprint links or anything read from linked folders. The counter loads only after the welcome card is closed and can be switched off there; the setting is remembered in the browser.
