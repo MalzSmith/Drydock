@@ -42,7 +42,7 @@ npm run build     # production build in dist/
 npm test          # unit tests
 ```
 
-The tests need nothing but the repository. A few extra checks build meshes and textures from real game files; they run only when `SE_GAME_ROOT` points at a Space Engineers install.
+The tests need nothing but the repository. A few extra checks build meshes and textures from real game files; they run when Space Engineers is installed in the default Steam folder or `SE_GAME_ROOT` points at an install, and are skipped otherwise.
 
 The production build in `dist/` is a static website and can be served by any web server.
 

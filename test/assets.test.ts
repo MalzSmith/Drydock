@@ -7,9 +7,9 @@ import type { DefTuple } from '../src/se/defs.ts'
 import { KIND_GLASS } from '../src/assets/material.ts'
 import { parseMwm } from '../src/se/mwm.ts'
 
-const root = process.env.SE_GAME_ROOT
-const content = root ? join(root, 'Content') : ''
-const have = !!root && existsSync(join(content, 'Models'))
+const root = process.env.SE_GAME_ROOT ?? 'C:/Program Files (x86)/Steam/steamapps/common/SpaceEngineers'
+const content = join(root, 'Content')
+const have = existsSync(join(content, 'Models'))
 
 function diskEnv(): AssetEnv & { cache: Map<string, unknown> } {
   const cache = new Map<string, unknown>()
