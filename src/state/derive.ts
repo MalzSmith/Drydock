@@ -40,7 +40,7 @@ export function sourceStatus(s: AppState): { dot: boolean; text: string } {
   const hasGame = src.some((r) => r.kind === 'game')
   const mods = src.filter((r) => r.kind === 'workshop' || r.kind === 'torch' || r.kind === 'mods').length
   if (hasGame) return { dot: true, text: `${src.length} source${src.length > 1 ? 's' : ''} linked${mods ? ` · ${mods} mod folder${mods > 1 ? 's' : ''}` : ''}` }
-  return { dot: false, text: src.length ? 'Mods linked · no game folder yet' : 'No sources linked · vanilla blocks only' }
+  return { dot: false, text: src.length ? 'Mods linked · no game folder yet' : 'Link your game folder to load models and textures' }
 }
 
 const KIND_LABEL: Record<string, string> = { game: 'Game', workshop: 'Workshop', torch: 'Torch', mods: 'Mods', blueprints: 'Blueprints' }
