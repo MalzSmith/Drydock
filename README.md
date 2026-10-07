@@ -68,6 +68,14 @@ Two data files in `src/data/` are generated and committed. They only need to be 
 
 `ARCHITECTURE.md` describes the internal structure, data flow and rendering pipeline.
 
+## License
+
+Copyright (C) 2026 MalzSmith
+
+Drydock is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed without any warranty. See `LICENSE` for the full text.
+
+It includes the Lucide icons (ISC, partly MIT from Feather), three.js (MIT) and the Barlow fonts (SIL Open Font License 1.1). Their notices are in `public/THIRD_PARTY_NOTICES.txt`, which the build copies to the site root.
+
 ## Disclaimer
 
 Drydock is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Keen Software House. Space Engineers is a trademark of Keen Software House.
