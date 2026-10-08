@@ -1,6 +1,7 @@
 import { store } from '../state/app.ts'
 import { blocksText, contentPath, dimsText, modSummary } from '../state/derive.ts'
-import { h, progressBar, text } from './dom.ts'
+import { msg, tr } from '../i18n.ts'
+import { h, progressBar, t, text } from './dom.ts'
 
 export function mountFooter(root: HTMLElement) {
   const status = text()
@@ -16,10 +17,10 @@ export function mountFooter(root: HTMLElement) {
     dims.el,
     mods.el,
     path2,
-    h('span', null, 'Runs in your browser · files stay on this device'),
+    h('span', null, t('footer.privacy')),
     h('a', { href: 'https://github.com/MalzSmith/Drydock', target: '_blank', rel: 'noopener' }, 'GitHub'),
   )
-  store.watch((s) => (s.busy ? 'Rendering' : s.loading ? 'Loading' : s.scanText || s.assetText || 'Ready'), status.set)
+  store.watch((s) => (s.busy ? tr('status.rendering') : s.loading ? tr('status.loading') : msg(s.scanText || s.assetText) || tr('footer.ready')), status.set)
   store.watch(
     (s) => (s.scanText ? (s.scanFrac ?? -1) : s.assetText ? (s.assetFrac ?? -1) : -2),
     (v) => {

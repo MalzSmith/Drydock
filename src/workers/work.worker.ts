@@ -1,3 +1,4 @@
+import { keyed } from '../util/keyed.ts'
 import { PARSE_VERSION, decodeBlueprint, parseBlueprint, type ParsedBlueprint } from '../se/blueprint.ts'
 import { idbDelete, idbGet, idbKeys, idbPut } from '../sources/idb.ts'
 import { mapPool, treeFromFiles } from '../sources/fs.ts'
@@ -111,7 +112,7 @@ serve({
       const r = await loadMesh(assetEnv, cands).catch(() => null)
       if (r?.status === 'ok') cached++
       done++
-      if (done % 10 === 0 || done === todo.length) emit('progress', { sourceId: arg.sourceId, text: `Caching models ${done.toLocaleString('en-US')}/${todo.length.toLocaleString('en-US')}`, frac: done / todo.length })
+      if (done % 10 === 0 || done === todo.length) emit('progress', { sourceId: arg.sourceId, text: keyed('progress.cachingModels', { done, total: todo.length }), frac: done / todo.length })
     })
     return { result: cached }
   },
@@ -126,7 +127,7 @@ serve({
     const seen = new Set<string>()
     let indexed = 0
     for (let i = 0; i < todo.length; i++) {
-      emit('progress', { sourceId: arg.sourceId, text: `Indexing skyboxes ${i + 1}/${todo.length}`, frac: (i + 1) / todo.length })
+      emit('progress', { sourceId: arg.sourceId, text: keyed('progress.indexingSkies', { done: i + 1, total: todo.length }), frac: (i + 1) / todo.length })
       const t = todo[i]
       const key = t.cands.find((c) => assetEnv.has(c))
       if (!key || seen.has(key)) continue
@@ -181,19 +182,19 @@ serve({
   },
   writeBlueprint(arg: { shapes: VShape[]; name: string; size: 'Large' | 'Small' }) {
     const v = voxelize(arg.shapes)
-    if (v.total > MAX_EXPORT_BLOCKS) throw new Error(`Too many blocks to export (${v.total.toLocaleString('en-US')}). Hollow the shape or make it smaller.`)
+    if (v.total > MAX_EXPORT_BLOCKS) throw new Error(keyed('errors.tooMany', { count: v.total }))
     const result: WriteResult = { blob: writeSbc(v, arg.name, arg.size), total: v.total }
     return { result }
   },
   async scanSource(arg: ScanArg, emit) {
     const t0 = performance.now()
     const send = (text: string, frac: number | null) => emit('progress', { sourceId: arg.sourceId, text, frac })
-    send('Building file index…', null)
+    send(keyed('progress.buildingIndex'), null)
     const root = treeFromFiles(arg.files)
     const result = await scanSource(root, { kind: arg.kind, sourceId: arg.sourceId, cache, progress: send })
     let persisted = true
     try {
-      send('Saving snapshot…', null)
+      send(keyed('progress.savingSnapshot'), null)
       const { seenMods, ...snap } = result
       const rec: SnapRec = { ...snap, entries: result.entries.map((e) => ({ ...e, file: null })) }
       await idbPut('snap', arg.sourceId, rec)
@@ -217,7 +218,7 @@ serve({
     }
     for (let i = 0; i < arg.items.length && !failed; i++) {
       const it = arg.items[i]
-      emit('progress', { sourceId: arg.sourceId, text: `Caching blueprints ${i + 1}/${arg.items.length}`, frac: (i + 1) / arg.items.length })
+      emit('progress', { sourceId: arg.sourceId, text: keyed('progress.cachingBlueprints', { done: i + 1, total: arg.items.length }), frac: (i + 1) / arg.items.length })
       const fp = `${it.file.size}|${it.file.lastModified}`
       try {
         const have = await idbGet<BpRec>('bps', it.id)

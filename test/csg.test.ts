@@ -192,7 +192,7 @@ describe('writeSbc round trip', () => {
 
   it('refuses Interior Wall on the small grid', () => {
     const v = voxelize([shape({ block: 12 })])
-    expect(() => writeSbc(v, 'x', 'Small')).toThrow(/no small-grid variant/)
+    expect(() => writeSbc(v, 'x', 'Small')).toThrow(/errors\.noSmall/)
     expect(() => writeSbc(v, 'x', 'Large')).not.toThrow()
   })
 })

@@ -1,10 +1,6 @@
-import '@fontsource/barlow/400.css'
-import '@fontsource/barlow/500.css'
-import '@fontsource/barlow/700.css'
-import '@fontsource/barlow-condensed/400.css'
-import '@fontsource/barlow-condensed/600.css'
 import './styles/industry.css'
 import './styles/app.css'
+import { bootLocale, currentLang } from './i18n.ts'
 import { installDrop } from './sources/drop.ts'
 import { exportPerf } from './render/exportImage.ts'
 import { PBR } from './render/pbr.ts'
@@ -21,8 +17,12 @@ import { mountMissingDialog } from './ui/missingDialog.ts'
 import { mountTour } from './ui/tour.ts'
 import { mountViewport } from './ui/viewport.ts'
 import { loadCounter } from './util/count.ts'
+import { errText, keyed } from './util/keyed.ts'
 
 const $ = (id: string) => document.getElementById(id)!
+
+await bootLocale()
+store.set({ locale: currentLang() })
 
 const q = new URLSearchParams(location.search)
 if (q.get('w') || q.get('h')) {
@@ -96,7 +96,7 @@ store.watch(
 
 installDrop(
   (d) => actions.loadBlueprint({ file: d.file, name: d.name }),
-  (e) => actions.toast('Could not open: ' + (e instanceof Error ? e.message : String(e))),
+  (e) => actions.toast(keyed('toast.dropFailed', { error: errText(e) })),
 )
 
 void restoreSources().then(() => {
@@ -156,7 +156,7 @@ if (bpUrl && bpUrl.origin === location.origin) {
       } catch {}
       return actions.loadBlueprint({ buffer, name })
     })
-    .catch((err) => actions.toast('Blueprint load failed: ' + (err instanceof Error ? err.message : String(err))))
+    .catch((err) => actions.toast(keyed('toast.urlFailed', { error: errText(err) })))
 }
 
 function bench(frames: number): { avgMs: number; frames: number } {

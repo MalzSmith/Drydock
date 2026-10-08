@@ -25,12 +25,12 @@ describe('composition files', () => {
 
   it('rejects files it cannot open', () => {
     const bad = (shape: object) => JSON.stringify({ ...JSON.parse(compositionJson(comp)), shapes: [{ ...comp.shapes[0], ...shape }] })
-    expect(() => parseComposition('nope')).toThrow(/Not a JSON/)
-    expect(() => parseComposition('{"shapes":[]}')).toThrow(/Not a Drydock composition/)
+    expect(() => parseComposition('nope')).toThrow(/errors\.notJson/)
+    expect(() => parseComposition('{"shapes":[]}')).toThrow(/errors\.notComposition/)
     expect(() => parseComposition(JSON.stringify({ format: 'drydock-composition', version: 2, shapes: [] }))).toThrow(/newer/)
-    expect(() => parseComposition(bad({ type: 'cone' }))).toThrow(/Shape 1: unknown shape/)
-    expect(() => parseComposition(bad({ size: [0, 5, 5] }))).toThrow(/size/)
-    expect(() => parseComposition(bad({ block: 99 }))).toThrow(/unknown block/)
+    expect(() => parseComposition(bad({ type: 'cone' }))).toThrow(/errors\.unknownShape {"n":1,/)
+    expect(() => parseComposition(bad({ size: [0, 5, 5] }))).toThrow(/errors\.sizeRange/)
+    expect(() => parseComposition(bad({ block: 99 }))).toThrow(/errors\.unknownBlock/)
     expect(() => parseComposition(bad({ rot: [1, 0, 0, 0, 1, 0, 0, 0, -1] }))).toThrow(/rotation/)
     expect(() => parseComposition(bad({ rot: [1, 1, 0, 0, 1, 0, 0, 0, 1] }))).toThrow(/rotation/)
   })

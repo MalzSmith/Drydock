@@ -1,46 +1,17 @@
 import { actions, store } from '../state/app.ts'
-import { check, corners, h, icon, kicker } from './dom.ts'
+import { LANGS, NATIVE, tr, type Lang } from '../i18n.ts'
+import { check, corners, h, icon, kicker, seg, t, tAttr, tRich } from './dom.ts'
 import { countEnabled, setCountEnabled } from '../util/count.ts'
 
 type Place = 'bottom' | 'right' | 'left'
 
-const STEPS: Array<{ target: string; place: Place; title: string; body: string }> = [
-  {
-    target: 'sources',
-    place: 'bottom',
-    title: 'Link your game folder',
-    body: 'Drydock reads models and textures from your own Space Engineers install. Until it is linked, every block draws as a plain box.',
-  },
-  {
-    target: 'library',
-    place: 'right',
-    title: 'Open a blueprint',
-    body: 'Pick one from your linked Blueprints folder, or drop a bp.sbc or a whole blueprint folder anywhere on the page.',
-  },
-  {
-    target: 'vptools',
-    place: 'bottom',
-    title: 'Frame the shot',
-    body: 'Switch perspective and orthographic, cut a cross-section, spin a turntable, or refit the ship to the frame.',
-  },
-  {
-    target: 'tabs',
-    place: 'left',
-    title: 'Fine-tune the render',
-    body: 'View sets the render style. Section slices the hull layer by layer. Scene picks backdrops and lighting.',
-  },
-  {
-    target: 'export',
-    place: 'bottom',
-    title: 'Export an image',
-    body: 'PNG, JPG or WebP up to 8K with supersampling, copy to clipboard, or a 36-frame turntable ZIP.',
-  },
-  {
-    target: 'mode',
-    place: 'bottom',
-    title: 'Build your own hull',
-    body: 'Compose stacks boxes, spheres and cylinders into a hull and exports it as a bp.sbc you can paste in the game.',
-  },
+const STEPS: Array<{ target: string; place: Place }> = [
+  { target: 'sources', place: 'bottom' },
+  { target: 'library', place: 'right' },
+  { target: 'vptools', place: 'bottom' },
+  { target: 'tabs', place: 'left' },
+  { target: 'export', place: 'bottom' },
+  { target: 'mode', place: 'bottom' },
 ]
 
 const PAD = 6
@@ -50,8 +21,15 @@ const W = 300
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
 export function mountTour(app: HTMLElement) {
-  const count = check('Count my visit anonymously', setCountEnabled, 'chk tour-count')
-  const start = h('button', { class: 'btn btn-primary tour-big', style: 'justify-content:space-between', onClick: () => actions.setTour(1) }, 'Show me around', h('span', null, '→'))
+  const count = check(t('welcome.count'), setCountEnabled, 'chk tour-count')
+  const lang = seg<Lang>({
+    options: LANGS.map((code) => [code, h('span', { lang: code }, NATIVE[code])]),
+    value: store.get().locale,
+    style: 'display:flex',
+    optCls: 'tour-lang-opt',
+    onChange: (v) => void actions.setLang(v),
+  })
+  const start = h('button', { class: 'btn btn-primary tour-big', style: 'justify-content:space-between', onClick: () => actions.setTour(1) }, t('welcome.start'), h('span', null, '→'))
   const welcome = h(
     'div',
     { class: 'tour-welcome' },
@@ -59,25 +37,22 @@ export function mountTour(app: HTMLElement) {
       'div',
       { class: 'dlg blueprint tour-card' },
       ...corners(),
-      kicker('First time here'),
-      h('span', { class: 'tour-hello' }, 'Welcome to Drydock'),
-      h(
-        'span',
-        { class: 'tour-lead' },
-        'Render Space Engineers blueprints and build simple hulls, all in your browser. Six quick stops show where everything lives.',
-      ),
+      h('div', { class: 'tour-lang' }, h('span', { class: 'kicker' }, icon('languages', 13), t('language.title')), lang.el),
+      kicker(t('welcome.kicker')),
+      h('span', { class: 'tour-hello' }, t('welcome.title')),
+      h('span', { class: 'tour-lead' }, t('welcome.lead')),
       h(
         'div',
         { class: 'tour-choice' },
         start,
-        h('button', { class: 'btn btn-secondary tour-big', onClick: () => actions.closeTour('skip') }, "I'll explore on my own"),
+        h('button', { class: 'btn btn-secondary tour-big', onClick: () => actions.closeTour('skip') }, t('welcome.explore')),
       ),
-      h('span', { class: 's11 muted' }, 'Files are read locally and never uploaded. Replay this tour any time from ', h('b', { class: 'acc7' }, 'Tour'), ' in the header.'),
+      h('span', { class: 's11 muted' }, tRich('welcome.note', { tour: () => h('b', { class: 'acc7' }, tr('nav.tour')) })),
       h(
         'div',
         null,
         count.el,
-        h('span', { class: 's11 muted' }, 'Drydock counts visits with GoatCounter: no cookies, nothing from your files. This helps me gauge interest in the project.'),
+        h('span', { class: 's11 muted' }, t('welcome.countNote')),
       ),
     ),
   )
@@ -90,7 +65,7 @@ export function mountTour(app: HTMLElement) {
   const title = h('span', { class: 'tour-title' })
   const body = h('span', { class: 'tour-body' })
   const ticks = STEPS.map(() => h('i'))
-  const back = h('button', { class: 'btn btn-secondary', style: 'padding:5px 10px', onClick: () => go(-1) }, 'Back')
+  const back = h('button', { class: 'btn btn-secondary', style: 'padding:5px 10px', onClick: () => go(-1) }, t('tour.back'))
   const next = h('button', { class: 'btn btn-primary', style: 'padding:5px 12px', onClick: () => go(1) })
   const callout = h(
     'div',
@@ -100,7 +75,7 @@ export function mountTour(app: HTMLElement) {
       'div',
       { class: 'between', style: 'align-items:center' },
       stepKicker,
-      h('button', { class: 'btn btn-ghost btn-icon tour-x', title: 'Close tour', onClick: () => actions.closeTour('close') }, icon('x', 14)),
+      tAttr(h('button', { class: 'btn btn-ghost btn-icon tour-x', onClick: () => actions.closeTour('close') }, icon('x', 14)), 'title', 'tour.close'),
     ),
     title,
     body,
@@ -161,32 +136,37 @@ export function mountTour(app: HTMLElement) {
   document.addEventListener('keydown', (e) => {
     const n = store.get().tour
     if (n < 0) return
+    const ctl = (e.target as Element).closest?.('button, a, input, select, textarea, label')
     if (e.key === 'Escape') actions.closeTour(n === 0 ? 'skip' : 'close')
+    else if (ctl && (e.key === 'Enter' || !ctl.matches('button, a'))) return
     else if (e.key === 'ArrowRight' || e.key === 'Enter') go(1)
     else if (e.key === 'ArrowLeft') go(-1)
     else return
     e.preventDefault()
   })
 
+  store.watch((s) => s.locale, lang.set)
   store.watch(
-    (s) => s.tour,
-    (n, prev) => {
+    (s) => [s.tour, s.locale] as const,
+    ([n], [prev]) => {
       welcome.hidden = n !== 0
       if (n === 0) count.set(countEnabled())
       for (const e of spot) e.hidden = n < 1
-      if (n === 0) start.focus()
+      if (n === 0 && prev !== 0) start.focus()
       if (n < 1) return
       const entering = prev < 1
       if (entering) for (const e of spot) e.classList.add('still')
-      stepKicker.textContent = `Step ${n} of ${STEPS.length}`
-      title.textContent = STEPS[n - 1].title
-      body.textContent = STEPS[n - 1].body
+      const step = STEPS[n - 1].target
+      stepKicker.textContent = tr('tour.stepOf', { n, total: STEPS.length })
+      title.textContent = tr(`tour.steps.${step}.title`)
+      body.textContent = tr(`tour.steps.${step}.body`)
       ticks.forEach((t, i) => t.classList.toggle('on', i < n))
       back.hidden = n === 1
-      next.textContent = n === STEPS.length ? 'Done' : 'Next →'
+      next.textContent = tr(n === STEPS.length ? 'tour.done' : 'tour.next')
       place()
-      next.focus()
+      if (n !== prev) next.focus()
       if (entering) requestAnimationFrame(() => requestAnimationFrame(() => spot.forEach((e) => e.classList.remove('still'))))
     },
+    (a, b) => a[0] === b[0] && a[1] === b[1],
   )
 }

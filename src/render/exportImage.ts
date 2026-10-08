@@ -4,6 +4,7 @@ import { zipStore } from '../util/zip.ts'
 import { aspectOf, frameRect } from './camera.ts'
 import type { Fit } from './camera.ts'
 import type { Renderer } from './renderer.ts'
+import { errText, keyed } from '../util/keyed.ts'
 
 const MIME = { PNG: 'image/png', JPG: 'image/jpeg', WEBP: 'image/webp' } as const
 const MAX_PIXELS = 64e6
@@ -97,7 +98,7 @@ function flatten(c: HTMLCanvasElement): HTMLCanvasElement {
 
 function encode(c: HTMLCanvasElement, fmt: keyof typeof MIME): Promise<Blob> {
   const src = fmt === 'JPG' ? flatten(c) : c
-  return new Promise((ok, fail) => src.toBlob((b) => (b ? ok(b) : fail(new Error('Encoding failed'))), MIME[fmt], 0.92))
+  return new Promise((ok, fail) => src.toBlob((b) => (b ? ok(b) : fail(new Error(keyed('errors.encoding')))), MIME[fmt], 0.92))
 }
 
 export function fileName(): string {
@@ -105,7 +106,6 @@ export function fileName(): string {
   const bp = (s.mode === 'compose' ? s.compose.name : (s.info?.name ?? 'blueprint')).replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'blueprint'
   const base = s.export.fileName
     .replace('{blueprint}', bp)
-    .replace('{view}', s.preset || 'custom')
     .replace('{date}', new Date().toISOString().slice(0, 10))
   return base.replace(/[\\/:*?"<>|]+/g, '_')
 }
@@ -120,7 +120,7 @@ function cssWidth(canvas: HTMLCanvasElement): number {
 
 export const exportPerf: { lastMs: number } = { lastMs: 0 }
 
-async function guarded(fn: () => Promise<void>, failText: string) {
+async function guarded(fn: () => Promise<void>, failKey: string) {
   if (store.get().busy) return
   store.set({ busy: true })
   await nextFrame()
@@ -129,7 +129,7 @@ async function guarded(fn: () => Promise<void>, failText: string) {
     await fn()
     exportPerf.lastMs = performance.now() - t0
   } catch (err) {
-    actions.toast(failText + (err instanceof Error ? err.message : String(err)))
+    actions.toast(keyed(failKey, { error: errText(err) }))
   } finally {
     store.set({ busy: false })
   }
@@ -141,8 +141,8 @@ export function exportImage(r: Renderer, canvas: HTMLCanvasElement) {
     const blob = await encode(c, store.get().export.fmt)
     const name = `${fileName()}.${ext()}`
     download(blob, name)
-    actions.toast(`Downloaded ${name} · ${c.width}×${c.height}`)
-  }, 'Export failed: ')
+    actions.toast(keyed('toast.downloadedFile', { file: name, detail: `${c.width}×${c.height}` }))
+  }, 'toast.exportFailed')
 }
 
 export function copyImage(r: Renderer, canvas: HTMLCanvasElement) {
@@ -151,11 +151,11 @@ export function copyImage(r: Renderer, canvas: HTMLCanvasElement) {
     const blob = await encode(c, 'PNG')
     try {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      actions.toast('Image copied to clipboard')
+      actions.toast(keyed('toast.copied'))
     } catch {
-      actions.toast('Clipboard not available')
+      actions.toast(keyed('toast.noClipboard'))
     }
-  }, 'Copy failed: ')
+  }, 'toast.copyFailed')
 }
 
 export function exportTurntable(r: Renderer, canvas: HTMLCanvasElement) {
@@ -176,6 +176,6 @@ export function exportTurntable(r: Renderer, canvas: HTMLCanvasElement) {
     }
     const name = `${base}_turntable.zip`
     download(zipStore(files), name)
-    actions.toast(`Downloaded ${name} · 36 frames`)
-  }, 'Turntable failed: ')
+    actions.toast(keyed('toast.downloadedFile', { file: name, detail: keyed('units.frames', { count: 36 }) }))
+  }, 'toast.turntableFailed')
 }

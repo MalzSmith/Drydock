@@ -1,0 +1,457 @@
+{
+  "_meta": {
+    "code": "en",
+    "nativeName": "English",
+    "dir": "ltr",
+    "pluralCategories": [
+      "one",
+      "other"
+    ]
+  },
+  "languageNames": {
+    "en": "English",
+    "de": "German",
+    "ru": "Russian",
+    "zh-Hans": "Chinese, Simplified",
+    "zh-Hant": "Chinese, Traditional"
+  },
+  "nav": {
+    "subtitle": "Blueprint renderer",
+    "mode": {
+      "blueprint": "Blueprint",
+      "compose": "Compose"
+    },
+    "statusNoGame": "Link your game folder to load models and textures",
+    "tour": "Tour",
+    "tourTitle": "Show the feature tour",
+    "linkFolders": "Link folders",
+    "exportImage": "Export image",
+    "sources": "Sources",
+    "sourcesLinked": {
+      "one": "{count} source linked",
+      "other": "{count} sources linked"
+    },
+    "modFolders": {
+      "one": "{count} mod folder",
+      "other": "{count} mod folders"
+    },
+    "modsNoGame": "Mods linked · no game folder yet"
+  },
+  "language": {
+    "title": "Language",
+    "browser": "Browser language",
+    "current": "Now: {lang}",
+    "help": "Missing or wrong translation? Help improve it on GitHub"
+  },
+  "library": {
+    "title": "Blueprints",
+    "found": {
+      "one": "{count} found",
+      "other": "{count} found"
+    },
+    "search": "Search blueprints",
+    "local": "Local",
+    "workshop": "Workshop",
+    "dropHint": "Drop a {file} or a blueprint folder anywhere to open it.",
+    "modsTitle": "Mods in this blueprint",
+    "modsLoaded": {
+      "one": "{count} mod loaded",
+      "other": "{count} mods loaded"
+    },
+    "modState": {
+      "loaded": "Loaded",
+      "off": "Off",
+      "notInstalled": "Not installed"
+    },
+    "missingBtn": "Missing blocks, click to view",
+    "missingBtnTitle": "Show the block types that no linked source defines",
+    "unresolved": "Unresolved blocks",
+    "modMeta": "{source} {folder} · {blocks}",
+    "modFallback": "Mod"
+  },
+  "units": {
+    "gridLarge": "Large grid",
+    "gridSmall": "Small grid",
+    "blocks": {
+      "one": "{count} block",
+      "other": "{count} blocks"
+    },
+    "length": "{length} m long",
+    "mods": {
+      "one": "{count} mod",
+      "other": "{count} mods"
+    },
+    "shapes": {
+      "one": "{count} shape",
+      "other": "{count} shapes"
+    },
+    "blockTypes": {
+      "one": "{count} block type",
+      "other": "{count} block types"
+    },
+    "textures": {
+      "one": "{count} texture",
+      "other": "{count} textures"
+    },
+    "models": {
+      "one": "{count} model",
+      "other": "{count} models"
+    },
+    "files": {
+      "one": "{count} file",
+      "other": "{count} files"
+    },
+    "blueprints": {
+      "one": "{count} blueprint",
+      "other": "{count} blueprints"
+    },
+    "frames": {
+      "one": "{count} frame",
+      "other": "{count} frames"
+    },
+    "vanilla": "vanilla",
+    "dims": "{dims} blocks",
+    "meters": "{m} m",
+    "seconds": "{s} s"
+  },
+  "viewport": {
+    "presets": {
+      "iso": "Iso",
+      "front": "Front",
+      "side": "Side",
+      "top": "Top",
+      "rear": "Rear"
+    },
+    "persp": "Persp",
+    "ortho": "Ortho",
+    "hint": "Drag to orbit · right-drag to pan · scroll to zoom · Shift+scroll steps section",
+    "perspTitle": "Perspective: nearer parts look bigger, like a real camera",
+    "orthoTitle": "Orthographic: no perspective, sizes stay true at any depth (technical views)",
+    "section": "Section view",
+    "turntable": "Turntable",
+    "frame": "Frame ship"
+  },
+  "tabs": {
+    "view": "View",
+    "section": "Section",
+    "scene": "Scene",
+    "export": "Export"
+  },
+  "view": {
+    "renderStyle": "Render style",
+    "styles": {
+      "textured": "Textured",
+      "shaded": "Shaded",
+      "clay": "Clay",
+      "line": "Line"
+    },
+    "exposure": "Exposure",
+    "seams": "Block seams",
+    "tintMods": "Tint modded blocks",
+    "missingTitle": "Missing mod blocks",
+    "missing": {
+      "placeholder": "Placeholder",
+      "substitute": "Substitute",
+      "hide": "Hide"
+    },
+    "missingDesc": "Blocks whose definition isn't in the game or any enabled mod.",
+    "defsTitle": "Block definitions",
+    "col": {
+      "block": "Block",
+      "source": "Source",
+      "qty": "Qty"
+    },
+    "missingSource": "{source} · missing",
+    "sourceVanilla": "Vanilla",
+    "sourceUnknown": "Unknown"
+  },
+  "footer": {
+    "ready": "Ready",
+    "privacy": "Runs in your browser · files stay on this device",
+    "noSources": "Link the game, workshop or a Torch instance to load textures, models and mods",
+    "source": "{kind}: {name}"
+  },
+  "welcome": {
+    "kicker": "First time here",
+    "title": "Welcome to Drydock",
+    "lead": "Render Space Engineers blueprints and build simple hulls, all in your browser. Six quick stops show where everything lives.",
+    "start": "Show me around",
+    "explore": "I'll explore on my own",
+    "note": "Files are read locally and never uploaded. Replay this tour any time from {tour} in the header.",
+    "count": "Count my visit anonymously",
+    "countNote": "Drydock counts visits with GoatCounter: no cookies, nothing from your files. This helps me gauge interest in the project."
+  },
+  "narrow": {
+    "tooSmall": "Your screen is too small for Drydock. It needs a browser window at least 1120 pixels wide, and on a smaller screen the layout will not fit.",
+    "options": "Open this page on a larger screen, or continue anyway and scroll around the layout.",
+    "continue": "Continue anyway",
+    "github": "Drydock on GitHub"
+  },
+  "kinds": {
+    "game": "Game",
+    "workshop": "Workshop",
+    "torch": "Torch",
+    "mods": "Mods",
+    "blueprints": "Blueprints"
+  },
+  "status": {
+    "loading": "Loading",
+    "rendering": "Rendering"
+  },
+  "caption": {
+    "noBlueprint": "No blueprint loaded",
+    "loading": "Loading…",
+    "drop": "Drop a bp.sbc or a blueprint folder to open it",
+    "composition": "Composition · {grid}",
+    "compositionFull": "Composition · {grid} · {dims} · {count} placed"
+  },
+  "section": {
+    "title": "Cross-section",
+    "cutPlane": "Cut plane",
+    "axisX": "X · Beam",
+    "axisY": "Y · Deck",
+    "axisZ": "Z · Keel",
+    "cut": "Cut away",
+    "slice": "Slice",
+    "position": "Position",
+    "layer": "Layer {n} / {total}",
+    "prev": "− Layer",
+    "next": "+ Layer",
+    "flip": "Flip side",
+    "thickness": "Slice thickness",
+    "highlight": "Highlight cut faces",
+    "tip": "Tip",
+    "tipText": "Use {slice} on the Y plane with Top view for deck plans. Each step moves one block (2.5 m large grid, 0.5 m small grid)."
+  },
+  "scene": {
+    "skyboxes": "Skyboxes · game & mods",
+    "gradients": "Gradients & studio",
+    "lighting": "Lighting",
+    "directional": "Directional",
+    "uniform": "Uniform",
+    "sun": "Sun azimuth",
+    "top": "Top",
+    "bottom": "Bottom",
+    "offNote": "Greyed-out skyboxes load from the game files. Link the game folder to use them.",
+    "offTitle": "Link the game folder to use this skybox",
+    "vanilla": "Vanilla",
+    "bg": {
+      "sky-default": "Deep space",
+      "sky-orbit": "Planet orbit",
+      "sky-nebula": "Nebula field",
+      "paper": "Drafting",
+      "hangar": "Hangar",
+      "steel": "Steel",
+      "dusk": "Haze",
+      "transparent": "Transparent",
+      "custom": "Custom"
+    },
+    "src": {
+      "procedural": "Procedural",
+      "orbit": "In orbit",
+      "nebula": "Mod · Nebula Skybox Pack"
+    }
+  },
+  "export": {
+    "resolution": "Resolution",
+    "framed": "The framed area in the viewport is what gets saved.",
+    "format": "Format",
+    "transparent": "Transparent background (PNG)",
+    "ss": "Supersampling",
+    "fileName": "File name",
+    "render": "Render & save {fmt}",
+    "rendering": "Rendering…",
+    "copy": "Copy to clipboard",
+    "turntable": "Turntable · 36 frames"
+  },
+  "compose": {
+    "stack": "Shape stack",
+    "add": "+ Add shape",
+    "help": "Shapes evaluate top to bottom. Sizes and offsets are in blocks; a wall value hollows the shape to that thickness.",
+    "file": "Composition file",
+    "saveJson": "Save JSON",
+    "saveJsonTitle": "Save the shape stack as a JSON file",
+    "openJson": "Open JSON",
+    "openJsonTitle": "Replace the shape stack with a saved JSON file",
+    "grid": "Grid",
+    "gridOpt": "{grid} · {size}",
+    "name": "Blueprint name",
+    "export": "Export blueprint · bp.sbc",
+    "exportNote": "Downloads bp.sbc. Put it in a folder named after the blueprint inside Blueprints\\local.",
+    "warnMax": "{blocks} ({size}) exceeds the {max} block export limit.",
+    "warnBig": "{blocks}, {size}. Large blueprints are slow to load and paste in the game.",
+    "ops": {
+      "add": "Add",
+      "subtract": "Subtract",
+      "intersect": "Intersect"
+    },
+    "types": {
+      "box": "Box",
+      "sphere": "Sphere",
+      "cylinder": "Cyl",
+      "ellipsoid": "Ellipsoid",
+      "torus": "Torus",
+      "pyramid": "Pyramid"
+    },
+    "typeNames": {
+      "box": "box",
+      "sphere": "sphere",
+      "cylinder": "cylinder",
+      "ellipsoid": "ellipsoid",
+      "torus": "torus",
+      "pyramid": "pyramid"
+    },
+    "title": {
+      "add": "Add {type}",
+      "subtract": "Subtract {type}",
+      "intersect": "Intersect {type}"
+    },
+    "meta": {
+      "tube": "tube {n}",
+      "rotated": "rotated",
+      "wall": "wall {n}"
+    },
+    "size": "Size",
+    "offset": "Offset",
+    "tube": "Tube",
+    "rotate": "Rotate",
+    "wall": "Wall",
+    "block": "Block",
+    "solid": "Solid",
+    "turn": "Turn 90° about {axis}",
+    "reset": "Reset",
+    "moveUp": "Move earlier",
+    "moveDown": "Move later",
+    "dup": "Dup",
+    "delete": "Delete"
+  },
+  "sources": {
+    "title": "Content sources",
+    "desc": "Block definitions, models and textures are read from these folders, top to bottom. Later sources override earlier ones.",
+    "close": "Close",
+    "empty": "Nothing linked yet. Without a game folder only the built-in vanilla block set is available.",
+    "link": "Link a folder",
+    "uploadNote": "Your browser asks to confirm an upload, but nothing leaves this device. Each folder is stored as a snapshot here and loads without picking again; refresh a source to update it.",
+    "refresh": "Refresh",
+    "refreshTitle": "Pick the folder again to update this snapshot",
+    "remove": "Remove",
+    "rowMeta": "{meta} · linked {time} · Snapshot from {date}",
+    "meta": {
+      "game": "SpaceEngineers\\Content · vanilla blocks, models, textures",
+      "workshop": "steamapps\\workshop\\content\\244850 · subscribed mods",
+      "torch": "Torch / dedicated server instance · its Mods & Content",
+      "mods": "Loose mod folder · scanned for .sbc definitions",
+      "blueprints": "%AppData%\\SpaceEngineers\\Blueprints · local blueprints"
+    },
+    "hint": {
+      "game": "SpaceEngineers\\Content folder",
+      "workshop": "Steam workshop 244850 folder",
+      "torch": "Server instance folder",
+      "mods": "Any folder of mods",
+      "blueprints": "Blueprints folder (local)"
+    }
+  },
+  "missing": {
+    "title": "Missing blocks",
+    "desc": "No linked source defines these block types. Link the game folder or the mods that contain them.",
+    "blocks": "Blocks",
+    "empty": "(empty)"
+  },
+  "tour": {
+    "stepOf": "Step {n} of {total}",
+    "back": "Back",
+    "next": "Next →",
+    "done": "Done",
+    "close": "Close tour",
+    "steps": {
+      "sources": {
+        "title": "Link your game folder",
+        "body": "Drydock reads models and textures from your own Space Engineers install. Until it is linked, every block draws as a plain box."
+      },
+      "library": {
+        "title": "Open a blueprint",
+        "body": "Pick one from your linked Blueprints folder, or drop a bp.sbc or a whole blueprint folder anywhere on the page."
+      },
+      "vptools": {
+        "title": "Frame the shot",
+        "body": "Switch perspective and orthographic, cut a cross-section, spin a turntable, or refit the ship to the frame."
+      },
+      "tabs": {
+        "title": "Fine-tune the render",
+        "body": "View sets the render style. Section slices the hull layer by layer. Scene picks backdrops and lighting."
+      },
+      "export": {
+        "title": "Export an image",
+        "body": "PNG, JPG or WebP up to 8K with supersampling, copy to clipboard, or a 36-frame turntable ZIP."
+      },
+      "mode": {
+        "title": "Build your own hull",
+        "body": "Compose stacks boxes, spheres and cylinders into a hull and exports it as a bp.sbc you can paste in the game."
+      }
+    }
+  },
+  "toast": {
+    "tourDone": "All set · replay the tour any time from {tour} in the header",
+    "tourSkip": "Replay the tour any time from {tour} in the header",
+    "tourClosed": "Tour closed · replay it any time from {tour} in the header",
+    "notInSnapshot": "This blueprint is not in the snapshot yet. Refresh the source to read it.",
+    "openFailed": "Could not open blueprint: {error}",
+    "readFailed": "Could not read blueprint: {error}",
+    "composeFailed": "Compose failed: {error}",
+    "downloadedSbc": "Downloaded bp.sbc · {blocks} · {size}",
+    "downloadedFile": "Downloaded {file} · {detail}",
+    "openedFile": "Opened {file} · {detail}",
+    "openFileFailed": "Could not open {file}: {error}",
+    "uncached": "{parts} · link the game folder again to load them",
+    "texturesMissing": "Textures missing: {count}",
+    "modelsMissing": "Models missing: {count}",
+    "dropFailed": "Could not open: {error}",
+    "urlFailed": "Blueprint load failed: {error}",
+    "exportFailed": "Export failed: {error}",
+    "copyFailed": "Copy failed: {error}",
+    "turntableFailed": "Turntable failed: {error}",
+    "copied": "Image copied to clipboard",
+    "noClipboard": "Clipboard not available",
+    "storeListFailed": "Could not store the source list; it will be forgotten after this session.",
+    "notGameFolder": "Folder linked · no game data found in it, nothing new loaded",
+    "snapshotFailed": "Could not store the snapshot (storage full?). It works for this session only.",
+    "cacheFailed": "Could not cache all blueprints (storage full?). Uncached ones need a refresh to open.",
+    "scanFailed": "Scan failed for {name}: {error}",
+    "emptyFolder": "That folder is empty.",
+    "clearFailed": "Could not clear the stored snapshot."
+  },
+  "progress": {
+    "waitingList": "Waiting for browser to list files…",
+    "readingList": "Reading file list… {files}",
+    "loadingModels": "Loading models {done}/{total}",
+    "loadingTextures": "Loading textures {done}/{total}",
+    "cachingModels": "Caching models {done}/{total}",
+    "indexingSkies": "Indexing skyboxes {done}/{total}",
+    "buildingIndex": "Building file index…",
+    "savingSnapshot": "Saving snapshot…",
+    "cachingBlueprints": "Caching blueprints {done}/{total}",
+    "parsingDefs": "Parsing definitions {done}/{total}",
+    "readingBlueprints": "Reading blueprints {done}/{total}",
+    "indexingMods": "Indexing mods {done}/{total}"
+  },
+  "errors": {
+    "tooMany": "Too many blocks to export ({count}). Hollow the shape or make it smaller.",
+    "noSmall": "{block} has no small-grid variant",
+    "notJson": "Not a JSON file",
+    "notComposition": "Not a Drydock composition",
+    "newer": "Composition version {v} is newer than this app supports",
+    "noShapes": "Composition has no shape list",
+    "notObject": "Shape {n} is not an object",
+    "unknownOp": "Shape {n}: unknown operation {v}",
+    "unknownShape": "Shape {n}: unknown shape {v}",
+    "unknownBlock": "Shape {n}: unknown block {v}",
+    "wallRange": "Shape {n}: wall must be 0 to 3",
+    "tubeRange": "Shape {n}: tube must be 1 to 80",
+    "rotation": "Shape {n}: rotation is not a 90° turn",
+    "sizeRange": "Shape {n}: size must be three whole numbers from {min} to {max}",
+    "offsetRange": "Shape {n}: offset must be three whole numbers from {min} to {max}",
+    "unknownGrid": "Unknown grid size {v}",
+    "encoding": "Encoding failed",
+    "notBlueprint": "Not a Space Engineers blueprint"
+  }
+}

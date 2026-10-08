@@ -27,6 +27,8 @@ import type { ParseArg, ParseResult, VoxelizeResult, WriteResult } from '../work
 import { estimateSbcBytes, formatBytes } from '../se/sbcWrite.ts'
 import { download } from '../util/save.ts'
 import { createStore } from './store.ts'
+import { currentLang, ensureLocale, applyLocale, readLangSetting, resolveLang, saveLangSetting, type Lang, type LangSetting } from '../i18n.ts'
+import { errText, keyed, keyedList } from '../util/keyed.ts'
 
 export type { SourceKind }
 export type Source = { id: number; name: string; kind: SourceKind; when: number; note: string }
@@ -50,6 +52,7 @@ export type ListEntry = {
   large: boolean
   size: number
   mods: number | null
+  unresolved?: boolean
   blocks: number | null
   list: 'local' | 'workshop'
   modified: number
@@ -108,6 +111,8 @@ export type AppState = {
   sources: Source[]
   srcOpen: boolean
   tour: number
+  lang: LangSetting
+  locale: Lang
   toast: string
   busy: boolean
   spin: boolean
@@ -159,11 +164,13 @@ export const store = createStore<AppState>({
   section: { on: false, axis: 0, pos: 0.5, mode: 'cut', flip: false, thick: 2, capHi: true },
   scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40, lighting: 'directional' },
   skies: [],
-  export: { res: 2160, aspect: '16:9', fmt: 'PNG', transparent: false, ss: 2, fileName: '{blueprint}_{view}_{date}' },
+  export: { res: 2160, aspect: '16:9', fmt: 'PNG', transparent: false, ss: 2, fileName: '{blueprint}_{date}' },
   compose: { shapes: shapes0, selShape: null, grid: 'Large', name: 'Drydock Hull' },
   sources: [],
   srcOpen: false,
   tour: -1,
+  lang: readLangSetting(),
+  locale: currentLang(),
   toast: '',
   busy: false,
   spin: false,
@@ -314,7 +321,7 @@ async function voxelizeLatest() {
       composePerf.lastTotal = r.total
       composePerf.runs++
       const rows: TableRow[] = r.counts
-        .map((qty, i) => ({ name: COMP_BLOCKS[i].name, source: 'Vanilla', qty, missing: false, modded: false }))
+        .map((qty, i) => ({ name: COMP_BLOCKS[i].name, source: keyed('view.sourceVanilla'), qty, missing: false, modded: false }))
         .filter((x) => x.qty > 0)
         .sort((a, b) => b.qty - a.qty)
       const info: Info = { name: now.compose.name, large, dims: r.dims, lengthM: composeModel.lengthM, blockCount: r.total, rows, sbcBytes: estimateSbcBytes(r.counts, r.dims, now.compose.name.trim() || 'Drydock Hull', now.compose.grid) }
@@ -323,14 +330,14 @@ async function voxelizeLatest() {
       store.set((st) => ({ composeInfo: info, composeVersion: st.composeVersion + 1, composeFrame: st.composeFrame + frame }))
     } while (voxPending)
   } catch (err) {
-    actions.toast('Compose failed: ' + (err instanceof Error ? err.message : String(err)))
+    actions.toast(keyed('toast.composeFailed', { error: errText(err) }))
   } finally {
     voxInflight = false
     store.set({ composeBusy: false })
   }
 }
 
-export const plural = (n: number, w: string) => `${n.toLocaleString('en-US')} ${w}${n === 1 ? '' : 's'}`
+export const plural = (key: string, count: number) => keyed('units.' + key, { count })
 
 export function formatSize(b: number): string {
   if (b >= 1048576) return `${(b / 1048576).toFixed(1)} MB`
@@ -338,10 +345,11 @@ export function formatSize(b: number): string {
 }
 
 export function entryMeta(e: ListEntry): string {
-  const parts = [`${e.large ? 'Large' : 'Small'} grid`]
-  if (e.blocks !== null) parts.push(plural(e.blocks, 'block'))
-  if (e.mods !== null) parts.push(e.mods === 0 ? 'vanilla' : plural(e.mods, 'mod'))
-  return parts.join(' · ')
+  const parts = [keyed(e.large ? 'units.gridLarge' : 'units.gridSmall')]
+  if (e.blocks !== null) parts.push(plural('blocks', e.blocks))
+  if (e.mods) parts.push(plural('mods', e.mods))
+  else if (e.mods === 0 && !e.unresolved) parts.push(keyed('units.vanilla'))
+  return keyedList(parts)
 }
 
 let fillRun = 0
@@ -365,7 +373,8 @@ async function fillEntryMods() {
     try {
       const rec = await idbGet<{ fp: string; parsed: ParsedBlueprint }>('bps', e.id)
       if (!rec || rec.fp !== `${e.size}|${e.modified}`) continue
-      const meta: BpMeta = { mods: e.mods ?? pickMods(rec.parsed, base, modIndex).picked.length, blocks: rec.parsed.grids.reduce((a, g) => a + g.key.length, 0) }
+      const p = e.mods === null ? pickMods(rec.parsed, base, modIndex) : null
+      const meta: BpMeta = { mods: p ? p.picked.length : e.mods!, unresolved: p ? p.uncoveredTypes > 0 : e.unresolved, blocks: rec.parsed.grids.reduce((a, g) => a + g.key.length, 0) }
       found.set(e.id, meta)
       void idbPut('bpmeta', `${e.id}|${e.modified}`, meta).catch(() => undefined)
     } catch {
@@ -380,6 +389,7 @@ async function fillEntryMods() {
 }
 
 let toastTimer = 0
+let langSeq = 0
 let uncachedToast: string | null = null
 
 async function resolveCurrent() {
@@ -415,7 +425,7 @@ async function resolveCurrent() {
     return {
       key: p.key,
       name: m?.name ?? p.key,
-      meta: `${m?.label ?? 'Mod'} ${m?.folder ?? ''} · ${plural(p.blocks, 'block')}`,
+      meta: keyed('library.modMeta', { source: keyed(m ? 'kinds.' + m.label : 'library.modFallback'), folder: m?.folder ?? '', blocks: plural('blocks', p.blocks) }),
       enabled: toggles[p.key] !== false,
       missing: false,
     }
@@ -423,8 +433,8 @@ async function resolveCurrent() {
   if (picks.uncoveredBlocks > 0)
     rows.push({
       key: 'unresolved',
-      name: 'Unresolved blocks',
-      meta: `${plural(picks.uncoveredTypes, 'block type')} · ${plural(picks.uncoveredBlocks, 'block')}`,
+      name: keyed('library.unresolved'),
+      meta: keyedList([plural('blockTypes', picks.uncoveredTypes), plural('blocks', picks.uncoveredBlocks)]),
       enabled: false,
       missing: true,
     })
@@ -433,9 +443,10 @@ async function resolveCurrent() {
   if (perf.last) perf.last.resolve = performance.now() - t0
   const e = c.entry
   const pin = store.get().pinned
-  const bpMeta: BpMeta = { mods: picks.picked.length, blocks: m.blockCount }
-  if (!e && pin && (pin.mods !== bpMeta.mods || pin.blocks !== bpMeta.blocks)) store.set({ pinned: { ...pin, ...bpMeta } })
-  if (e && (e.mods !== bpMeta.mods || e.blocks !== bpMeta.blocks)) {
+  const bpMeta: BpMeta = { mods: picks.picked.length, unresolved: picks.uncoveredTypes > 0, blocks: m.blockCount }
+  const stale = (x: ListEntry) => x.mods !== bpMeta.mods || x.unresolved !== bpMeta.unresolved || x.blocks !== bpMeta.blocks
+  if (!e && pin && stale(pin)) store.set({ pinned: { ...pin, ...bpMeta } })
+  if (e && stale(e)) {
     const updated = { ...e, ...bpMeta }
     c.entry = updated
     idbPut('bpmeta', `${e.id}|${e.modified}`, bpMeta)
@@ -464,16 +475,16 @@ export const actions = {
     const text = !busy
       ? ''
       : c.meshesDone < c.meshes
-        ? `Loading models ${c.meshesDone.toLocaleString('en-US')}/${c.meshes.toLocaleString('en-US')}`
-        : `Loading textures ${c.texturesDone.toLocaleString('en-US')}/${c.textures.toLocaleString('en-US')}`
+        ? keyed('progress.loadingModels', { done: c.meshesDone, total: c.meshes })
+        : keyed('progress.loadingTextures', { done: c.texturesDone, total: c.textures })
     const frac = !busy ? null : c.meshesDone < c.meshes ? c.meshesDone / c.meshes : c.texturesDone / c.textures
     store.set({ assetText: text, assetFrac: frac })
     const s = store.get()
     const id = s.mode === 'compose' ? 'compose' : s.bp
     if (!busy && (c.uncachedMeshes || c.uncachedTextures) && id && uncachedToast !== id) {
       uncachedToast = id
-      const parts = [c.uncachedTextures ? `Textures missing: ${plural(c.uncachedTextures, 'texture')}` : '', c.uncachedMeshes ? plural(c.uncachedMeshes, 'model') : ''].filter(Boolean)
-      actions.toast(`${parts.join(' · ')} not cached · link the game folder again to load them`)
+      const parts = [c.uncachedTextures ? keyed('toast.texturesMissing', { count: c.uncachedTextures }) : '', c.uncachedMeshes ? keyed('toast.modelsMissing', { count: c.uncachedMeshes }) : '']
+      actions.toast(keyed('toast.uncached', { parts: keyedList(parts) }))
     }
   },
   assetsChanged: () => store.set((s) => ({ assetsVersion: s.assetsVersion + 1 })),
@@ -492,6 +503,20 @@ export const actions = {
     store.set({ tab: 'view', srcOpen: false, missingOpen: false, tour: 0 })
   },
   setTour: (tour: number) => store.set({ tour }),
+  async setLang(lang: LangSetting) {
+    saveLangSetting(lang)
+    store.set({ lang })
+    const my = ++langSeq
+    const l = resolveLang(lang)
+    try {
+      await ensureLocale(l)
+    } catch {
+      return
+    }
+    if (my !== langSeq) return
+    applyLocale(l)
+    store.set({ locale: l })
+  },
   closeTour(reason: 'done' | 'skip' | 'close') {
     store.set({ tour: -1 })
     try {
@@ -499,10 +524,10 @@ export const actions = {
     } catch {}
     actions.toast(
       reason === 'done'
-        ? 'All set · replay the tour any time from Tour in the header'
+        ? keyed('toast.tourDone', { tour: keyed('nav.tour') })
         : reason === 'skip'
-          ? 'Replay the tour any time from Tour in the header'
-          : 'Tour closed · replay it any time from Tour in the header',
+          ? keyed('toast.tourSkip', { tour: keyed('nav.tour') })
+          : keyed('toast.tourClosed', { tour: keyed('nav.tour') }),
     )
   },
 
@@ -599,12 +624,12 @@ export const actions = {
         return
       }
       if (!e.file) {
-        actions.toast('This blueprint is not in the snapshot yet. Refresh the source to read it.')
+        actions.toast(keyed('toast.notInSnapshot'))
         return
       }
       await actions.loadBlueprint({ file: e.file, name: e.name }, e)
     } catch (err) {
-      actions.toast('Could not open blueprint: ' + (err instanceof Error ? err.message : String(err)))
+      actions.toast(keyed('toast.openFailed', { error: errText(err) }))
     }
   },
 
@@ -618,6 +643,7 @@ export const actions = {
       const res: ParseResult = cached
         ? { parsed: cached, ms: { read: 0, decode: 0, parse: 0 } }
         : await parseRpc().call<ParseResult>('parseBlueprint', arg, transfer)
+      if (!res.parsed.grids.length) throw new Error(keyed('errors.notBlueprint'))
       current = { parsed: res.parsed, entry, picks: null, picksVersion: -1, resolved: { model: emptyModel(), rows: [] } }
       perf.last = { ...res.ms, resolve: 0, firstFrame: 0, total: 0, blocks: res.parsed.grids.reduce((n, g) => n + g.key.length, 0) }
       const pinned: ListEntry | null = entry
@@ -627,7 +653,7 @@ export const actions = {
       await resolveCurrent()
     } catch (err) {
       store.set({ loading: false })
-      actions.toast('Could not read blueprint: ' + (err instanceof Error ? err.message : String(err)))
+      actions.toast(keyed('toast.readFailed', { error: errText(err) }))
     }
   },
 
@@ -642,12 +668,11 @@ export const actions = {
     try {
       res = await composeRpc().call<WriteResult>('writeBlueprint', { shapes: vshapes(s.compose.shapes), name, size: s.compose.grid })
     } catch (err) {
-      actions.toast(err instanceof Error ? err.message : String(err))
+      actions.toast(errText(err))
       return
     }
-    const count = res.total.toLocaleString('en-US')
     download(res.blob, 'bp.sbc')
-    actions.toast(`Downloaded bp.sbc · ${count} blocks · ${formatBytes(res.blob.size)}`)
+    actions.toast(keyed('toast.downloadedSbc', { blocks: plural('blocks', res.total), size: formatBytes(res.blob.size) }))
   },
 
   exportComposition() {
@@ -655,7 +680,7 @@ export const actions = {
     const name = c.name.trim() || 'Drydock Hull'
     const file = `${name.replace(/[\\/:*?"<>|]+/g, '_')}.json`
     download(new Blob([compositionJson(c)], { type: 'application/json' }), file)
-    actions.toast(`Downloaded ${file} · ${plural(c.shapes.length, 'shape')}`)
+    actions.toast(keyed('toast.downloadedFile', { file, detail: plural('shapes', c.shapes.length) }))
   },
 
   async importComposition(f: File) {
@@ -664,9 +689,9 @@ export const actions = {
       const shapes = c.shapes.map((x) => ({ ...x, id: nextShapeId() }))
       frameNext = true
       store.set((s) => ({ mode: 'compose', compose: { ...s.compose, shapes, grid: c.grid, name: c.name || s.compose.name, selShape: null } }))
-      actions.toast(`Opened ${f.name} · ${plural(shapes.length, 'shape')}`)
+      actions.toast(keyed('toast.openedFile', { file: f.name, detail: plural('shapes', shapes.length) }))
     } catch (err) {
-      actions.toast(`Could not open ${f.name}: ${err instanceof Error ? err.message : String(err)}`)
+      actions.toast(keyed('toast.openFileFailed', { file: f.name, error: errText(err) }))
     }
   },
 }

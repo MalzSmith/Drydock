@@ -1,3 +1,4 @@
+import { errText, keyed, keyedList } from '../util/keyed.ts'
 import { fromTuples } from '../se/defs.ts'
 import { actions, store, type ListEntry, type ModMeta, type Source, type SourceKind } from '../state/app.ts'
 import { assetRpc, scanRpc } from '../workers/client.ts'
@@ -9,14 +10,11 @@ import { idbAll, idbClear, idbDelete, idbGet, idbKeys, idbPut } from './idb.ts'
 import type { ScanResult } from './scan.ts'
 import type { SkyMeta } from '../assets/sky.ts'
 
-const MOD_LABEL: Record<string, string> = { workshop: 'Workshop', torch: 'Torch', mods: 'Mods' }
-
 const results = new Map<number, SnapRec>()
 const progress = new Map<number, { text: string; frac: number | null }>()
 let waiting = ''
 let started = false
 
-const num = (n: number) => n.toLocaleString('en-US')
 
 function setStatus() {
   const p = [...progress.values()][0]
@@ -45,12 +43,13 @@ function publish() {
         large: e.large,
         size: e.size,
         mods: e.mods,
+        unresolved: e.unresolved,
         blocks: e.blocks ?? null,
         list: r.kind === 'blueprints' ? 'local' : 'workshop',
         modified: e.modified,
         file: e.file,
       })
-    for (const m of r.mods) mods.push({ key: m.key, name: m.name, label: MOD_LABEL[r.kind], folder: m.folder, subs: m.subs })
+    for (const m of r.mods) mods.push({ key: m.key, name: m.name, label: r.kind, folder: m.folder, subs: m.subs })
   }
   actions.setEntries(entries)
   return actions.setIndex(game, mods, skins, glass)
@@ -90,7 +89,7 @@ function pick(): Promise<Picked | null> {
     el.type = 'file'
     el.webkitdirectory = true
     el.multiple = true
-    waiting = 'Waiting for browser to list files…'
+    waiting = keyed('progress.waitingList')
     setStatus()
     const finish = (v: Picked | null) => {
       waiting = ''
@@ -99,7 +98,7 @@ function pick(): Promise<Picked | null> {
     }
     el.addEventListener('change', () => {
       const list = Array.from(el.files ?? [])
-      waiting = `Reading file list… ${num(list.length)} files`
+      waiting = keyed('progress.readingList', { files: keyed('units.files', { count: list.length }) })
       setStatus()
       const name = list[0]?.webkitRelativePath.split('/')[0] ?? ''
       finish({ files: list.filter((f) => isRelevantFile(f.name)), assets: list.filter((f) => isAssetFile(f.name)), total: list.length, name })
@@ -113,35 +112,40 @@ async function persistSource(src: Source) {
   try {
     await idbPut('sources', undefined, src)
   } catch {
-    actions.toast('Could not store the source list; it will be forgotten after this session.')
+    actions.toast(keyed('toast.storeListFailed'))
   }
 }
 
 async function scanOne(id: number, kind: SourceKind, name: string, files: File[], assets: File[], total: number) {
-  progress.set(id, { text: `Reading file list… ${num(total)} files`, frac: null })
+  progress.set(id, { text: keyed('progress.readingList', { files: keyed('units.files', { count: total }) }), frac: null })
   setStatus()
   try {
     if (kind !== 'blueprints') {
-      const keyed = assetKeys(kind, id, assets)
-      setAssetFiles(id, new Map(keyed))
-      await assetRpc().call<number>('registerAssets', { sourceId: id, keys: keyed.map((k) => k[0]) })
+      const keys = assetKeys(kind, id, assets)
+      setAssetFiles(id, new Map(keys))
+      await assetRpc().call<number>('registerAssets', { sourceId: id, keys: keys.map((k) => k[0]) })
       actions.assetsChanged()
     }
     const rep = await scanRpc().call<ScanReply>('scanSource', { files, kind, sourceId: id })
     const res: ScanResult = rep.result
     results.set(id, res)
-    const note = `${num(total)} files${res.entries.length ? ` · ${num(res.entries.length)} blueprints` : ''}${res.mods.length ? ` · ${num(res.mods.length)} mods` : ''} · ${(rep.ms / 1000).toFixed(1)} s`
+    const note = keyedList([
+      keyed('units.files', { count: total }),
+      res.entries.length ? keyed('units.blueprints', { count: res.entries.length }) : '',
+      res.mods.length ? keyed('units.mods', { count: res.mods.length }) : '',
+      keyed('units.seconds', { s: Math.round(rep.ms / 100) / 10 }),
+    ])
     const src: Source = { id, name, kind, when: Date.now(), note }
     store.set((s) => ({ sources: s.sources.some((x) => x.id === id) ? s.sources.map((x) => (x.id === id ? src : x)) : [...s.sources, src] }))
     await persistSource(src)
-    if (kind === 'game' && !res.found) actions.toast('Expected the SpaceEngineers (or its Content) folder — linked anyway')
-    if (!rep.persisted) actions.toast('Could not store the snapshot (storage full?). It works for this session only.')
+    if (kind === 'game' && !res.found) actions.toast(keyed('toast.notGameFolder'))
+    if (!rep.persisted) actions.toast(keyed('toast.snapshotFailed'))
     await publish()
     void actions.fillMods()
     if (rep.persisted && res.entries.length) {
       const arg: CacheArg = { sourceId: id, items: res.entries.filter((e) => e.file).map((e) => ({ id: e.id, name: e.name, file: e.file! })) }
       const c = await scanRpc().call<CacheReply>('cacheBlueprints', arg)
-      if (c.failed) actions.toast('Could not cache all blueprints (storage full?). Uncached ones need a refresh to open.')
+      if (c.failed) actions.toast(keyed('toast.cacheFailed'))
       void actions.fillMods()
     }
     if (rep.persisted && kind !== 'blueprints') {
@@ -150,7 +154,7 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
       await assetRpc().call<number>('cacheModels', { sourceId: id })
     }
   } catch (err) {
-    actions.toast(`Scan failed for ${name}: ` + (err instanceof Error ? err.message : String(err)))
+    actions.toast(keyed('toast.scanFailed', { name, error: errText(err) }))
   } finally {
     progress.delete(id)
     setStatus()
@@ -180,7 +184,7 @@ export async function linkSource(kind: SourceKind, replaceId?: number) {
   const picked = await pick()
   if (!picked) return
   if (!picked.total) {
-    actions.toast('That folder is empty.')
+    actions.toast(keyed('toast.emptyFolder'))
     return
   }
   const sources = store.get().sources
@@ -202,7 +206,7 @@ export async function unlinkSource(id: number) {
     for (const st of ['mods', 'bps'] as const) for (const k of await idbKeys(st)) if (typeof k === 'string' && k.startsWith(prefix)) await idbDelete(st, k)
     for (const st of ['meshes', 'textures', 'skymeta'] as const) for (const k of await idbKeys(st)) if (typeof k === 'string' && k.startsWith('m:' + prefix)) await idbDelete(st, k)
   } catch {
-    actions.toast('Could not clear the stored snapshot.')
+    actions.toast(keyed('toast.clearFailed'))
   }
   await publish()
   await publishSkies()

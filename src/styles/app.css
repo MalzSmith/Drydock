@@ -12,6 +12,8 @@ button { font: inherit; color: inherit; }
   background: var(--color-bg); color: var(--color-text); font-family: var(--font-body);
 }
 #nav { border-bottom: 1px solid var(--color-divider); padding: 8px 16px; gap: 18px; }
+#nav > * { flex: none; white-space: nowrap; }
+@media (max-width: 1279px) { #nav { gap: 12px; } }
 #work { display: grid; grid-template-columns: auto minmax(0, 1fr) 316px; min-height: 0; }
 #left { display: flex; min-height: 0; }
 #view { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
@@ -43,7 +45,38 @@ button { font: inherit; color: inherit; }
 .brand .name { font-family: var(--font-heading); font-weight: 600; font-size: 19px; letter-spacing: .02em; }
 .brand .sub { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--color-neutral-700); }
 .navstat { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--color-neutral-700); margin-left: auto; }
+#nav > .navstat { flex: 1 1 0; min-width: 0; white-space: normal; }
 .dot7 { width: 7px; height: 7px; background: var(--color-accent); }
+
+.lang { position: relative; }
+.lang-btn { padding: 6.8px 10px; gap: 6px; }
+.lang-btn[aria-expanded="true"] { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.lang-btn .lang-nm { font-size: 14px; }
+.lang-nm { font-family: var(--font-heading); font-weight: 600; font-size: 15px; line-height: 1.15; }
+.lang-menu {
+  position: absolute; top: calc(100% + 12px); right: 0; width: 292px; z-index: 15;
+  display: flex; flex-direction: column; background: var(--color-bg);
+  border: 1px solid var(--color-divider); box-shadow: var(--shadow-lg);
+}
+.lang-menu[hidden] { display: none; }
+.lang-menu > .kicker { padding: 12px 14px 8px; }
+.lang-row {
+  display: grid; grid-template-columns: 16px 1fr auto; gap: 10px; align-items: center; padding: 7px 14px;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.lang-row:hover { background: color-mix(in srgb, var(--color-text) 5%, transparent); }
+.lang-row.on { background: var(--color-accent-100); }
+.lang-row:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.lang-chk { display: grid; visibility: hidden; }
+.lang-chk svg { stroke-width: 2 !important; }
+.lang-row.on .lang-chk { visibility: visible; }
+.lang-auto { grid-template-columns: 16px 1fr; }
+.lang-sub { font-size: 11px; color: var(--color-neutral-700); }
+.lang-sys { font-family: var(--font-body); }
+.lang-sec { font-size: 11px; color: var(--color-neutral-700); }
+.lang-div { display: block; height: 1px; margin: 6px 14px; background: var(--color-divider); }
+.lang-foot { margin-top: 6px; padding: 10px 14px 12px; border-top: 1px solid var(--color-divider); font-size: 11px; }
+.lang-foot a { color: var(--color-accent); }
 
 .lib { width: 280px; border-right: 1px solid var(--color-divider); display: flex; flex-direction: column; min-height: 0; }
 .lib-head { padding: 14px 14px 10px; display: flex; flex-direction: column; gap: 10px; }
@@ -96,6 +129,8 @@ button { font: inherit; color: inherit; }
 .shape-head .idx { font-size: 11px; color: var(--color-neutral-700); font-variant-numeric: tabular-nums; }
 .shape-edit { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-top: 1px solid var(--color-divider); }
 .seg-opt.sm { flex: 1; justify-content: center; padding: 5px 4px; }
+.seg-opt.grow { min-width: 0; white-space: normal; text-align: center; hyphens: auto; }
+.seg-opt.glyph { font-size: 20px; line-height: 1; padding: 3px 4px; }
 .num-grid { display: grid; grid-template-columns: 52px repeat(3, 1fr); gap: 6px; align-items: center; font-size: 12px; }
 .sel-grid { display: grid; grid-template-columns: 52px 1fr; gap: 6px; align-items: center; font-size: 12px; }
 .num-grid .input, .sel-grid .input { padding: 4px 6px; font-size: 12px; }
@@ -110,7 +145,8 @@ button { font: inherit; color: inherit; }
 #view canvas.gl { cursor: grab; touch-action: none; }
 #view canvas.gl.drag { cursor: grabbing; }
 #view canvas.ov { pointer-events: none; }
-.vp-top { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; }
+.vp-top { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 10px; pointer-events: none; }
+.vp-top > div:nth-child(2) { margin-left: auto; }
 .vp-top > div { display: flex; gap: 8px; pointer-events: auto; }
 .vp-top .seg { background: var(--color-bg); }
 .vp-top .seg-opt { padding: 6px 10px; }
@@ -123,8 +159,9 @@ button { font: inherit; color: inherit; }
 .vp-right { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex: none; }
 .hint { font-size: 11px; padding: 6px 10px; background: var(--color-bg); border: 1px solid var(--color-divider); color: var(--color-neutral-700); }
 .readout { font-family: var(--font-heading); font-size: 13px; letter-spacing: .06em; padding: 5px 10px; background: var(--color-bg); border: 1px solid var(--color-divider); }
+.vp-top > .toast-row { flex-basis: 100%; display: flex; justify-content: center; pointer-events: none; }
 .toast {
-  position: absolute; left: 50%; top: 60px; transform: translateX(-50%); padding: 10px 14px; background: var(--color-bg);
+  margin-top: 6px; pointer-events: auto; padding: 10px 14px; background: var(--color-bg);
   border: 1px solid var(--color-accent); box-shadow: var(--shadow-md); font-size: 13px; display: flex; gap: 8px; align-items: center; z-index: 10;
 }
 
@@ -203,6 +240,10 @@ button { font: inherit; color: inherit; }
 .tour-big { padding: 10px 12px; font-size: 15px; }
 .tour-count { flex-direction: row-reverse; justify-content: flex-end; gap: 8px; font-size: 14px; }
 .tour-count input { width: 14px; height: 14px; margin: 0; }
+.tour-lang { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--color-divider); }
+.tour-lang .kicker { display: flex; align-items: center; gap: 6px; }
+.tour-lang-opt { flex: 1; justify-content: center; padding: 7px 4px; font-size: 13px; }
+.tour-lang-opt span { font-family: var(--font-body); }
 .tour-block { position: absolute; inset: 0; z-index: 30; }
 .tour-frame {
   position: absolute; z-index: 31; pointer-events: none; border: 1px solid var(--color-accent);

@@ -1,0 +1,457 @@
+{
+  "_meta": {
+    "code": "de",
+    "nativeName": "Deutsch",
+    "dir": "ltr",
+    "pluralCategories": [
+      "one",
+      "other"
+    ]
+  },
+  "languageNames": {
+    "en": "Englisch",
+    "de": "Deutsch",
+    "ru": "Russisch",
+    "zh-Hans": "Chinesisch, vereinfacht",
+    "zh-Hant": "Chinesisch, traditionell"
+  },
+  "nav": {
+    "subtitle": "Blueprint renderer",
+    "mode": {
+      "blueprint": "Blaupause",
+      "compose": "Entwurf"
+    },
+    "statusNoGame": "Spielordner verknüpfen, um Modelle und Texturen zu laden",
+    "tour": "Tour",
+    "tourTitle": "Funktionstour anzeigen",
+    "linkFolders": "Ordner verknüpfen",
+    "exportImage": "Bild exportieren",
+    "sources": "Quellen",
+    "sourcesLinked": {
+      "one": "{count} Quelle verknüpft",
+      "other": "{count} Quellen verknüpft"
+    },
+    "modFolders": {
+      "one": "{count} Mod-Ordner",
+      "other": "{count} Mod-Ordner"
+    },
+    "modsNoGame": "Mods verknüpft · noch kein Spielordner"
+  },
+  "language": {
+    "title": "Sprache",
+    "browser": "Browsersprache",
+    "current": "Aktuell: {lang}",
+    "help": "Übersetzung fehlt oder ist falsch? Auf GitHub mithelfen"
+  },
+  "library": {
+    "title": "Blaupausen",
+    "found": {
+      "one": "{count} gefunden",
+      "other": "{count} gefunden"
+    },
+    "search": "Blaupausen durchsuchen",
+    "local": "Lokal",
+    "workshop": "Workshop",
+    "dropHint": "Ziehe eine {file} oder einen Blaupausen-Ordner irgendwohin, um sie zu öffnen.",
+    "modsTitle": "Mods in dieser Blaupause",
+    "modsLoaded": {
+      "one": "{count} Mod geladen",
+      "other": "{count} Mods geladen"
+    },
+    "modState": {
+      "loaded": "Geladen",
+      "off": "Aus",
+      "notInstalled": "Nicht installiert"
+    },
+    "missingBtn": "Fehlende Blöcke, zum Anzeigen klicken",
+    "missingBtnTitle": "Blocktypen anzeigen, die keine verknüpfte Quelle definiert",
+    "unresolved": "Nicht aufgelöste Blöcke",
+    "modMeta": "{source} {folder} · {blocks}",
+    "modFallback": "Mod"
+  },
+  "units": {
+    "gridLarge": "Großes Grid",
+    "gridSmall": "Kleines Grid",
+    "blocks": {
+      "one": "{count} Block",
+      "other": "{count} Blöcke"
+    },
+    "length": "{length} m lang",
+    "mods": {
+      "one": "{count} Mod",
+      "other": "{count} Mods"
+    },
+    "shapes": {
+      "one": "{count} Form",
+      "other": "{count} Formen"
+    },
+    "blockTypes": {
+      "one": "{count} Blocktyp",
+      "other": "{count} Blocktypen"
+    },
+    "textures": {
+      "one": "{count} Textur",
+      "other": "{count} Texturen"
+    },
+    "models": {
+      "one": "{count} Modell",
+      "other": "{count} Modelle"
+    },
+    "files": {
+      "one": "{count} Datei",
+      "other": "{count} Dateien"
+    },
+    "blueprints": {
+      "one": "{count} Blaupause",
+      "other": "{count} Blaupausen"
+    },
+    "frames": {
+      "one": "{count} Bild",
+      "other": "{count} Bilder"
+    },
+    "vanilla": "Vanilla",
+    "dims": "{dims} Blöcke",
+    "meters": "{m} m",
+    "seconds": "{s} s"
+  },
+  "viewport": {
+    "presets": {
+      "iso": "Iso",
+      "front": "Vorne",
+      "side": "Seite",
+      "top": "Oben",
+      "rear": "Hinten"
+    },
+    "persp": "Persp",
+    "ortho": "Ortho",
+    "hint": "Ziehen zum Drehen · Rechtsziehen zum Verschieben · Scrollen zum Zoomen · Umschalt+Scrollen wechselt Schnitt",
+    "perspTitle": "Perspektive: nähere Teile wirken größer, wie bei einer echten Kamera",
+    "orthoTitle": "Orthografisch: keine Perspektive, Größen bleiben in jeder Tiefe maßstabsgetreu (technische Ansichten)",
+    "section": "Schnittansicht",
+    "turntable": "Drehteller",
+    "frame": "Schiff einpassen"
+  },
+  "tabs": {
+    "view": "Ansicht",
+    "section": "Schnitt",
+    "scene": "Szene",
+    "export": "Export"
+  },
+  "view": {
+    "renderStyle": "Renderstil",
+    "styles": {
+      "textured": "Texturiert",
+      "shaded": "Schattiert",
+      "clay": "Ton",
+      "line": "Linie"
+    },
+    "exposure": "Belichtung",
+    "seams": "Blockfugen",
+    "tintMods": "Mod-Blöcke einfärben",
+    "missingTitle": "Fehlende Mod-Blöcke",
+    "missing": {
+      "placeholder": "Platzhalter",
+      "substitute": "Ersatz",
+      "hide": "Ausblenden"
+    },
+    "missingDesc": "Blöcke, deren Definition weder im Spiel noch in einem aktiven Mod steht.",
+    "defsTitle": "Blockdefinitionen",
+    "col": {
+      "block": "Block",
+      "source": "Quelle",
+      "qty": "Anz."
+    },
+    "missingSource": "{source} · fehlt",
+    "sourceVanilla": "Vanilla",
+    "sourceUnknown": "Unbekannt"
+  },
+  "footer": {
+    "ready": "Bereit",
+    "privacy": "Läuft im Browser · Dateien bleiben auf diesem Gerät",
+    "noSources": "Spiel, Workshop oder Torch-Instanz verknüpfen, um Texturen, Modelle und Mods zu laden",
+    "source": "{kind}: {name}"
+  },
+  "welcome": {
+    "kicker": "Zum ersten Mal hier",
+    "title": "Willkommen bei Drydock",
+    "lead": "Space-Engineers-Blaupausen rendern und einfache Rümpfe bauen – alles im Browser. Sechs kurze Stationen zeigen, wo was zu finden ist.",
+    "start": "Zeig mir alles",
+    "explore": "Ich schaue mich selbst um",
+    "note": "Dateien werden lokal gelesen und nie hochgeladen. Die Tour lässt sich jederzeit über {tour} in der Kopfzeile wiederholen.",
+    "count": "Meinen Besuch anonym zählen",
+    "countNote": "Drydock zählt Besuche mit GoatCounter: keine Cookies, nichts aus deinen Dateien. So sehe ich, ob das Projekt genutzt wird."
+  },
+  "narrow": {
+    "tooSmall": "Dein Bildschirm ist zu klein für Drydock. Es braucht ein Browserfenster mit mindestens 1120 Pixeln Breite, auf kleineren Bildschirmen passt das Layout nicht.",
+    "options": "Öffne die Seite auf einem größeren Bildschirm oder fahre trotzdem fort und scrolle durch das Layout.",
+    "continue": "Trotzdem fortfahren",
+    "github": "Drydock auf GitHub"
+  },
+  "kinds": {
+    "game": "Spiel",
+    "workshop": "Workshop",
+    "torch": "Torch",
+    "mods": "Mods",
+    "blueprints": "Blaupausen"
+  },
+  "status": {
+    "loading": "Lädt",
+    "rendering": "Rendert"
+  },
+  "caption": {
+    "noBlueprint": "Keine Blaupause geladen",
+    "loading": "Lädt…",
+    "drop": "Ziehe eine bp.sbc oder einen Blaupausen-Ordner hierher, um sie zu öffnen",
+    "composition": "Entwurf · {grid}",
+    "compositionFull": "Entwurf · {grid} · {dims} · {count} platziert"
+  },
+  "section": {
+    "title": "Querschnitt",
+    "cutPlane": "Schnittebene",
+    "axisX": "X · Breite",
+    "axisY": "Y · Deck",
+    "axisZ": "Z · Kiel",
+    "cut": "Wegschneiden",
+    "slice": "Scheibe",
+    "position": "Position",
+    "layer": "Schicht {n} / {total}",
+    "prev": "− Schicht",
+    "next": "+ Schicht",
+    "flip": "Seite wechseln",
+    "thickness": "Scheibendicke",
+    "highlight": "Schnittflächen hervorheben",
+    "tip": "Tipp",
+    "tipText": "Nutze {slice} auf der Y-Ebene mit der Ansicht Oben für Deckpläne. Jeder Schritt bewegt sich um einen Block (2,5 m großes Grid, 0,5 m kleines Grid)."
+  },
+  "scene": {
+    "skyboxes": "Skyboxen · Spiel & Mods",
+    "gradients": "Verläufe & Studio",
+    "lighting": "Beleuchtung",
+    "directional": "Gerichtet",
+    "uniform": "Gleichmäßig",
+    "sun": "Sonnenazimut",
+    "top": "Oben",
+    "bottom": "Unten",
+    "offNote": "Ausgegraute Skyboxen werden aus den Spieldateien geladen. Verknüpfe den Spielordner, um sie zu nutzen.",
+    "offTitle": "Verknüpfe den Spielordner, um diese Skybox zu nutzen",
+    "vanilla": "Vanilla",
+    "bg": {
+      "sky-default": "Tiefer Weltraum",
+      "sky-orbit": "Planetenorbit",
+      "sky-nebula": "Nebelfeld",
+      "paper": "Zeichenpapier",
+      "hangar": "Hangar",
+      "steel": "Stahl",
+      "dusk": "Dunst",
+      "transparent": "Transparent",
+      "custom": "Eigene"
+    },
+    "src": {
+      "procedural": "Prozedural",
+      "orbit": "Im Orbit",
+      "nebula": "Mod · Nebula Skybox Pack"
+    }
+  },
+  "export": {
+    "resolution": "Auflösung",
+    "framed": "Gespeichert wird der markierte Bereich im Ansichtsfenster.",
+    "format": "Format",
+    "transparent": "Transparenter Hintergrund (PNG)",
+    "ss": "Supersampling",
+    "fileName": "Dateiname",
+    "render": "{fmt} rendern & speichern",
+    "rendering": "Rendert…",
+    "copy": "In Zwischenablage kopieren",
+    "turntable": "Drehteller · 36 Bilder"
+  },
+  "compose": {
+    "stack": "Formstapel",
+    "add": "+ Form hinzufügen",
+    "help": "Formen werden von oben nach unten ausgewertet. Größen und Versätze sind in Blöcken; ein Wandwert höhlt die Form bis auf diese Dicke aus.",
+    "file": "Entwurfsdatei",
+    "saveJson": "JSON speichern",
+    "saveJsonTitle": "Formstapel als JSON-Datei speichern",
+    "openJson": "JSON öffnen",
+    "openJsonTitle": "Formstapel durch eine gespeicherte JSON-Datei ersetzen",
+    "grid": "Grid",
+    "gridOpt": "{grid} · {size}",
+    "name": "Name der Blaupause",
+    "export": "Blaupause exportieren · bp.sbc",
+    "exportNote": "Lädt bp.sbc herunter. Lege sie in Blueprints\\local in einen Ordner, der wie die Blaupause heißt.",
+    "warnMax": "{blocks} ({size}) überschreiten das Exportlimit von {max} Blöcken.",
+    "warnBig": "{blocks}, {size}. Große Blaupausen laden und platzieren sich im Spiel langsam.",
+    "ops": {
+      "add": "Addieren",
+      "subtract": "Subtrahieren",
+      "intersect": "Schnittmenge"
+    },
+    "types": {
+      "box": "Quader",
+      "sphere": "Kugel",
+      "cylinder": "Zyl.",
+      "ellipsoid": "Ellipsoid",
+      "torus": "Torus",
+      "pyramid": "Pyramide"
+    },
+    "typeNames": {
+      "box": "Quader",
+      "sphere": "Kugel",
+      "cylinder": "Zylinder",
+      "ellipsoid": "Ellipsoid",
+      "torus": "Torus",
+      "pyramid": "Pyramide"
+    },
+    "title": {
+      "add": "{type} addieren",
+      "subtract": "{type} subtrahieren",
+      "intersect": "Schnittmenge mit {type}"
+    },
+    "meta": {
+      "tube": "Rohr {n}",
+      "rotated": "gedreht",
+      "wall": "Wand {n}"
+    },
+    "size": "Größe",
+    "offset": "Versatz",
+    "tube": "Rohr",
+    "rotate": "Drehen",
+    "wall": "Wand",
+    "block": "Block",
+    "solid": "Voll",
+    "turn": "Um {axis} um 90° drehen",
+    "reset": "Zurücksetzen",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
+    "dup": "Dupl.",
+    "delete": "Löschen"
+  },
+  "sources": {
+    "title": "Inhaltsquellen",
+    "desc": "Blockdefinitionen, Modelle und Texturen werden von oben nach unten aus diesen Ordnern gelesen. Spätere Quellen überschreiben frühere.",
+    "close": "Schließen",
+    "empty": "Noch nichts verknüpft. Ohne Spielordner gibt es nur die eingebauten Vanilla-Blöcke.",
+    "link": "Ordner verknüpfen",
+    "uploadNote": "Dein Browser fragt nach einer Upload-Bestätigung, aber nichts verlässt dieses Gerät. Jeder Ordner wird hier als Snapshot gespeichert und lädt ohne erneute Auswahl; aktualisiere eine Quelle, um sie aufzufrischen.",
+    "refresh": "Aktualisieren",
+    "refreshTitle": "Ordner erneut auswählen, um diesen Snapshot zu aktualisieren",
+    "remove": "Entfernen",
+    "rowMeta": "{meta} · verknüpft {time} · Snapshot vom {date}",
+    "meta": {
+      "game": "SpaceEngineers\\Content · Vanilla-Blöcke, Modelle, Texturen",
+      "workshop": "steamapps\\workshop\\content\\244850 · abonnierte Mods",
+      "torch": "Torch- / Dedicated-Server-Instanz · ihre Mods & Inhalte",
+      "mods": "Loser Mod-Ordner · wird nach .sbc-Definitionen durchsucht",
+      "blueprints": "%AppData%\\SpaceEngineers\\Blueprints · lokale Blaupausen"
+    },
+    "hint": {
+      "game": "Ordner SpaceEngineers\\Content",
+      "workshop": "Steam-Workshop-Ordner 244850",
+      "torch": "Server-Instanzordner",
+      "mods": "Beliebiger Mod-Ordner",
+      "blueprints": "Blaupausen-Ordner (lokal)"
+    }
+  },
+  "missing": {
+    "title": "Fehlende Blöcke",
+    "desc": "Keine verknüpfte Quelle definiert diese Blocktypen. Verknüpfe den Spielordner oder die Mods, die sie enthalten.",
+    "blocks": "Blöcke",
+    "empty": "(leer)"
+  },
+  "tour": {
+    "stepOf": "Schritt {n} von {total}",
+    "back": "Zurück",
+    "next": "Weiter →",
+    "done": "Fertig",
+    "close": "Tour schließen",
+    "steps": {
+      "sources": {
+        "title": "Spielordner verknüpfen",
+        "body": "Drydock liest Modelle und Texturen aus deiner eigenen Space-Engineers-Installation. Bis sie verknüpft ist, wird jeder Block als einfacher Quader gezeichnet."
+      },
+      "library": {
+        "title": "Blaupause öffnen",
+        "body": "Wähle eine aus deinem verknüpften Blaupausen-Ordner oder ziehe eine bp.sbc oder einen ganzen Blaupausen-Ordner irgendwo auf die Seite."
+      },
+      "vptools": {
+        "title": "Bildausschnitt wählen",
+        "body": "Wechsle zwischen Perspektive und Orthografie, schneide einen Querschnitt, starte den Drehteller oder passe das Schiff wieder in den Rahmen ein."
+      },
+      "tabs": {
+        "title": "Rendering feinjustieren",
+        "body": "Ansicht legt den Renderstil fest. Schnitt zerlegt den Rumpf Schicht für Schicht. Szene wählt Hintergrund und Beleuchtung."
+      },
+      "export": {
+        "title": "Bild exportieren",
+        "body": "PNG, JPG oder WebP bis 8K mit Supersampling, in die Zwischenablage kopieren oder ein Drehteller-ZIP mit 36 Bildern."
+      },
+      "mode": {
+        "title": "Eigenen Rumpf bauen",
+        "body": "Im Entwurf stapelst du Quader, Kugeln und Zylinder zu einem Rumpf und exportierst ihn als bp.sbc, die du im Spiel einfügen kannst."
+      }
+    }
+  },
+  "toast": {
+    "tourDone": "Alles bereit · die Tour kannst du jederzeit über {tour} in der Kopfzeile wiederholen",
+    "tourSkip": "Die Tour kannst du jederzeit über {tour} in der Kopfzeile wiederholen",
+    "tourClosed": "Tour geschlossen · über {tour} in der Kopfzeile jederzeit wiederholbar",
+    "notInSnapshot": "Diese Blaupause ist noch nicht im Snapshot. Aktualisiere die Quelle, um sie zu lesen.",
+    "openFailed": "Blaupause konnte nicht geöffnet werden: {error}",
+    "readFailed": "Blaupause konnte nicht gelesen werden: {error}",
+    "composeFailed": "Entwurf fehlgeschlagen: {error}",
+    "downloadedSbc": "bp.sbc heruntergeladen · {blocks} · {size}",
+    "downloadedFile": "{file} heruntergeladen · {detail}",
+    "openedFile": "{file} geöffnet · {detail}",
+    "openFileFailed": "{file} konnte nicht geöffnet werden: {error}",
+    "uncached": "{parts} · verknüpfe den Spielordner erneut, um sie zu laden",
+    "texturesMissing": "Fehlende Texturen: {count}",
+    "modelsMissing": "Fehlende Modelle: {count}",
+    "dropFailed": "Öffnen fehlgeschlagen: {error}",
+    "urlFailed": "Laden der Blaupause fehlgeschlagen: {error}",
+    "exportFailed": "Export fehlgeschlagen: {error}",
+    "copyFailed": "Kopieren fehlgeschlagen: {error}",
+    "turntableFailed": "Drehteller fehlgeschlagen: {error}",
+    "copied": "Bild in die Zwischenablage kopiert",
+    "noClipboard": "Zwischenablage nicht verfügbar",
+    "storeListFailed": "Die Quellenliste konnte nicht gespeichert werden; sie geht nach dieser Sitzung verloren.",
+    "notGameFolder": "Ordner verknüpft · keine Spieldaten darin gefunden, nichts Neues geladen",
+    "snapshotFailed": "Snapshot konnte nicht gespeichert werden (Speicher voll?). Er funktioniert nur in dieser Sitzung.",
+    "cacheFailed": "Nicht alle Blaupausen konnten zwischengespeichert werden (Speicher voll?). Nicht gespeicherte brauchen eine Aktualisierung zum Öffnen.",
+    "scanFailed": "Scan von {name} fehlgeschlagen: {error}",
+    "emptyFolder": "Dieser Ordner ist leer.",
+    "clearFailed": "Der gespeicherte Snapshot konnte nicht gelöscht werden."
+  },
+  "progress": {
+    "waitingList": "Warte darauf, dass der Browser die Dateien auflistet…",
+    "readingList": "Lese Dateiliste… {files}",
+    "loadingModels": "Lade Modelle {done}/{total}",
+    "loadingTextures": "Lade Texturen {done}/{total}",
+    "cachingModels": "Speichere Modelle zwischen {done}/{total}",
+    "indexingSkies": "Indiziere Skyboxen {done}/{total}",
+    "buildingIndex": "Erstelle Dateiindex…",
+    "savingSnapshot": "Speichere Snapshot…",
+    "cachingBlueprints": "Speichere Blaupausen zwischen {done}/{total}",
+    "parsingDefs": "Lese Definitionen {done}/{total}",
+    "readingBlueprints": "Lese Blaupausen {done}/{total}",
+    "indexingMods": "Indiziere Mods {done}/{total}"
+  },
+  "errors": {
+    "tooMany": "Zu viele Blöcke für den Export ({count}). Höhle die Form aus oder mach sie kleiner.",
+    "noSmall": "{block} hat keine Variante für kleine Grids",
+    "notJson": "Keine JSON-Datei",
+    "notComposition": "Kein Drydock-Entwurf",
+    "newer": "Entwurfsversion {v} ist neuer, als diese App unterstützt",
+    "noShapes": "Entwurf hat keine Formliste",
+    "notObject": "Form {n} ist kein Objekt",
+    "unknownOp": "Form {n}: unbekannte Operation {v}",
+    "unknownShape": "Form {n}: unbekannte Form {v}",
+    "unknownBlock": "Form {n}: unbekannter Block {v}",
+    "wallRange": "Form {n}: Wand muss zwischen 0 und 3 liegen",
+    "tubeRange": "Form {n}: Rohr muss zwischen 1 und 80 liegen",
+    "rotation": "Form {n}: Drehung ist keine 90°-Drehung",
+    "sizeRange": "Form {n}: Größe muss aus drei ganzen Zahlen von {min} bis {max} bestehen",
+    "offsetRange": "Form {n}: Versatz muss aus drei ganzen Zahlen von {min} bis {max} bestehen",
+    "unknownGrid": "Unbekannte Grid-Größe {v}",
+    "encoding": "Kodierung fehlgeschlagen",
+    "notBlueprint": "Keine Space-Engineers-Blaupause"
+  }
+}

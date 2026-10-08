@@ -2,10 +2,10 @@ import { wrapAngle, type Rect, type View } from '../render/camera.ts'
 import { createRenderer, type FrameInfo } from '../render/renderer.ts'
 import { actions, perf, store } from '../state/app.ts'
 import { captionText, titleText } from '../state/derive.ts'
-import { h, icon, seg, text } from './dom.ts'
+import { msg } from '../i18n.ts'
+import { h, icon, seg, t, tAttr, text } from './dom.ts'
 
 const DARK_BG = new Set(['sky-default', 'sky-orbit', 'sky-nebula', 'steel'])
-const PRESET_OPTS: Array<[string, string]> = [['iso', 'Iso'], ['front', 'Front'], ['side', 'Side'], ['top', 'Top'], ['rear', 'Rear']]
 
 function drawOverlay(ctx: CanvasRenderingContext2D, dpr: number, f: FrameInfo) {
   const { W, H, frame: fr, view } = f
@@ -106,7 +106,7 @@ export function mountViewport(root: HTMLElement) {
   })
 
   const presets = seg<string>({
-    options: PRESET_OPTS,
+    options: ['iso', 'front', 'side', 'top', 'rear'].map((id) => [id, t('viewport.presets.' + id)]),
     value: 'iso',
     onChange: (id) => {
       actions.setPreset(id)
@@ -114,22 +114,21 @@ export function mountViewport(root: HTMLElement) {
     },
   })
   const proj = seg<'persp' | 'ortho'>({
-    options: [['persp', 'Persp'], ['ortho', 'Ortho']],
-    titles: [
-      'Perspective: nearer parts look bigger, like a real camera',
-      'Orthographic: no perspective, sizes stay true at any depth (technical views)',
-    ],
+    options: [['persp', t('viewport.persp')], ['ortho', t('viewport.ortho')]],
     value: 'ortho',
     onChange: (v) => actions.setRender({ proj: v }),
   })
-  const secBtn = h('button', { class: 'btn btn-secondary btn-icon', title: 'Section view', onClick: actions.toggleSection }, icon('scissors', 16))
-  const spinBtn = h('button', { class: 'btn btn-secondary btn-icon', title: 'Turntable', onClick: () => actions.setSpin(!store.get().spin) }, icon('rotate-cw', 16))
-  const fitBtn = h('button', { class: 'btn btn-secondary btn-icon', title: 'Frame ship', onClick: () => renderer.fit() }, icon('maximize', 16))
+  const secBtn = tAttr(h('button', { class: 'btn btn-secondary btn-icon', onClick: actions.toggleSection }, icon('scissors', 16)), 'title', 'viewport.section')
+  const spinBtn = tAttr(h('button', { class: 'btn btn-secondary btn-icon', onClick: () => actions.setSpin(!store.get().spin) }, icon('rotate-cw', 16)), 'title', 'viewport.turntable')
+  const fitBtn = tAttr(h('button', { class: 'btn btn-secondary btn-icon', onClick: () => renderer.fit() }, icon('maximize', 16)), 'title', 'viewport.frame')
+  const [perspOpt, orthoOpt] = proj.el.querySelectorAll('label')
+  tAttr(perspOpt, 'title', 'viewport.perspTitle')
+  tAttr(orthoOpt, 'title', 'viewport.orthoTitle')
 
   root.append(
     gl,
     ov,
-    h('div', { class: 'vp-top' }, h('div', null, presets.el), h('div', { 'data-tour': 'vptools' }, proj.el, secBtn, spinBtn, fitBtn)),
+    h('div', { class: 'vp-top' }, h('div', null, presets.el), h('div', { 'data-tour': 'vptools' }, proj.el, secBtn, spinBtn, fitBtn), h('div', { class: 'toast-row' }, toast)),
     h(
       'div',
       { class: 'vp-bot' },
@@ -137,11 +136,10 @@ export function mountViewport(root: HTMLElement) {
       h(
         'div',
         { class: 'vp-right' },
-        h('span', { class: 'hint' }, 'Drag to orbit · right-drag to pan · scroll to zoom · Shift+scroll steps section'),
+        h('span', { class: 'hint' }, t('viewport.hint')),
         h('span', { class: 'readout' }, readout.el),
       ),
     ),
-    toast,
   )
 
   let drag: { x: number; y: number; lx: number; ly: number; yaw: number; pitch: number; dir: number; pan: boolean } | null = null
@@ -202,7 +200,7 @@ export function mountViewport(root: HTMLElement) {
   store.watch(titleText, (v) => (name.textContent = v))
   store.watch(captionText, (v) => (dims.textContent = v))
   store.watch(
-    (s) => s.toast,
+    (s) => msg(s.toast),
     (t) => {
       toast.hidden = !t
       toastText.textContent = t

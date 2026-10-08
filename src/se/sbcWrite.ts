@@ -1,3 +1,4 @@
+import { keyed } from '../util/keyed.ts'
 import { COMP_BLOCKS } from '../compose/blocks.ts'
 import type { Voxels } from '../compose/csg.ts'
 
@@ -53,7 +54,7 @@ function frame(name: string, size: 'Large' | 'Small'): { head: string; tail: str
 
 export function writeSbc(v: Voxels, name: string, size: 'Large' | 'Small'): Blob {
   const subs = COMP_BLOCKS.map((b) => (size === 'Large' ? b.large : b.small))
-  for (let i = 0; i < v.counts.length; i++) if (v.counts[i] && subs[i] === null) throw new Error(`${COMP_BLOCKS[i].name} has no small-grid variant`)
+  for (let i = 0; i < v.counts.length; i++) if (v.counts[i] && subs[i] === null) throw new Error(keyed('errors.noSmall', { block: COMP_BLOCKS[i].name }))
   const { head, tail } = frame(name, size)
   const [X, Y, Z] = v.dims
   const parts: string[] = [head]

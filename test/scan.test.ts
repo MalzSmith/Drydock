@@ -44,7 +44,7 @@ describe('scanSource', () => {
     const r = await scanSource(dirHandle(root), { kind: 'workshop', sourceId: 7, cache, progress: (d) => progress.push(d) })
     expect(r.mods.map((m) => [m.key, m.name, m.subs.sort()])).toEqual([['7/1001', 'Cool Mod', ['modarmor', 'modthruster']]])
     expect(r.entries.map((e) => [e.name, e.large])).toEqual([['Boat', true], ['Small Boat', false]])
-    expect(progress.filter((t) => t.startsWith('Indexing mods')).length).toBe(5)
+    expect(progress.filter((t) => t.startsWith('@progress.indexingMods')).length).toBe(5)
     const rec = cache.mods.get('7/1001')!
     expect(rec.defs.length).toBe(2)
 

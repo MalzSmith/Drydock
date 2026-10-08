@@ -62,6 +62,16 @@
   --shadow-lg: 0 12px 32px color-mix(in srgb, #2b2b2d 22%, transparent);
 }
 
+:lang(ru) { --font-heading: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif; }
+:lang(zh-Hans) {
+  --font-heading: "Barlow Condensed", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
+  --font-body: "Barlow", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", sans-serif;
+}
+:lang(zh-Hant) {
+  --font-heading: "Barlow Condensed", "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+  --font-body: "Barlow", "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", "Noto Sans TC", sans-serif;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text);

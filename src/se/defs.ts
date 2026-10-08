@@ -1,3 +1,4 @@
+import { keyed } from '../util/keyed.ts'
 import { notePilot, type ParsedBlueprint } from './blueprint.ts'
 import { paintRgb24 } from './color.ts'
 import { BASE6_VEC, createWorld, identity, invertRigid, mul, rotatedExtent, transformPoint } from './orient.ts'
@@ -469,7 +470,7 @@ export function resolveBlueprint(
     const k = Math.floor(ck / 2)
     const [, sub] = typeParts[k]
     const name = def ? def.name : sub
-    const source = def ? (labels.get(def.source) ?? sourceLabel(def.source)) : 'Unknown'
+    const source = def ? (labels.get(def.source) ?? sourceLabel(def.source)) : keyed('view.sourceUnknown')
     const id = name + '\u0000' + source
     const row = keyTotals.get(id)
     if (row) row.qty += qty
@@ -501,5 +502,5 @@ export function resolveBlueprint(
 }
 
 function sourceLabel(s: string): string {
-  return s === 'vanilla' || s === 'game' ? 'Vanilla' : s
+  return s === 'vanilla' || s === 'game' ? keyed('view.sourceVanilla') : s
 }

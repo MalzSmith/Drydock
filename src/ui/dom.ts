@@ -1,3 +1,5 @@
+import { tr } from '../i18n.ts'
+import { store } from '../state/app.ts'
 import ICONS from './icons.ts'
 
 type Child = Node | string | number | null | false | undefined
@@ -45,7 +47,7 @@ export type Seg<T> = { el: HTMLElement; set(v: T): void }
 let segId = 0
 
 export function seg<T extends string | number | boolean>(opts: {
-  options: Array<[T, string]>
+  options: Array<[T, string | Node]>
   value: T
   onChange: (v: T) => void
   cls?: string
@@ -75,7 +77,7 @@ export function seg<T extends string | number | boolean>(opts: {
 
 export type Check = { el: HTMLElement; set(v: boolean): void }
 
-export function check(label: string, onChange: (v: boolean) => void, cls = 'chk'): Check {
+export function check(label: string | Node, onChange: (v: boolean) => void, cls = 'chk'): Check {
   const input = h('input', { type: 'checkbox', onChange: () => onChange(input.checked) })
   return {
     el: h('label', { class: cls }, label, input),
@@ -85,7 +87,7 @@ export function check(label: string, onChange: (v: boolean) => void, cls = 'chk'
   }
 }
 
-export function kicker(text: string): HTMLElement {
+export function kicker(text: string | Node): HTMLElement {
   return h('span', { class: 'kicker' }, text)
 }
 
@@ -99,7 +101,27 @@ export function text(initial = ''): { el: HTMLElement; set(v: string): void } {
   }
 }
 
-export const fmt = (n: number) => n.toLocaleString('en-US')
+type Params = Record<string, string | number>
+
+export function t(key: string, p?: Params): Text {
+  const node = document.createTextNode('')
+  store.watch((s) => s.locale, () => (node.data = tr(key, p)))
+  return node
+}
+
+export function tAttr<E extends Element>(el: E, attr: string, key: string): E {
+  store.watch((s) => s.locale, () => el.setAttribute(attr, tr(key)))
+  return el
+}
+
+export function tRich(key: string, parts: Record<string, () => Node>): HTMLElement {
+  const el = h('span')
+  store.watch(
+    (s) => s.locale,
+    () => replaceChildren(el, ...tr(key).split(/\{(\w+)\}/).map((x, i) => (i % 2 ? (parts[x]?.() ?? x) : x))),
+  )
+  return el
+}
 
 export function progressBar() {
   const fill = h('i')

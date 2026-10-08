@@ -2,16 +2,17 @@ import { COMP_BLOCKS } from '../compose/blocks.ts'
 import { formatBytes, MAX_EXPORT_BLOCKS, WARN_EXPORT_BLOCKS } from '../se/sbcWrite.ts'
 import { ROT_IDENTITY } from '../compose/csg.ts'
 import { ROTATABLE, actions, store, type Shape, type ShapeOp, type ShapeType } from '../state/app.ts'
-import { corners, h, kicker, replaceChildren, seg, text } from './dom.ts'
+import { fmt1, tr } from '../i18n.ts'
+import { corners, h, kicker, replaceChildren, seg, t, tAttr, text } from './dom.ts'
 
 const GLYPH: Record<ShapeOp, string> = { add: '∪', subtract: '−', intersect: '∩' }
-const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
+const OPS = ['add', 'subtract', 'intersect'] as const
 
 function shapeMeta(sp: Shape): string {
   const b = COMP_BLOCKS.find((x) => x.t === sp.block) ?? COMP_BLOCKS[0]
-  const tube = sp.type === 'torus' ? ` · tube ${sp.tube}` : ''
-  const turned = ROTATABLE.includes(sp.type) && sp.rot.some((v, i) => v !== ROT_IDENTITY[i]) ? ' · rotated' : ''
-  return `${sp.size.join('×')} @ ${sp.pos.join(', ')}${tube}${turned}${sp.shell ? ` · wall ${sp.shell}` : ''}${sp.op === 'add' ? ' · ' + b.name : ''}`
+  const tube = sp.type === 'torus' ? ' · ' + tr('compose.meta.tube', { n: sp.tube }) : ''
+  const turned = ROTATABLE.includes(sp.type) && sp.rot.some((v, i) => v !== ROT_IDENTITY[i]) ? ' · ' + tr('compose.meta.rotated') : ''
+  return `${sp.size.join('×')} @ ${sp.pos.join(', ')}${tube}${turned}${sp.shell ? ' · ' + tr('compose.meta.wall', { n: sp.shell }) : ''}${sp.op === 'add' ? ' · ' + b.name : ''}`
 }
 
 function numRow(label: string, sp: Shape, key: 'size' | 'pos', min: number, max: number): HTMLElement[] {
@@ -35,15 +36,16 @@ function numRow(label: string, sp: Shape, key: 'size' | 'pos', min: number, max:
 }
 
 function editor(sp: Shape): HTMLElement {
-  const opts = (key: 'op' | 'type', list: Array<[string, string]>) =>
+  const opts = (key: 'op' | 'type', list: Array<[string, string]>, titles?: string[], cls = 'sm') =>
     seg<string>({
       options: list,
       value: sp[key],
-      optCls: 'sm',
+      optCls: cls,
+      titles,
       onChange: (v) => actions.updateShape(sp.id, { [key]: v as ShapeOp & ShapeType }),
     }).el
   const shell = seg<number>({
-    options: [[0, 'Solid'], [1, '1'], [2, '2'], [3, '3']],
+    options: [[0, tr('compose.solid')], [1, '1'], [2, '2'], [3, '3']],
     value: sp.shell,
     optCls: 'sm',
     onChange: (v) => actions.updateShape(sp.id, { shell: v }),
@@ -59,15 +61,15 @@ function editor(sp: Shape): HTMLElement {
   return h(
     'div',
     { class: 'shape-edit' },
-    opts('op', [['add', '∪ Add'], ['subtract', '− Subtract'], ['intersect', '∩ Intersect']]),
-    opts('type', [['box', 'Box'], ['sphere', 'Sphere'], ['cylinder', 'Cyl'], ['ellipsoid', 'Ellipsoid']]),
-    opts('type', [['torus', 'Torus'], ['pyramid', 'Pyramid']]),
-    h('div', { class: 'num-grid' }, ...numRow('Size', sp, 'size', 1, 160), ...numRow('Offset', sp, 'pos', -200, 200)),
+    opts('op', OPS.map((op) => [op, GLYPH[op]]), OPS.map((op) => tr('compose.ops.' + op)), 'sm glyph'),
+    opts('type', ['box', 'sphere', 'cylinder', 'ellipsoid'].map((ty) => [ty, tr('compose.types.' + ty)])),
+    opts('type', ['torus', 'pyramid'].map((ty) => [ty, tr('compose.types.' + ty)])),
+    h('div', { class: 'num-grid' }, ...numRow(tr('compose.size'), sp, 'size', 1, 160), ...numRow(tr('compose.offset'), sp, 'pos', -200, 200)),
     sp.type === 'torus'
       ? h(
           'div',
           { class: 'num-grid' },
-          h('span', { class: 'muted' }, 'Tube'),
+          h('span', { class: 'muted' }, tr('compose.tube')),
           h('input', {
             class: 'input',
             type: 'number',
@@ -82,35 +84,41 @@ function editor(sp: Shape): HTMLElement {
       ? h(
           'div',
           { class: 'sel-grid' },
-          h('span', { class: 'muted' }, 'Rotate'),
+          h('span', { class: 'muted' }, tr('compose.rotate')),
           h(
             'div',
             { class: 'btn-row4' },
-            btn('X 90°', () => actions.rotateShape(sp.id, 'x'), 'Turn 90° about X'),
-            btn('Y 90°', () => actions.rotateShape(sp.id, 'y'), 'Turn 90° about Y'),
-            btn('Z 90°', () => actions.rotateShape(sp.id, 'z'), 'Turn 90° about Z'),
-            btn('Reset', () => actions.rotateShape(sp.id, null)),
+            btn('X 90°', () => actions.rotateShape(sp.id, 'x'), tr('compose.turn', { axis: 'X' })),
+            btn('Y 90°', () => actions.rotateShape(sp.id, 'y'), tr('compose.turn', { axis: 'Y' })),
+            btn('Z 90°', () => actions.rotateShape(sp.id, 'z'), tr('compose.turn', { axis: 'Z' })),
+            btn(tr('compose.reset'), () => actions.rotateShape(sp.id, null)),
           ),
         )
       : null,
-    h('div', { class: 'sel-grid' }, h('span', { class: 'muted' }, 'Wall'), shell, h('span', { class: 'muted' }, 'Block'), select),
+    h('div', { class: 'sel-grid' }, h('span', { class: 'muted' }, tr('compose.wall')), shell, h('span', { class: 'muted' }, tr('compose.block')), select),
     h(
       'div',
       { class: 'btn-row4' },
-      btn('↑', () => actions.moveShape(sp.id, -1), 'Move earlier'),
-      btn('↓', () => actions.moveShape(sp.id, 1), 'Move later'),
-      btn('Dup', () => actions.dupShape(sp.id)),
-      btn('Delete', () => actions.deleteShape(sp.id), undefined, 'color:var(--color-accent-800)'),
+      btn('↑', () => actions.moveShape(sp.id, -1), tr('compose.moveUp')),
+      btn('↓', () => actions.moveShape(sp.id, 1), tr('compose.moveDown')),
+      btn(tr('compose.dup'), () => actions.dupShape(sp.id)),
+      btn(tr('compose.delete'), () => actions.deleteShape(sp.id), undefined, 'color:var(--color-accent-800)'),
     ),
   )
+}
+
+function gridOpt(key: string, m: number): HTMLElement {
+  const el = h('span')
+  store.watch((s) => s.locale, () => (el.textContent = tr('compose.gridOpt', { grid: tr(key), size: tr('units.meters', { m: fmt1(m) }) })))
+  return el
 }
 
 export function mountComposePanel(root: HTMLElement) {
   const summary = text()
   const stack = h('div', { style: 'display:contents' })
-  const add = h('div', { class: 'add-row' }, h('button', { class: 'btn btn-secondary', onClick: () => actions.addShape('box') }, '+ Add shape'))
+  const add = h('div', { class: 'add-row' }, h('button', { class: 'btn btn-secondary', onClick: () => actions.addShape('box') }, t('compose.add')))
   const grid = seg<'Large' | 'Small'>({
-    options: [['Large', 'Large grid · 2.5 m'], ['Small', 'Small grid · 0.5 m']],
+    options: [['Large', gridOpt('units.gridLarge', 2.5)], ['Small', gridOpt('units.gridSmall', 0.5)]],
     value: 'Large',
     optCls: 'grow',
     style: 'display:flex',
@@ -121,7 +129,7 @@ export function mountComposePanel(root: HTMLElement) {
     'button',
     { class: 'btn btn-primary blueprint', style: 'padding:10px;font-size:15px;border:1px solid var(--color-accent)' },
     ...corners(),
-    'Export blueprint · bp.sbc',
+    t('compose.export'),
   )
   exportBtn.addEventListener('click', () => void actions.exportBlueprint())
   const picker = h('input', { type: 'file', accept: '.json,application/json', hidden: true })
@@ -133,8 +141,8 @@ export function mountComposePanel(root: HTMLElement) {
   const fileRow = h(
     'div',
     { class: 'btn-row2' },
-    h('button', { class: 'btn btn-secondary', title: 'Save the shape stack as a JSON file', onClick: () => actions.exportComposition() }, 'Save JSON'),
-    h('button', { class: 'btn btn-secondary', title: 'Replace the shape stack with a saved JSON file', onClick: () => picker.click() }, 'Open JSON'),
+    tAttr(h('button', { class: 'btn btn-secondary', onClick: () => actions.exportComposition() }, t('compose.saveJson')), 'title', 'compose.saveJsonTitle'),
+    tAttr(h('button', { class: 'btn btn-secondary', onClick: () => picker.click() }, t('compose.openJson')), 'title', 'compose.openJsonTitle'),
     picker,
   )
   const sizeInfo = text()
@@ -151,32 +159,32 @@ export function mountComposePanel(root: HTMLElement) {
       h(
         'div',
         { class: 'col g8' },
-        h('div', { class: 'between' }, kicker('Shape stack'), h('span', { class: 's11 muted' }, summary.el)),
+        h('div', { class: 'between' }, kicker(t('compose.stack')), h('span', { class: 's11 muted' }, summary.el)),
         stack,
         add,
-        h('span', { class: 's12 muted' }, 'Shapes evaluate top to bottom. Sizes and offsets are in blocks; a wall value hollows the shape to that thickness.'),
+        h('span', { class: 's12 muted' }, t('compose.help')),
       ),
-      h('div', { class: 'col g8' }, kicker('Composition file'), fileRow),
+      h('div', { class: 'col g8' }, kicker(t('compose.file')), fileRow),
     ),
     h(
       'div',
       { class: 'comp-bot' },
-      h('div', { class: 'col g8' }, kicker('Grid'), grid.el),
+      h('div', { class: 'col g8' }, kicker(t('compose.grid')), grid.el),
       h(
         'div',
         { class: 'col g8' },
-        h('div', { class: 'field' }, h('label', null, 'Blueprint name'), name),
+        h('div', { class: 'field' }, h('label', null, t('compose.name')), name),
         exportBtn,
         sizeLine,
         warn,
-        h('span', { class: 's12 muted' }, 'Downloads bp.sbc. Put it in a folder named after the blueprint inside Blueprints\\local.'),
+        h('span', { class: 's12 muted' }, t('compose.exportNote')),
       ),
     ),
   )
   root.append(aside)
 
   store.watch(
-    (s) => [s.compose.shapes, s.compose.selShape] as const,
+    (s) => [s.compose.shapes, s.compose.selShape, s.locale] as const,
     ([shapes, sel]) => {
       replaceChildren(
         stack,
@@ -190,7 +198,7 @@ export function mountComposePanel(root: HTMLElement) {
               'button',
               { class: 'shape-head', onClick: () => actions.selectShape(on ? null : sp.id) },
               h('span', { class: 'op' }, GLYPH[sp.op]),
-              h('span', { class: 'txt' }, h('span', { class: 'ttl' }, `${cap(sp.op)} ${sp.type}`), h('span', { class: 'meta' }, shapeMeta(sp))),
+              h('span', { class: 'txt' }, h('span', { class: 'ttl' }, tr('compose.title.' + sp.op, { type: tr('compose.typeNames.' + sp.type) })), h('span', { class: 'meta' }, shapeMeta(sp))),
               h('span', { class: 'idx' }, String(i + 1).padStart(2, '0')),
             ),
             on ? editor(sp) : null,
@@ -198,26 +206,23 @@ export function mountComposePanel(root: HTMLElement) {
         }),
       )
     },
-    (a, b) => a[0] === b[0] && a[1] === b[1],
+    (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2],
   )
   store.watch(
-    (s) => [s.compose.shapes.length, s.composeInfo?.blockCount ?? null] as const,
-    ([n, total]) => summary.set(`${n} ${n === 1 ? 'shape' : 'shapes'}${total === null ? '' : ` · ${total.toLocaleString('en-US')} blocks`}`),
-    (a, b) => a[0] === b[0] && a[1] === b[1],
+    (s) => [s.compose.shapes.length, s.composeInfo?.blockCount ?? null, s.locale] as const,
+    ([n, total]) => summary.set(tr('units.shapes', { count: n }) + (total === null ? '' : ' · ' + tr('units.blocks', { count: total }))),
+    (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2],
   )
   store.watch(
-    (s) => [s.composeInfo?.blockCount ?? 0, s.composeInfo?.sbcBytes ?? 0] as const,
+    (s) => [s.composeInfo?.blockCount ?? 0, s.composeInfo?.sbcBytes ?? 0, s.locale] as const,
     ([n, bytes]) => {
       const sz = `~${formatBytes(bytes)}`
-      sizeInfo.set(`${n.toLocaleString('en-US')} ${n === 1 ? 'block' : 'blocks'} · ${sz}`)
+      const blocks = tr('units.blocks', { count: n })
+      sizeInfo.set(`${blocks} · ${sz}`)
       warn.hidden = n <= WARN_EXPORT_BLOCKS
-      warnText.set(
-        n > MAX_EXPORT_BLOCKS
-          ? `${n.toLocaleString('en-US')} blocks (${sz}) exceeds the ${MAX_EXPORT_BLOCKS.toLocaleString('en-US')} block export limit.`
-          : `${n.toLocaleString('en-US')} blocks, ${sz}. Large blueprints are slow to load and paste in the game.`,
-      )
+      warnText.set(tr(n > MAX_EXPORT_BLOCKS ? 'compose.warnMax' : 'compose.warnBig', { blocks, size: sz, max: MAX_EXPORT_BLOCKS }))
     },
-    (a, b) => a[0] === b[0] && a[1] === b[1],
+    (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2],
   )
   store.watch((s) => s.compose.grid, grid.set)
   store.watch(

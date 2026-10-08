@@ -2,7 +2,8 @@ import { actions, store } from '../../state/app.ts'
 import { aspectOf } from '../../render/camera.ts'
 import { copyImage, exportImage, exportTurntable } from '../../render/exportImage.ts'
 import type { Renderer } from '../../render/renderer.ts'
-import { check, corners, h, kicker, seg, text } from '../dom.ts'
+import { fmt as fmtN, tr } from '../../i18n.ts'
+import { check, corners, h, kicker, seg, t, text } from '../dom.ts'
 
 export function mountExportTab(renderer: Renderer): HTMLElement {
   const dims = text()
@@ -27,7 +28,7 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
     style: 'display:flex',
     onChange: (v) => actions.setExport({ fmt: v }),
   })
-  const transparent = check('Transparent background (PNG)', (v) => actions.setExport({ transparent: v }))
+  const transparent = check(t('export.transparent'), (v) => actions.setExport({ transparent: v }))
   const ss = seg<number>({
     options: [[1, '1×'], [2, '2×'], [4, '4×']],
     value: 2,
@@ -44,29 +45,29 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
     h(
       'div',
       { class: 'col g8' },
-      h('div', { class: 'between' }, kicker('Resolution'), h('span', { class: 'res-dims' }, dims.el)),
+      h('div', { class: 'between' }, kicker(t('export.resolution')), h('span', { class: 'res-dims' }, dims.el)),
       res.el,
       aspect.el,
-      h('span', { class: 's12 muted' }, 'The framed area in the viewport is what gets saved.'),
+      h('span', { class: 's12 muted' }, t('export.framed')),
     ),
     h(
       'div',
       { class: 'col g8' },
-      kicker('Format'),
+      kicker(t('export.format')),
       fmt.el,
       transparent.el,
-      h('div', { class: 'ss-row' }, h('span', null, 'Supersampling'), ss.el),
+      h('div', { class: 'ss-row' }, h('span', null, t('export.ss')), ss.el),
     ),
     h(
       'div',
       { class: 'col g10' },
-      h('div', { class: 'field' }, h('label', null, 'File name'), fileName),
+      h('div', { class: 'field' }, h('label', null, t('export.fileName')), fileName),
     ),
     h(
       'div',
       { class: 'col g8' },
       render,
-      h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' }, h('button', { class: 'btn btn-secondary', onClick: () => void copyImage(renderer, renderer.canvas) }, 'Copy to clipboard'), h('button', { class: 'btn btn-secondary', onClick: () => void exportTurntable(renderer, renderer.canvas) }, 'Turntable · 36 frames')),
+      h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' }, h('button', { class: 'btn btn-secondary', onClick: () => void copyImage(renderer, renderer.canvas) }, t('export.copy')), h('button', { class: 'btn btn-secondary', onClick: () => void exportTurntable(renderer, renderer.canvas) }, t('export.turntable'))),
     ),
   )
 
@@ -77,9 +78,9 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
   store.watch((s) => s.export.ss, ss.set)
   store.watch((s) => s.export.fileName, (v) => (fileName.value = v))
   store.watch(
-    (s) => `${Math.round(s.export.res * aspectOf(s.export.aspect)).toLocaleString('en-US')} × ${s.export.res.toLocaleString('en-US')} px`,
+    (s) => `${fmtN(Math.round(s.export.res * aspectOf(s.export.aspect)))} × ${fmtN(s.export.res)} px`,
     dims.set,
   )
-  store.watch((s) => (s.busy ? 'Rendering…' : `Render & save ${s.export.fmt}`), renderLabel.set)
+  store.watch((s) => (s.busy ? tr('export.rendering') : tr('export.render', { fmt: s.export.fmt === 'WEBP' ? 'WebP' : s.export.fmt })), renderLabel.set)
   return el
 }

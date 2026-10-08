@@ -1,0 +1,443 @@
+{
+  "_meta": {
+    "code": "zh-Hant",
+    "nativeName": "繁體中文",
+    "dir": "ltr",
+    "pluralCategories": [
+      "other"
+    ]
+  },
+  "languageNames": {
+    "en": "英文",
+    "de": "德文",
+    "ru": "俄文",
+    "zh-Hans": "簡體中文",
+    "zh-Hant": "繁體中文"
+  },
+  "nav": {
+    "subtitle": "Blueprint renderer",
+    "mode": {
+      "blueprint": "藍圖",
+      "compose": "組合"
+    },
+    "statusNoGame": "連結遊戲資料夾以載入模型與材質",
+    "tour": "導覽",
+    "tourTitle": "顯示功能導覽",
+    "linkFolders": "連結資料夾",
+    "exportImage": "匯出圖片",
+    "sources": "來源",
+    "sourcesLinked": {
+      "other": "已連結 {count} 個來源"
+    },
+    "modFolders": {
+      "other": "{count} 個模組資料夾"
+    },
+    "modsNoGame": "已連結模組 · 尚未連結遊戲資料夾"
+  },
+  "language": {
+    "title": "語言",
+    "browser": "依照瀏覽器",
+    "current": "目前：{lang}",
+    "help": "翻譯缺漏或有誤？歡迎在 GitHub 上協助改進"
+  },
+  "library": {
+    "title": "藍圖",
+    "found": {
+      "other": "共 {count} 個"
+    },
+    "search": "搜尋藍圖",
+    "local": "本機",
+    "workshop": "工作坊",
+    "dropHint": "將 {file} 或藍圖資料夾拖曳到任意位置即可開啟。",
+    "modsTitle": "此藍圖使用的模組",
+    "modsLoaded": {
+      "other": "已載入 {count} 個模組"
+    },
+    "modState": {
+      "loaded": "已載入",
+      "off": "已關閉",
+      "notInstalled": "未安裝"
+    },
+    "missingBtn": "缺少方塊，按一下檢視",
+    "missingBtnTitle": "顯示所有已連結來源皆未定義的方塊類型",
+    "unresolved": "未解析的方塊",
+    "modMeta": "{source} {folder} · {blocks}",
+    "modFallback": "模組"
+  },
+  "units": {
+    "gridLarge": "大型網格",
+    "gridSmall": "小型網格",
+    "blocks": {
+      "other": "{count} 個方塊"
+    },
+    "length": "長 {length} 公尺",
+    "mods": {
+      "other": "{count} 個模組"
+    },
+    "shapes": {
+      "other": "{count} 個形狀"
+    },
+    "blockTypes": {
+      "other": "{count} 種方塊類型"
+    },
+    "textures": {
+      "other": "{count} 個材質"
+    },
+    "models": {
+      "other": "{count} 個模型"
+    },
+    "files": {
+      "other": "{count} 個檔案"
+    },
+    "blueprints": {
+      "other": "{count} 個藍圖"
+    },
+    "frames": {
+      "other": "{count} 影格"
+    },
+    "vanilla": "原版",
+    "dims": "{dims} 方塊",
+    "meters": "{m} 公尺",
+    "seconds": "{s} 秒"
+  },
+  "viewport": {
+    "presets": {
+      "iso": "等角",
+      "front": "前",
+      "side": "側",
+      "top": "頂",
+      "rear": "後"
+    },
+    "persp": "透視",
+    "ortho": "正交",
+    "hint": "拖曳以環繞 · 右鍵拖曳以平移 · 捲動以縮放 · Shift+捲動切換剖面",
+    "perspTitle": "透視：近處的部分看起來較大，與真實相機相同",
+    "orthoTitle": "正交：無透視，任何深度下尺寸皆維持不變（技術視圖）",
+    "section": "剖面檢視",
+    "turntable": "轉台",
+    "frame": "讓船體符合畫面"
+  },
+  "tabs": {
+    "view": "檢視",
+    "section": "剖面",
+    "scene": "場景",
+    "export": "匯出"
+  },
+  "view": {
+    "renderStyle": "算繪樣式",
+    "styles": {
+      "textured": "材質",
+      "shaded": "著色",
+      "clay": "素模",
+      "line": "線框"
+    },
+    "exposure": "曝光",
+    "seams": "方塊接縫",
+    "tintMods": "為模組方塊著色",
+    "missingTitle": "缺少的模組方塊",
+    "missing": {
+      "placeholder": "預留位置",
+      "substitute": "替代",
+      "hide": "隱藏"
+    },
+    "missingDesc": "遊戲與已啟用模組中皆未定義的方塊。",
+    "defsTitle": "方塊定義",
+    "col": {
+      "block": "方塊",
+      "source": "來源",
+      "qty": "數量"
+    },
+    "missingSource": "{source} · 缺少",
+    "sourceVanilla": "原版",
+    "sourceUnknown": "未知"
+  },
+  "footer": {
+    "ready": "就緒",
+    "privacy": "在瀏覽器中執行 · 檔案保留在此裝置上",
+    "noSources": "連結遊戲、工作坊或 Torch 執行個體以載入材質、模型與模組",
+    "source": "{kind}：{name}"
+  },
+  "welcome": {
+    "kicker": "初次使用",
+    "title": "歡迎使用 Drydock",
+    "lead": "算繪《太空工程師》藍圖、打造簡單船體，全部在瀏覽器中完成。六個簡短步驟帶你認識各項功能的位置。",
+    "start": "帶我看看",
+    "explore": "我自己探索",
+    "note": "檔案僅在本機讀取，絕不上傳。隨時可透過頂部的{tour}重新觀看。",
+    "count": "匿名統計我的造訪",
+    "countNote": "Drydock 使用 GoatCounter 統計造訪：不使用 Cookie，不讀取你的檔案。這能幫我了解專案受關注的程度。"
+  },
+  "narrow": {
+    "tooSmall": "你的螢幕對 Drydock 來說太小了。它需要至少 1120 像素寬的瀏覽器視窗，螢幕更小時版面將無法完整顯示。",
+    "options": "請在更大的螢幕上開啟此頁面，或仍要繼續並捲動檢視版面。",
+    "continue": "仍要繼續",
+    "github": "GitHub 上的 Drydock"
+  },
+  "kinds": {
+    "game": "遊戲",
+    "workshop": "工作坊",
+    "torch": "Torch",
+    "mods": "模組",
+    "blueprints": "藍圖"
+  },
+  "status": {
+    "loading": "載入中",
+    "rendering": "算繪中"
+  },
+  "caption": {
+    "noBlueprint": "未載入藍圖",
+    "loading": "載入中…",
+    "drop": "拖入 bp.sbc 或藍圖資料夾即可開啟",
+    "composition": "組合 · {grid}",
+    "compositionFull": "組合 · {grid} · {dims} · 已放置 {count} 個"
+  },
+  "section": {
+    "title": "橫截面",
+    "cutPlane": "剖切面",
+    "axisX": "X · 船寬",
+    "axisY": "Y · 甲板",
+    "axisZ": "Z · 龍骨",
+    "cut": "切除",
+    "slice": "切片",
+    "position": "位置",
+    "layer": "第 {n} / {total} 層",
+    "prev": "− 層",
+    "next": "+ 層",
+    "flip": "翻轉方向",
+    "thickness": "切片厚度",
+    "highlight": "醒目提示剖切面",
+    "tip": "提示",
+    "tipText": "繪製甲板平面圖時，在 Y 平面上使用{slice}並切換到頂視圖。每步移動一個方塊（大型網格 2.5 公尺，小型網格 0.5 公尺）。"
+  },
+  "scene": {
+    "skyboxes": "天空盒 · 遊戲與模組",
+    "gradients": "漸層與攝影棚",
+    "lighting": "光照",
+    "directional": "定向",
+    "uniform": "均勻",
+    "sun": "太陽方位角",
+    "top": "頂部",
+    "bottom": "底部",
+    "offNote": "灰色的天空盒需從遊戲檔案載入。連結遊戲資料夾後即可使用。",
+    "offTitle": "連結遊戲資料夾以使用此天空盒",
+    "vanilla": "原版",
+    "bg": {
+      "sky-default": "深空",
+      "sky-orbit": "行星軌道",
+      "sky-nebula": "星雲",
+      "paper": "繪圖紙",
+      "hangar": "機庫",
+      "steel": "鋼",
+      "dusk": "霧靄",
+      "transparent": "透明",
+      "custom": "自訂"
+    },
+    "src": {
+      "procedural": "程序化生成",
+      "orbit": "軌道上",
+      "nebula": "模組 · Nebula Skybox Pack"
+    }
+  },
+  "export": {
+    "resolution": "解析度",
+    "framed": "儲存的是檢視區中框選的範圍。",
+    "format": "格式",
+    "transparent": "透明背景 (PNG)",
+    "ss": "超取樣",
+    "fileName": "檔案名稱",
+    "render": "算繪並儲存 {fmt}",
+    "rendering": "算繪中…",
+    "copy": "複製到剪貼簿",
+    "turntable": "轉台 · 36 影格"
+  },
+  "compose": {
+    "stack": "形狀堆疊",
+    "add": "+ 新增形狀",
+    "help": "形狀由上而下依序計算。尺寸與偏移以方塊為單位；設定壁厚會將形狀挖空至該厚度。",
+    "file": "組合檔案",
+    "saveJson": "儲存 JSON",
+    "saveJsonTitle": "將形狀堆疊儲存為 JSON 檔案",
+    "openJson": "開啟 JSON",
+    "openJsonTitle": "以已儲存的 JSON 檔案取代形狀堆疊",
+    "grid": "網格",
+    "gridOpt": "{grid} · {size}",
+    "name": "藍圖名稱",
+    "export": "匯出藍圖 · bp.sbc",
+    "exportNote": "將下載 bp.sbc。請把它放進 Blueprints\\local 中以藍圖命名的資料夾。",
+    "warnMax": "{blocks}（{size}）超過 {max} 個方塊的匯出上限。",
+    "warnBig": "{blocks}，{size}。大型藍圖在遊戲中載入與貼上都較慢。",
+    "ops": {
+      "add": "聯集",
+      "subtract": "差集",
+      "intersect": "交集"
+    },
+    "types": {
+      "box": "長方體",
+      "sphere": "球體",
+      "cylinder": "圓柱",
+      "ellipsoid": "橢球",
+      "torus": "圓環",
+      "pyramid": "角錐"
+    },
+    "typeNames": {
+      "box": "長方體",
+      "sphere": "球體",
+      "cylinder": "圓柱體",
+      "ellipsoid": "橢球體",
+      "torus": "圓環",
+      "pyramid": "角錐"
+    },
+    "title": {
+      "add": "聯集：{type}",
+      "subtract": "差集：{type}",
+      "intersect": "交集：{type}"
+    },
+    "meta": {
+      "tube": "管徑 {n}",
+      "rotated": "已旋轉",
+      "wall": "壁厚 {n}"
+    },
+    "size": "尺寸",
+    "offset": "偏移",
+    "tube": "管徑",
+    "rotate": "旋轉",
+    "wall": "壁厚",
+    "block": "方塊",
+    "solid": "實心",
+    "turn": "繞 {axis} 軸旋轉 90°",
+    "reset": "重置",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "dup": "建立副本",
+    "delete": "刪除"
+  },
+  "sources": {
+    "title": "內容來源",
+    "desc": "方塊定義、模型與材質依由上而下的順序從這些資料夾讀取，後面的來源會覆寫前面的。",
+    "close": "關閉",
+    "empty": "尚未連結任何內容。沒有遊戲資料夾時，只能使用內建的原版方塊。",
+    "link": "連結資料夾",
+    "uploadNote": "瀏覽器會要求確認上傳，但沒有任何資料離開此裝置。每個資料夾都會以快照形式儲存在本機，下次不必重新選擇即可載入；重新整理來源即可更新。",
+    "refresh": "重新整理",
+    "refreshTitle": "重新選擇資料夾以更新此快照",
+    "remove": "移除",
+    "rowMeta": "{meta} · 連結於 {time} · 快照日期 {date}",
+    "meta": {
+      "game": "SpaceEngineers\\Content · 原版方塊、模型、材質",
+      "workshop": "steamapps\\workshop\\content\\244850 · 已訂閱的模組",
+      "torch": "Torch / 專用伺服器執行個體 · 其模組與內容",
+      "mods": "零散模組資料夾 · 掃描其中的 .sbc 定義",
+      "blueprints": "%AppData%\\SpaceEngineers\\Blueprints · 本機藍圖"
+    },
+    "hint": {
+      "game": "SpaceEngineers\\Content 資料夾",
+      "workshop": "Steam 工作坊 244850 資料夾",
+      "torch": "伺服器執行個體資料夾",
+      "mods": "任意模組資料夾",
+      "blueprints": "藍圖資料夾（本機）"
+    }
+  },
+  "missing": {
+    "title": "缺少的方塊",
+    "desc": "已連結的來源皆未定義這些方塊類型。請連結遊戲資料夾或包含它們的模組。",
+    "blocks": "方塊",
+    "empty": "（空）"
+  },
+  "tour": {
+    "stepOf": "第 {n} 步，共 {total} 步",
+    "back": "上一步",
+    "next": "下一步 →",
+    "done": "完成",
+    "close": "關閉導覽",
+    "steps": {
+      "sources": {
+        "title": "連結遊戲資料夾",
+        "body": "Drydock 會從你本機安裝的《太空工程師》讀取模型與材質。連結之前，所有方塊都會顯示為普通方盒。"
+      },
+      "library": {
+        "title": "開啟藍圖",
+        "body": "從已連結的藍圖資料夾中選擇，或將 bp.sbc 或整個藍圖資料夾拖曳到頁面任意位置。"
+      },
+      "vptools": {
+        "title": "調整構圖",
+        "body": "切換透視與正交、剖切橫截面、啟動轉台，或讓船體重新符合畫面。"
+      },
+      "tabs": {
+        "title": "微調算繪",
+        "body": "「檢視」設定算繪樣式，「剖面」逐層剖切船體，「場景」選擇背景與光照。"
+      },
+      "export": {
+        "title": "匯出圖片",
+        "body": "支援含超取樣的 PNG、JPG 或 WebP（最高 8K），可複製到剪貼簿，或匯出 36 影格轉台 ZIP。"
+      },
+      "mode": {
+        "title": "打造你自己的船體",
+        "body": "「組合」把長方體、球體與圓柱體堆疊成船體，並匯出為可在遊戲中貼上的 bp.sbc。"
+      }
+    }
+  },
+  "toast": {
+    "tourDone": "一切就緒 · 隨時可透過頂端的「{tour}」按鈕重新開始",
+    "tourSkip": "隨時可透過頂端的「{tour}」按鈕重新開始",
+    "tourClosed": "導覽已關閉 · 隨時可透過頂端的「{tour}」按鈕重新開始",
+    "notInSnapshot": "此藍圖尚未包含在快照中。請重新整理來源後再讀取。",
+    "openFailed": "無法開啟藍圖：{error}",
+    "readFailed": "無法讀取藍圖：{error}",
+    "composeFailed": "組合失敗：{error}",
+    "downloadedSbc": "已下載 bp.sbc · {blocks} · {size}",
+    "downloadedFile": "已下載 {file} · {detail}",
+    "openedFile": "已開啟 {file} · {detail}",
+    "openFileFailed": "無法開啟 {file}：{error}",
+    "uncached": "{parts} · 請重新連結遊戲資料夾以載入",
+    "texturesMissing": "缺少材質：{count}",
+    "modelsMissing": "缺少模型：{count}",
+    "dropFailed": "無法開啟：{error}",
+    "urlFailed": "藍圖載入失敗：{error}",
+    "exportFailed": "匯出失敗：{error}",
+    "copyFailed": "複製失敗：{error}",
+    "turntableFailed": "轉台匯出失敗：{error}",
+    "copied": "圖片已複製到剪貼簿",
+    "noClipboard": "剪貼簿無法使用",
+    "storeListFailed": "無法儲存來源清單；本次工作階段結束後將會遺失。",
+    "notGameFolder": "資料夾已連結 · 其中找不到遊戲資料，未載入新內容",
+    "snapshotFailed": "無法儲存快照（儲存空間已滿？），僅在本次工作階段中有效。",
+    "cacheFailed": "無法快取所有藍圖（儲存空間已滿？）。未快取的藍圖需重新整理後才能開啟。",
+    "scanFailed": "掃描 {name} 失敗：{error}",
+    "emptyFolder": "該資料夾是空的。",
+    "clearFailed": "無法清除已儲存的快照。"
+  },
+  "progress": {
+    "waitingList": "正在等待瀏覽器列出檔案…",
+    "readingList": "正在讀取檔案清單… {files}",
+    "loadingModels": "正在載入模型 {done}/{total}",
+    "loadingTextures": "正在載入材質 {done}/{total}",
+    "cachingModels": "正在快取模型 {done}/{total}",
+    "indexingSkies": "正在建立天空盒索引 {done}/{total}",
+    "buildingIndex": "正在建立檔案索引…",
+    "savingSnapshot": "正在儲存快照…",
+    "cachingBlueprints": "正在快取藍圖 {done}/{total}",
+    "parsingDefs": "正在解析定義 {done}/{total}",
+    "readingBlueprints": "正在讀取藍圖 {done}/{total}",
+    "indexingMods": "正在建立模組索引 {done}/{total}"
+  },
+  "errors": {
+    "tooMany": "要匯出的方塊過多（{count}）。請將形狀挖空或縮小。",
+    "noSmall": "{block} 沒有小型網格版本",
+    "notJson": "不是 JSON 檔案",
+    "notComposition": "不是 Drydock 組合檔案",
+    "newer": "組合版本 {v} 高於本應用程式支援的版本",
+    "noShapes": "組合中沒有形狀清單",
+    "notObject": "形狀 {n} 不是物件",
+    "unknownOp": "形狀 {n}：未知的運算 {v}",
+    "unknownShape": "形狀 {n}：未知的形狀 {v}",
+    "unknownBlock": "形狀 {n}：未知的方塊 {v}",
+    "wallRange": "形狀 {n}：壁厚必須介於 0 到 3",
+    "tubeRange": "形狀 {n}：管徑必須介於 1 到 80",
+    "rotation": "形狀 {n}：旋轉不是 90° 的整數倍",
+    "sizeRange": "形狀 {n}：尺寸必須是 {min} 到 {max} 之間的三個整數",
+    "offsetRange": "形狀 {n}：偏移必須是 {min} 到 {max} 之間的三個整數",
+    "unknownGrid": "未知的網格尺寸 {v}",
+    "encoding": "編碼失敗",
+    "notBlueprint": "不是《太空工程師》藍圖"
+  }
+}

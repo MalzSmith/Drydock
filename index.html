@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Drydock</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <script>
 {
   let ok = false
@@ -29,19 +30,62 @@ html.narrow body { margin: 0; background: #f2f2f3; }
   background: transparent; border: 1px solid color-mix(in srgb, #1d1f20 16%, transparent);
 }
 #narrow button:active { background: color-mix(in srgb, #1d1f20 14%, transparent); }
+#narrow .langs { display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, #1d1f20 16%, transparent); font-size: 13px; }
+#narrow .langs a.on { color: #1d1f20; text-decoration: none; }
+#narrow :lang(zh-Hans) { font-family: Barlow, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+#narrow :lang(zh-Hant) { font-family: Barlow, "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", sans-serif; }
+#narrow h1:lang(zh-Hans), #narrow button:lang(zh-Hans) { font-family: "Barlow Condensed", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+#narrow h1:lang(zh-Hant), #narrow button:lang(zh-Hant) { font-family: "Barlow Condensed", "PingFang TC", "Microsoft JhengHei", "Noto Sans CJK TC", sans-serif; }
 </style>
 </head>
 <body>
 <div id="narrow">
   <div>
     <h1>DRYDOCK</h1>
-    <div class="sub">Blueprint renderer</div>
+    <div class="sub" data-i="sub">Blueprint renderer</div>
   </div>
-  <p>Your screen is too small for Drydock. It needs a browser window at least 1120 pixels wide, and on a smaller screen the layout will not fit.</p>
-  <p>Open this page on a larger screen, or continue anyway and scroll around the layout.</p>
-  <button type="button" id="narrow-continue">Continue anyway</button>
-  <p><a href="https://github.com/MalzSmith/Drydock">Drydock on GitHub</a></p>
+  <p data-i="tooSmall">Your screen is too small for Drydock. It needs a browser window at least 1120 pixels wide, and on a smaller screen the layout will not fit.</p>
+  <p data-i="options">Open this page on a larger screen, or continue anyway and scroll around the layout.</p>
+  <button type="button" id="narrow-continue" data-i="continue">Continue anyway</button>
+  <p><a href="https://github.com/MalzSmith/Drydock" data-i="github">Drydock on GitHub</a></p>
+  <div class="langs" id="narrow-langs"></div>
 </div>
+<script>
+{
+  const S = {"en":{"tooSmall":"Your screen is too small for Drydock. It needs a browser window at least 1120 pixels wide, and on a smaller screen the layout will not fit.","options":"Open this page on a larger screen, or continue anyway and scroll around the layout.","continue":"Continue anyway","github":"Drydock on GitHub","sub":"Blueprint renderer"},"de":{"tooSmall":"Dein Bildschirm ist zu klein für Drydock. Es braucht ein Browserfenster mit mindestens 1120 Pixeln Breite, auf kleineren Bildschirmen passt das Layout nicht.","options":"Öffne die Seite auf einem größeren Bildschirm oder fahre trotzdem fort und scrolle durch das Layout.","continue":"Trotzdem fortfahren","github":"Drydock auf GitHub","sub":"Blueprint renderer"},"ru":{"tooSmall":"Экран слишком мал для Drydock. Нужно окно браузера шириной не менее 1120 пикселей, на меньшем экране интерфейс не поместится.","options":"Откройте страницу на большем экране или всё равно продолжите и прокручивайте интерфейс.","continue":"Всё равно продолжить","github":"Drydock на GitHub","sub":"Blueprint renderer"},"zh-Hans":{"tooSmall":"你的屏幕对 Drydock 来说太小了。它需要至少 1120 像素宽的浏览器窗口，屏幕更小时布局将无法完整显示。","options":"请在更大的屏幕上打开此页面，或仍然继续并滚动浏览布局。","continue":"仍然继续","github":"GitHub 上的 Drydock","sub":"Blueprint renderer"},"zh-Hant":{"tooSmall":"你的螢幕對 Drydock 來說太小了。它需要至少 1120 像素寬的瀏覽器視窗，螢幕更小時版面將無法完整顯示。","options":"請在更大的螢幕上開啟此頁面，或仍要繼續並捲動檢視版面。","continue":"仍要繼續","github":"GitHub 上的 Drydock","sub":"Blueprint renderer"}}
+  const N = {"en":"English","de":"Deutsch","ru":"Русский","zh-Hans":"简体中文","zh-Hant":"繁體中文"}
+  let l = null
+  try { l = localStorage.getItem('drydock.lang') } catch {}
+  if (!S[l]) {
+    l = 'en'
+    for (const x of navigator.languages || [navigator.language]) {
+      const v = x.toLowerCase()
+      if (v.startsWith('zh')) { l = /hant|-tw|-hk|-mo/.test(v) ? 'zh-Hant' : 'zh-Hans'; break }
+      if (/^(de|ru|en)/.test(v)) { l = v.slice(0, 2); break }
+    }
+  }
+  const box = document.getElementById('narrow-langs')
+  const apply = () => {
+    document.documentElement.lang = l
+    for (const e of document.querySelectorAll('#narrow [data-i]')) e.textContent = S[l][e.dataset.i]
+    for (const a of box.children) a.classList.toggle('on', a.lang === l)
+  }
+  for (const c in N) {
+    const a = document.createElement('a')
+    a.href = '#'
+    a.lang = c
+    a.textContent = N[c]
+    a.onclick = (e) => {
+      e.preventDefault()
+      l = c
+      try { localStorage.setItem('drydock.lang', c) } catch {}
+      apply()
+    }
+    box.append(a)
+  }
+  apply()
+}
+</script>
 <div id="app">
   <nav id="nav" class="nav"></nav>
   <div id="work">

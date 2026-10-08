@@ -1,3 +1,4 @@
+import { keyed } from '../util/keyed.ts'
 import { parseDefinitions, parseGlass, parseResx, parseSkins, toTuple, type DefTuple, type GlassDef, type SkinDef } from '../se/defs.ts'
 import { VANILLA_SEASONAL, VANILLA_SKY, parseSkies, type SkyDef } from '../se/env.ts'
 import { child, parseXml } from '../se/xml.ts'
@@ -25,15 +26,16 @@ export type BpEntry = {
   size: number
   modified: number
   mods: number | null
+  unresolved?: boolean
   blocks: number | null
   file: File | null
 }
 
-export type BpMeta = { mods: number; blocks: number }
+export type BpMeta = { mods: number; unresolved?: boolean; blocks: number }
 
-export function bpMetaOf(v: BpMeta | number | undefined): { mods: number | null; blocks: number | null } {
+export function bpMetaOf(v: BpMeta | number | undefined): { mods: number | null; unresolved?: boolean; blocks: number | null } {
   if (typeof v === 'number') return { mods: v, blocks: null }
-  return v ? { mods: v.mods, blocks: v.blocks } : { mods: null, blocks: null }
+  return v ? { mods: v.mods, unresolved: v.unresolved, blocks: v.blocks } : { mods: null, blocks: null }
 }
 
 export type ModInfo = { key: string; sourceId: number; folder: string; name: string; subs: string[] }
@@ -65,7 +67,6 @@ export type Progress = (text: string, frac: number | null) => void
 
 export type ScanOpts = { kind: SourceKind; sourceId: number; cache: ScanCache; progress?: Progress }
 
-const num = (n: number) => n.toLocaleString('en-US')
 
 function fingerprint(lines: string[]): string {
   let h = 0x811c9dc5
@@ -92,7 +93,7 @@ export async function scanGame(root: FsDir, progress?: Progress): Promise<{ foun
   let done = 0
   const parts = await mapPool(files, 8, async (get) => {
     const text = await (await get()).text()
-    progress?.(`Parsing definitions ${num(++done)}/${num(files.length)}`, done / files.length)
+    progress?.(keyed('progress.parsingDefs', { done: ++done, total: files.length }), done / files.length)
     return { defs: text.includes('<CubeBlocks') ? parseDefinitions(text, 'game', names).map(toTuple) : [], skins: parseSkins(text), glass: parseGlass(text), skies: parseSkies(text) }
   })
   return { found: true, defs: parts.flatMap((p) => p.defs), skins: parts.flatMap((p) => p.skins), glass: parts.flatMap((p) => p.glass), skies: withSeasonal(parts.flatMap((p) => p.skies)) }
@@ -112,8 +113,8 @@ async function readEntry(sourceId: number, dir: FsDir, cache: ScanCache): Promis
   const big = file.size > 4096 ? await file.slice(0, 65536).text() : head
   const g = /<GridSizeEnum>\s*(\w+)/.exec(big)
   const id = `${sourceId}/${dir.name}`
-  const { mods, blocks } = bpMetaOf(await cache.getBpMeta(`${id}|${file.lastModified}`))
-  return { id, sourceId, folder: dir.name, name, large: g ? g[1] !== 'Small' : true, size: file.size, modified: file.lastModified, mods, blocks, file }
+  const { mods, unresolved, blocks } = bpMetaOf(await cache.getBpMeta(`${id}|${file.lastModified}`))
+  return { id, sourceId, folder: dir.name, name, large: g ? g[1] !== 'Small' : true, size: file.size, modified: file.lastModified, mods, unresolved, blocks, file }
 }
 
 export async function scanBlueprints(root: FsDir, kind: SourceKind, sourceId: number, cache: ScanCache, progress?: Progress): Promise<BpEntry[]> {
@@ -123,7 +124,7 @@ export async function scanBlueprints(root: FsDir, kind: SourceKind, sourceId: nu
   let done = 0
   const list = await mapPool(dirs, 12, async (d) => {
     const e = await readEntry(sourceId, d, cache).catch(() => null)
-    progress?.(`Reading blueprints ${num(++done)}/${num(dirs.length)}`, done / dirs.length)
+    progress?.(keyed('progress.readingBlueprints', { done: ++done, total: dirs.length }), done / dirs.length)
     return e
   })
   return list.filter((e): e is BpEntry => e !== null).sort((a, b) => a.name.localeCompare(b.name))
@@ -189,7 +190,7 @@ export async function scanMods(root: FsDir, kind: SourceKind, sourceId: number, 
   let done = 0
   const list = await mapPool(dirs, 8, async (d) => {
     const m = await indexMod(sourceId, d, cache).catch(() => null)
-    progress?.(`Indexing mods ${num(++done)}/${num(dirs.length)}`, done / dirs.length)
+    progress?.(keyed('progress.indexingMods', { done: ++done, total: dirs.length }), done / dirs.length)
     return m
   })
   return {
