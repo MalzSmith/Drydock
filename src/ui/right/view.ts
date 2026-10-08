@@ -1,4 +1,4 @@
-import { actions, store, type RenderStyle } from '../../state/app.ts'
+import { actions, saveSeams, store, type RenderStyle } from '../../state/app.ts'
 import { activeInfo, blocksText } from '../../state/derive.ts'
 import { fmt, fmt1, msg, tr } from '../../i18n.ts'
 import { check, h, kicker, replaceChildren, seg, t, text } from '../dom.ts'
@@ -11,7 +11,10 @@ export function mountViewTab(): HTMLElement {
     style: 'display:flex',
     onChange: (v) => actions.setRender({ mode: v }),
   })
-  const seams = check(t('view.seams'), (v) => actions.setRender({ edges: v }))
+  const seams = check(t('view.seams'), (v) => {
+    saveSeams(v)
+    actions.setRender({ edges: v })
+  })
   const tint = check(t('view.tintMods'), (v) => actions.setRender({ tintMods: v }))
   const missing = seg<'placeholder' | 'substitute' | 'hide'>({
     options: (['placeholder', 'substitute', 'hide'] as const).map((id) => [id, t('view.missing.' + id)]),

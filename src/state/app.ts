@@ -126,6 +126,22 @@ export function mkShape(type: ShapeType, o: Partial<Shape> = {}): Shape {
   return { id: shapeSeq++, op: 'add', type, size: [15, 15, 15], pos: [0, 0, 0], block: 1, shell: 0, tube: 5, rot: ROT_IDENTITY, ...o }
 }
 
+const SEAMS_KEY = 'drydock.seams'
+
+function readSeams(): boolean {
+  try {
+    return localStorage.getItem(SEAMS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function saveSeams(on: boolean) {
+  try {
+    localStorage.setItem(SEAMS_KEY, on ? '1' : '0')
+  } catch {}
+}
+
 const defaultShapes = (): Shape[] => [
   mkShape('ellipsoid', { size: [25, 11, 61], shell: 2 }),
   mkShape('box', { size: [33, 3, 15], pos: [0, -2, 6], block: 2 }),
@@ -160,7 +176,7 @@ export const store = createStore<AppState>({
   search: '',
   mods: {},
   tab: 'view',
-  render: { mode: 'textured', proj: 'ortho', edges: true, tintMods: false, missing: 'placeholder', exposure: 0 },
+  render: { mode: 'textured', proj: 'ortho', edges: readSeams(), tintMods: false, missing: 'placeholder', exposure: 0 },
   section: { on: false, axis: 0, pos: 0.5, mode: 'cut', flip: false, thick: 2, capHi: true },
   scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40, lighting: 'directional' },
   skies: [],
