@@ -183,6 +183,15 @@ export function mountComposePanel(root: HTMLElement) {
   )
   root.append(aside)
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Delete' || e.ctrlKey || e.altKey || e.metaKey) return
+    const s = store.get()
+    if (s.mode !== 'compose' || s.compose.selShape === null || s.tour >= 0 || s.srcOpen || s.missingOpen) return
+    if ((e.target as Element).closest?.('input, select, textarea, [contenteditable]')) return
+    e.preventDefault()
+    actions.deleteShape(s.compose.selShape)
+  })
+
   store.watch(
     (s) => [s.compose.shapes, s.compose.selShape, s.locale] as const,
     ([shapes, sel]) => {
@@ -196,7 +205,14 @@ export function mountComposePanel(root: HTMLElement) {
             ...(on ? corners() : []),
             h(
               'button',
-              { class: 'shape-head', onClick: () => actions.selectShape(on ? null : sp.id) },
+              {
+                class: 'shape-head',
+                onClick: () => actions.selectShape(on ? null : sp.id),
+                onContextmenu: (e: Event) => {
+                  e.preventDefault()
+                  actions.deleteShape(sp.id)
+                },
+              },
               h('span', { class: 'op' }, GLYPH[sp.op]),
               h('span', { class: 'txt' }, h('span', { class: 'ttl' }, tr('compose.title.' + sp.op, { type: tr('compose.typeNames.' + sp.type) })), h('span', { class: 'meta' }, shapeMeta(sp))),
               h('span', { class: 'idx' }, String(i + 1).padStart(2, '0')),
