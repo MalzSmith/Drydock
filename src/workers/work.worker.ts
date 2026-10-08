@@ -32,7 +32,7 @@ const cache: ScanCache = {
 export type ParseArg = { buffer?: ArrayBuffer; file?: File; name: string }
 export type ParseResult = { parsed: ParsedBlueprint; ms: { read: number; decode: number; parse: number } }
 
-export type VoxelizeResult = { inst: ArrayBuffer; types: Uint8Array; count: number; dims: [number, number, number]; total: number; counts: number[]; ms: number }
+export type VoxelizeResult = { inst: ArrayBuffer; types: Uint8Array; count: number; fit: { inst: ArrayBuffer; count: number } | null; dims: [number, number, number]; total: number; counts: number[]; ms: number }
 export type WriteResult = { blob: Blob; total: number }
 
 const assetFiles = new Map<number, Set<string>>()
@@ -177,8 +177,10 @@ serve({
     const t0 = performance.now()
     const v = voxelize(arg.shapes, arg.sel)
     const s = surfaceInstances(v, arg.cut)
-    const result: VoxelizeResult = { inst: s.inst, types: s.types, count: s.count, dims: v.dims, total: v.total, counts: v.counts, ms: performance.now() - t0 }
-    return { result, transfer: [s.inst, s.types.buffer] }
+    const f = arg.cut ? surfaceInstances(v, null) : null
+    const fit = f ? { inst: f.inst, count: f.count } : null
+    const result: VoxelizeResult = { inst: s.inst, types: s.types, count: s.count, fit, dims: v.dims, total: v.total, counts: v.counts, ms: performance.now() - t0 }
+    return { result, transfer: f ? [s.inst, s.types.buffer, f.inst] : [s.inst, s.types.buffer] }
   },
   writeBlueprint(arg: { shapes: VShape[]; name: string; size: 'Large' | 'Small' }) {
     const v = voxelize(arg.shapes)

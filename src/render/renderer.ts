@@ -263,7 +263,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
       }
       const lo = m.boundsMin
       const hi = m.boundsMax
-      fitGrids = m.grids.map((g) => ({ cell: g.cell, toMain: g.toMain, inst: new Float32Array(g.inst), count: g.count }))
+      fitGrids = (m.fitGrids ?? m.grids).map((g) => ({ cell: g.cell, toMain: g.toMain, inst: new Float32Array(g.inst), count: g.count }))
       const com = centerOfMass(fitGrids)
       let radius = 0
       for (let i = 0; i < 8; i++)

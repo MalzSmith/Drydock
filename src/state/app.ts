@@ -306,6 +306,7 @@ function composeModelOf(r: VoxelizeResult, large: boolean, name: string): Render
     boundsMin: [-0.5 * cell, -0.5 * cell, -0.5 * cell],
     boundsMax: [(X - 0.5) * cell, (Y - 0.5) * cell, (Z - 0.5) * cell],
     grids: r.count ? [{ cell, toMain: identity(), inst: r.inst, count: r.count, detail }] : [],
+    ...(r.fit ? { fitGrids: r.fit.count ? [{ cell, toMain: identity(), inst: r.fit.inst, count: r.fit.count }] : [] } : {}),
     defs,
     skins: [],
     glass: glassMap([gameGlass]),

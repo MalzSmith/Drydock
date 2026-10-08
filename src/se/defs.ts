@@ -59,6 +59,7 @@ export type RenderModel = {
   boundsMin: [number, number, number]
   boundsMax: [number, number, number]
   grids: ModelGrid[]
+  fitGrids?: ModelGrid[]
   defs?: DefRecord[]
   skins?: Array<SkinRecord | null>
   glass?: Record<string, GlassRecord>
