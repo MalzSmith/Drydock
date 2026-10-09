@@ -5,3 +5,5 @@ scripts/gen-tiles/obj/
 todos.md
 design_handoff_*/
 regression-testing.md
+.claude/skills/drydock-regression-testing/work/
+.claude/skills/drydock-regression-testing/reports/
