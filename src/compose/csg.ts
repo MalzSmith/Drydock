@@ -52,11 +52,13 @@ function blockIndex(t: number): number {
 function inside(kind: number, u: number, v: number, w: number): boolean {
   if (kind === 0) return Math.max(Math.abs(u), Math.abs(v), Math.abs(w)) <= 1
   if (kind === 1) return u * u + v * v <= 1 && Math.abs(w) <= 1
-  if (kind === 4) {
-    const t = (v + 1) / 2
-    return t >= 0 && t <= 1 && Math.abs(u) <= 1 - t && Math.abs(w) <= 1 - t
-  }
   return u * u + v * v + w * w <= 1
+}
+
+function inPyramid(p: Prep, x: number, y: number, z: number): boolean {
+  const t = ((y - 0.5) / p.b + 1) / 2
+  if (t < -1e-9 || t > 1) return false
+  return Math.abs(x) <= Math.max((1 - t) * p.a, 0.5) + 1e-9 && Math.abs(z) <= Math.max((1 - t) * p.c, 0.5) + 1e-9
 }
 
 function inTorus(p: Prep, x: number, y: number, z: number): boolean {
@@ -90,6 +92,10 @@ function extent(s: VShape): [number, number, number] {
   return [0, 1, 2].map((r) => Math.abs(m[r * 3]) * h[0] + Math.abs(m[r * 3 + 1]) * h[1] + Math.abs(m[r * 3 + 2]) * h[2]) as [number, number, number]
 }
 
+function center(s: VShape, e: number[]): number[] {
+  return s.pos.map((v, i) => (Math.round(e[i] * 2) % 2 === 0 ? v + 0.5 : v))
+}
+
 function prep(s: VShape): Prep {
   const a = Math.max(0.5, s.size[0] / 2)
   const b = Math.max(0.5, s.size[1] / 2)
@@ -97,12 +103,13 @@ function prep(s: VShape): Prep {
   const kind = KIND[s.type]
   const t = Math.max(0.5, Math.min(s.tube ?? 1, Math.min(s.size[0], s.size[2]) / 2) / 2)
   const e = extent(s)
+  const c0 = center(s, e)
   return {
     op: s.op === 'add' ? 0 : s.op === 'subtract' ? 1 : 2,
     kind,
-    px: s.pos[0],
-    py: s.pos[1],
-    pz: s.pos[2],
+    px: c0[0],
+    py: c0[1],
+    pz: c0[2],
     a,
     b,
     c,
@@ -110,8 +117,8 @@ function prep(s: VShape): Prep {
     t,
     rot: s.rot && !isIdentity(s.rot) ? s.rot : null,
     block: blockIndex(s.block) + 1,
-    lo: s.pos.map((v, i) => Math.floor(v - e[i])),
-    hi: s.pos.map((v, i) => Math.ceil(v + e[i])),
+    lo: c0.map((v, i) => Math.floor(v - e[i])),
+    hi: c0.map((v, i) => Math.ceil(v + e[i])),
     mask: null,
     mlo: [0, 0, 0],
     mdim: [0, 0, 0],
@@ -182,6 +189,7 @@ function solidAt(p: Prep, x: number, y: number, z: number): boolean {
     dy = ly
   }
   if (p.kind === 3) return inTorus(p, dx, dy, dz)
+  if (p.kind === 4) return inPyramid(p, dx, dy, dz)
   return inside(p.kind, dx / p.a, dy / p.b, dz / p.c)
 }
 
@@ -193,17 +201,18 @@ export function voxelize(shapes: VShape[], sel = -1): Voxels {
     if (s.op !== 'add') continue
     anyAdd = true
     const e = extent(s)
+    const c = center(s, e)
     for (let i = 0; i < 3; i++) {
-      lo[i] = Math.min(lo[i], s.pos[i] - e[i])
-      hi[i] = Math.max(hi[i], s.pos[i] + e[i])
+      lo[i] = Math.min(lo[i], c[i] - e[i])
+      hi[i] = Math.max(hi[i], c[i] + e[i])
     }
   }
   if (!anyAdd) {
     lo.fill(0)
     hi.fill(0)
   }
-  const o = lo.map(Math.floor)
-  const dims = hi.map((h, i) => Math.min(MAX_DIM, Math.max(1, Math.ceil(h) - o[i] + 1))) as [number, number, number]
+  const o = lo.map(Math.ceil)
+  const dims = hi.map((h, i) => Math.min(MAX_DIM, Math.max(1, Math.floor(h) - o[i] + 1))) as [number, number, number]
   const [X, Y, Z] = dims
   const grid = new Uint8Array(X * Y * Z)
   const ps = shapes.map(prep)
@@ -236,7 +245,38 @@ export function voxelize(shapes: VShape[], sel = -1): Voxels {
           total++
         }
       }
-  return { grid, dims, counts, total, mark }
+  return crop({ grid, dims, counts, total, mark })
+}
+
+function crop(v: Voxels): Voxels {
+  const [X, Y, Z] = v.dims
+  const lo = [X, Y, Z]
+  const hi = [-1, -1, -1]
+  for (let z = 0, i = 0; z < Z; z++)
+    for (let y = 0; y < Y; y++)
+      for (let x = 0; x < X; x++, i++) {
+        if (!v.grid[i]) continue
+        if (x < lo[0]) lo[0] = x
+        if (x > hi[0]) hi[0] = x
+        if (y < lo[1]) lo[1] = y
+        if (y > hi[1]) hi[1] = y
+        if (z < lo[2]) lo[2] = z
+        if (z > hi[2]) hi[2] = z
+      }
+  if (hi[0] < 0) return { ...v, grid: new Uint8Array(1), dims: [1, 1, 1], mark: v.mark && new Uint8Array(1) }
+  const dims = [hi[0] - lo[0] + 1, hi[1] - lo[1] + 1, hi[2] - lo[2] + 1] as [number, number, number]
+  if (dims[0] === X && dims[1] === Y && dims[2] === Z) return v
+  const [CX, CY, CZ] = dims
+  const grid = new Uint8Array(CX * CY * CZ)
+  const mark = v.mark && new Uint8Array(CX * CY * CZ)
+  for (let z = 0, j = 0; z < CZ; z++)
+    for (let y = 0; y < CY; y++) {
+      const from = lo[0] + (y + lo[1]) * X + (z + lo[2]) * X * Y
+      grid.set(v.grid.subarray(from, from + CX), j)
+      if (mark) mark.set(v.mark!.subarray(from, from + CX), j)
+      j += CX
+    }
+  return { grid, dims, counts: v.counts, total: v.total, mark }
 }
 
 export type CutSpec = { axis: number; pos: number; mode: 'cut' | 'slice'; flip: boolean; thick: number }

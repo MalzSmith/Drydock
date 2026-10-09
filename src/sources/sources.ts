@@ -210,4 +210,5 @@ export async function unlinkSource(id: number) {
   }
   await publish()
   await publishSkies()
+  void actions.fillMods()
 }

@@ -38,7 +38,7 @@ describe('torus and pyramid', () => {
     expect(inShape(side, -5, 0, 0)).toBe(true)
     expect(inShape(side, 5, 4, 4)).toBe(true)
     const ring = voxelize([shape({ type: 'torus', size: [21, 5, 21], tube: 5, rot: QUARTER.x })])
-    expect(ring.dims).toEqual([23, 23, 7])
+    expect(ring.dims).toEqual([21, 21, 5])
     expect(rotMul(rotMul(QUARTER.y, QUARTER.y), rotMul(QUARTER.y, QUARTER.y))).toEqual([1, 0, 0, 0, 1, 0, 0, 0, 1])
   })
 })
@@ -103,7 +103,7 @@ describe('hollow walls', () => {
     let flagged = 0
     for (let i = 0; i < s.count; i++) if (f[i * 8 + 7] === 16) {
       flagged++
-      expect(f[i * 8]).toBeGreaterThanOrEqual(6)
+      expect(f[i * 8]).toBeGreaterThanOrEqual(5)
     }
     expect(flagged).toBe(27 - 2)
   })
@@ -112,12 +112,19 @@ describe('hollow walls', () => {
     const v = voxelize([shape({ size: [9, 9, 9], shell: 2 })])
     expect(v.total).toBe(9 ** 3 - 5 ** 3)
   })
+
+  it('sizes the grid to the placed blocks of an odd box', () => {
+    const v = voxelize([shape({ size: [21, 21, 21] })])
+    expect(v.dims).toEqual([21, 21, 21])
+    expect(v.total).toBe(21 ** 3)
+  })
 })
 
 describe('voxelize', () => {
-  it('fills a box and sizes the grid from the add AABBs plus one', () => {
+  it('fills a box and crops the grid to the placed blocks', () => {
     const v = voxelize([shape({ size: [4, 3, 2] })])
-    expect(v.dims).toEqual([5, 5, 3])
+    expect(v.dims).toEqual([4, 3, 2])
+    expect(v.total).toBe(4 * 3 * 2)
     expect(v.total).toBe(v.grid.reduce((n, c) => n + (c ? 1 : 0), 0))
     expect(v.total).toBeGreaterThanOrEqual(4 * 3 * 2)
   })
