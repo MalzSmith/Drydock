@@ -228,7 +228,7 @@ serve({
           reused++
           continue
         }
-        const parsed = parseBlueprint(decodeBlueprint(await it.file.arrayBuffer()), it.name)
+        const parsed = parseBlueprint(await decodeBlueprint(await it.file.arrayBuffer()), it.name)
         await idbPut('bps', it.id, { fp, v: PARSE_VERSION, parsed } satisfies BpRec)
         cached++
       } catch (err) {
@@ -243,7 +243,7 @@ serve({
     const t0 = performance.now()
     const buf = arg.buffer ?? (await arg.file!.arrayBuffer())
     const t1 = performance.now()
-    const text = decodeBlueprint(buf)
+    const text = await decodeBlueprint(buf)
     const t2 = performance.now()
     const parsed = parseBlueprint(text, arg.name)
     const t3 = performance.now()

@@ -452,6 +452,7 @@
     "offsetRange": "Form {n}: Versatz muss aus drei ganzen Zahlen von {min} bis {max} bestehen",
     "unknownGrid": "Unbekannte Grid-Größe {v}",
     "encoding": "Kodierung fehlgeschlagen",
-    "notBlueprint": "Keine Space-Engineers-Blaupause"
+    "notBlueprint": "Keine Space-Engineers-Blaupause",
+    "damagedGzip": "Die komprimierte Datei ist beschädigt oder unvollständig"
   }
 }

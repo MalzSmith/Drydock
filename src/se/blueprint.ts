@@ -1,3 +1,4 @@
+import { keyed } from '../util/keyed.ts'
 import { base6Index, createWorld } from './orient.ts'
 
 export type ParsedGrid = {
@@ -351,6 +352,31 @@ export function parseBlueprint(text: string, fallbackName = ''): ParsedBlueprint
   return { name, strings, skins, grids }
 }
 
-export function decodeBlueprint(buf: ArrayBuffer): string {
-  return new TextDecoder('utf-8').decode(buf)
+const isGzip = (b: Uint8Array) => b.length > 1 && b[0] === 0x1f && b[1] === 0x8b
+
+const gunzip = (b: Blob) => b.stream().pipeThrough(new DecompressionStream('gzip'))
+
+export async function decodeBlueprint(buf: ArrayBuffer): Promise<string> {
+  const b = new Uint8Array(buf)
+  if (!isGzip(b)) return new TextDecoder('utf-8').decode(b)
+  try {
+    return await new Response(gunzip(new Blob([b]))).text()
+  } catch {
+    throw new Error(keyed('errors.damagedGzip'))
+  }
+}
+
+export async function readBlueprintHead(file: Blob, max: number): Promise<string> {
+  if (!isGzip(new Uint8Array(await file.slice(0, 2).arrayBuffer()))) return file.slice(0, max).text()
+  const reader = gunzip(file).getReader()
+  const parts: Uint8Array[] = []
+  let size = 0
+  while (size < max) {
+    const { done, value } = await reader.read()
+    if (done) break
+    parts.push(value)
+    size += value.length
+  }
+  await reader.cancel()
+  return new Blob(parts as BlobPart[]).slice(0, max).text()
 }

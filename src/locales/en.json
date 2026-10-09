@@ -452,6 +452,7 @@
     "offsetRange": "Shape {n}: offset must be three whole numbers from {min} to {max}",
     "unknownGrid": "Unknown grid size {v}",
     "encoding": "Encoding failed",
-    "notBlueprint": "Not a Space Engineers blueprint"
+    "notBlueprint": "Not a Space Engineers blueprint",
+    "damagedGzip": "The compressed file is damaged or incomplete"
   }
 }

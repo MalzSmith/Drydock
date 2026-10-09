@@ -35,7 +35,7 @@ export function dirHandle(path: string): FsDir {
   }
 }
 
-export function tmpTree(files: Record<string, string>): string {
+export function tmpTree(files: Record<string, string | Uint8Array>): string {
   const root = mkdtempSync(join(tmpdir(), 'drydock-'))
   for (const [rel, content] of Object.entries(files)) {
     const p = join(root, rel)

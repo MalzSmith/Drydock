@@ -1,3 +1,4 @@
+import { gzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { fromTuples, buildLookup, resolveBlueprint } from '../src/se/defs.ts'
 import { parseBlueprint } from '../src/se/blueprint.ts'
@@ -124,6 +125,20 @@ const upload = (files: Record<string, string>, root: string, mtime = 1000) =>
     Object.defineProperty(f, 'webkitRelativePath', { value: `${root}/${rel}` })
     return f
   })
+
+describe('scanSource with cloud blueprints', () => {
+  it('lists gzip-compressed bp.sbc files with name and grid size', async () => {
+    const root = tmpTree({
+      'local/Plain/bp.sbc': bp('Plain Ship', 'A'),
+      'local/Cloud/bp.sbc': gzipSync(bp('Cloud Ship', 'A').replace('Large', 'Small')),
+    })
+    const r = await scanSource(dirHandle(root), { kind: 'blueprints', sourceId: 3, cache: memCache() })
+    expect(r.entries.map((e) => [e.folder, e.name, e.large])).toEqual([
+      ['Cloud', 'Cloud Ship', false],
+      ['Plain', 'Plain Ship', true],
+    ])
+  })
+})
 
 describe('scan from an uploaded file list', () => {
   const tree = {

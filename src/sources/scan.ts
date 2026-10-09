@@ -2,6 +2,7 @@ import { keyed } from '../util/keyed.ts'
 import { parseDefinitions, parseGlass, parseResx, parseSkins, toTuple, type DefTuple, type GlassDef, type SkinDef } from '../se/defs.ts'
 import { VANILLA_SEASONAL, VANILLA_SKY, parseSkies, type SkyDef } from '../se/env.ts'
 import { child, parseXml } from '../se/xml.ts'
+import { readBlueprintHead } from '../se/blueprint.ts'
 import {
   childDirs,
   findBlueprintsRoot,
@@ -103,14 +104,14 @@ async function readEntry(sourceId: number, dir: FsDir, cache: ScanCache): Promis
   const fh = await tryFile(dir, 'bp.sbc')
   if (!fh) return null
   const file = await fh.getFile()
-  const head = await file.slice(0, 4096).text()
+  const big = await readBlueprintHead(file, 65536)
+  const head = big.slice(0, 4096)
   const idAt = head.indexOf('<Id ')
   let name = dir.name
   if (idAt >= 0) {
     const m = /Subtype="([^"]*)"/.exec(head.slice(idAt, head.indexOf('>', idAt) + 1))
     if (m && m[1]) name = unescape(m[1])
   }
-  const big = file.size > 4096 ? await file.slice(0, 65536).text() : head
   const g = /<GridSizeEnum>\s*(\w+)/.exec(big)
   const id = `${sourceId}/${dir.name}`
   const { mods, unresolved, blocks } = bpMetaOf(await cache.getBpMeta(`${id}|${file.lastModified}`))

@@ -480,6 +480,7 @@
     "offsetRange": "Фигура {n}: смещение — три целых числа от {min} до {max}",
     "unknownGrid": "Неизвестный размер сетки {v}",
     "encoding": "Ошибка кодирования",
-    "notBlueprint": "Это не чертёж Space Engineers"
+    "notBlueprint": "Это не чертёж Space Engineers",
+    "damagedGzip": "Сжатый файл повреждён или неполон"
   }
 }

@@ -1,5 +1,6 @@
+import { gzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
-import { parseBlueprint } from '../src/se/blueprint.ts'
+import { decodeBlueprint, parseBlueprint, readBlueprintHead } from '../src/se/blueprint.ts'
 
 describe('parseBlueprint', () => {
   it('parses attributes and children forms', () => {
@@ -46,5 +47,29 @@ describe('parseBlueprint', () => {
     const xml = `<CubeGrids><CubeGrid><GridSizeEnum>Small</GridSizeEnum><CubeBlocks>${blk(0)}${blk(1)}${blk(2)}</CubeBlocks></CubeGrid><CubeGrid><GridSizeEnum>Large</GridSizeEnum><CubeBlocks>${blk(0)}</CubeBlocks></CubeGrid></CubeGrids>`
     const bp = parseBlueprint(xml)
     expect(bp.grids.map((g) => g.large)).toEqual([true, false])
+  })
+})
+
+describe('decodeBlueprint', () => {
+  const xml = `<?xml version="1.0"?><Definitions><ShipBlueprints><ShipBlueprint><Id Type="X" Subtype="Cloud Ship" /><CubeGrids><CubeGrid><GridSizeEnum>Small</GridSizeEnum><CubeBlocks>${'<MyObjectBuilder_CubeBlock><SubtypeName>Ä</SubtypeName><Min x="0" y="0" z="0" /></MyObjectBuilder_CubeBlock>'.repeat(2000)}</CubeBlocks></CubeGrid></CubeGrids></ShipBlueprint></ShipBlueprints></Definitions>`
+  const plain = new TextEncoder().encode(xml)
+  const packed = new Uint8Array(gzipSync(plain))
+  const buf = (b: Uint8Array) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer
+
+  it('reads plain and gzip-compressed cloud blueprints to the same text', async () => {
+    expect(await decodeBlueprint(buf(plain))).toBe(xml)
+    expect(await decodeBlueprint(buf(packed))).toBe(xml)
+    expect(parseBlueprint(await decodeBlueprint(buf(packed)))).toEqual(parseBlueprint(xml))
+  })
+
+  it('reports a damaged gzip file instead of a fetch error', async () => {
+    await expect(decodeBlueprint(buf(packed.slice(0, packed.length >> 1)))).rejects.toThrow('@errors.damagedGzip')
+  })
+
+  it('reads the start of plain and gzip-compressed files', async () => {
+    const head = new TextDecoder().decode(plain.slice(0, 4096))
+    expect(await readBlueprintHead(new Blob([plain]), 4096)).toBe(head)
+    expect(await readBlueprintHead(new Blob([packed]), 4096)).toBe(head)
+    expect(await readBlueprintHead(new Blob([packed]), 1e7)).toBe(xml)
   })
 })
