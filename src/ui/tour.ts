@@ -105,7 +105,9 @@ export function mountTour(app: HTMLElement) {
     const set = (e: HTMLElement, s: Record<string, number>) => {
       for (const [k, v] of Object.entries(s)) e.style.setProperty(k, v + 'px')
     }
-    set(frame, { left: r.x - PAD, top: r.y - PAD, width: r.w + PAD * 2, height: r.h + PAD * 2 })
+    const fx = Math.max(r.x - PAD, 0)
+    const fy = Math.max(r.y - PAD, 0)
+    set(frame, { left: fx, top: fy, width: Math.min(right + PAD, a.width) - fx, height: Math.min(bottom + PAD, a.height) - fy })
     let ax: number, ay: number, left: number, top: number
     if (step.place === 'bottom') {
       ax = r.x + r.w / 2
