@@ -2,7 +2,7 @@
 
 A full run took 25–40 minutes per runner on the reference machine; L9/L10 (workshop and game scans) take under a minute each when the disk cache is warm.
 
-Execution order for the whole run: E1–E4 → S1–S5 (runner A only) → E5–E6 → B1–B2 → T1–T5 → U1–U6 → O1–O9 → L1–L6 → G1–G7 → M1–M4 → L7–L14 → M5–M9 → G8 → R1–R13 → X1–X12 → C1–C20 → I1–I4 → N1–N5 → P0–P7 → F1–Fn (focus.md) → Z1–Z4 → report.
+Execution order for the whole run: E1–E4 → S1–S5 (runner A only) → E5–E6 → B1–B2 → T1, T2, T2b, T3–T5 → U1–U6 → O1–O9 → L1–L6 → G1–G7 → M1–M4 → L7–L14 → M5–M9 → G8 → R1–R13 → X1–X13 → C1–C20 → I1–I4 → N1–N5 → P0–P7 → F1–Fn (focus.md) → Z1–Z4 → report.
 
 ## E Setup (both runners)
 

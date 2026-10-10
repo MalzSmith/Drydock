@@ -201,6 +201,6 @@ Pass: both entries of every checked pair are cached with a matching fingerprint 
 
 **M7 Tint modded.** Check `${lib.pane('view')} label.chk` nth 1. Pass: `render.tintMods` true; screenshot differs from untinted. Uncheck.
 
-**M8 Workshop blueprint with mods.** After L9: open the first `entries` item with `list` workshop and `mods > 0`. Pass: loads, `modRows` not empty, the mods summary `.lib-mods .between .s11` (use `.first()`, the missing-blocks button can add a second match) reads "n mods loaded". Record the name. SKIP if none.
+**M8 Workshop blueprint with mods.** After L9: open the first `entries` item with `list` workshop and `mods > 0`. Pass: loads, `modRows` not empty, the mods summary `.lib-mods .between .s11` (use `.first()`; its text can be followed by the nested missing-blocks button text, so compare with startsWith) starts with "n mods loaded". Record the name. SKIP if none.
 
 **M9 Mod sources and the game together.** After L10 open `S Mod Block` again. Pass: the vanilla armor resolves to the game definitions (rows credited to the game), the mod block to the mod, `unknown` empty.

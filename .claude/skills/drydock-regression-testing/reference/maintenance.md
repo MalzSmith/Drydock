@@ -41,7 +41,7 @@ Keep this table current; it is how step 2 finds what to re-read.
 | `src/ui/right/view.ts` | R2–R4, M3, M7, P1, P7 |
 | `src/ui/right/section.ts` | R9, C18 |
 | `src/ui/right/scene.ts`, `src/render/sky.ts`, `src/assets/sky.ts` | R10–R12, P4 |
-| `src/ui/right/export.ts`, `src/render/exportImage.ts`, `src/util/save.ts`, `src/util/zip.ts` | X1–X12 |
+| `src/ui/right/export.ts`, `src/render/exportImage.ts`, `src/util/save.ts`, `src/util/zip.ts`, `src/util/webp.ts` | X1–X13 |
 | `src/ui/composePanel.ts`, `src/compose/*`, `src/se/sbcWrite.ts` | C1–C20 |
 | `src/se/blueprint.ts`, `src/workers/*` | O1–O6, O9, G1–G8, P2, P3, S1 test names |
 | `src/sources/scan.ts`, `src/se/mods.ts`, `src/se/defs.ts` | L2–L4, L7–L10, M5, M8, M9 |

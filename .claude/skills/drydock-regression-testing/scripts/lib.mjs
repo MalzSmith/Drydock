@@ -315,6 +315,53 @@ export async function imageInfo(s, path) {
   }, b64)
 }
 
+export async function animInfo(s, path, probe = [0, 9, 18]) {
+  const buf = readFileSync(path)
+  const allDurationsMs = []
+  for (let o = 12; o + 8 <= buf.length; ) {
+    const size = buf.readUInt32LE(o + 4)
+    if (buf.toString('latin1', o, o + 4) === 'ANMF') allDurationsMs.push(buf.readUIntLE(o + 20, 3))
+    o += 8 + size + (size & 1)
+  }
+  const b64 = buf.toString('base64')
+  const info = await s.page.evaluate(
+    async ({ b64, probe }) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+      const dec = new ImageDecoder({ data: bytes, type: 'image/webp' })
+      await dec.tracks.ready
+      const tr = dec.tracks.selectedTrack
+      const out = { frames: tr.frameCount, animated: tr.animated, loopsForever: tr.repetitionCount === Infinity, w: 0, h: 0, durationsMs: [], firstClearFrac: 0, changedFrac: [] }
+      let first = null
+      for (const i of probe) {
+        const { image } = await dec.decode({ frameIndex: i })
+        out.durationsMs.push(image.duration / 1000)
+        const c = new OffscreenCanvas(image.displayWidth, image.displayHeight)
+        const x = c.getContext('2d')
+        x.drawImage(image, 0, 0)
+        const d = x.getImageData(0, 0, c.width, c.height).data
+        const n = c.width * c.height
+        out.w = c.width
+        out.h = c.height
+        if (!first) {
+          first = d.slice()
+          let clear = 0
+          for (let k = 3; k < d.length; k += 4) if (d[k] < 255) clear++
+          out.firstClearFrac = clear / n
+        } else {
+          let ch = 0
+          for (let k = 0; k < d.length; k += 4) if (Math.abs(d[k] - first[k]) + Math.abs(d[k + 1] - first[k + 1]) + Math.abs(d[k + 2] - first[k + 2]) > 30) ch++
+          out.changedFrac.push(ch / n)
+        }
+        image.close()
+      }
+      dec.close()
+      return out
+    },
+    { b64, probe },
+  )
+  return { ...info, allDurationsMs }
+}
+
 export async function imgDiff(s, a, b, tol = 8) {
   const A = readFileSync(a).toString('base64')
   const B = readFileSync(b).toString('base64')
