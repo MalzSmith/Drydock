@@ -77,6 +77,7 @@ drydock/
     se/mwm.ts  se/dds.ts     MWM reader, DDS reader + BC1-5/BC7 decoders
     se/tiles.ts              tile table loader + armor pattern offset
     util/zip.ts              store-only zip writer (turntable frames)
+    util/webp.ts             animated WebP muxer over the browser's still WebP frames
     util/save.ts             download(blob, name): every file export is a browser download
     util/count.ts            visit counter opt-out and loader
     data/vanilla-blocks.json

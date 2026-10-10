@@ -1,6 +1,7 @@
 import { actions, store } from '../state/app.ts'
 import { download } from '../util/save.ts'
 import { zipStore } from '../util/zip.ts'
+import { animatedWebp } from '../util/webp.ts'
 import { aspectOf, frameRect } from './camera.ts'
 import type { Fit } from './camera.ts'
 import type { Renderer } from './renderer.ts'
@@ -44,11 +45,10 @@ function newCanvas(w: number, h: number): HTMLCanvasElement {
   return c
 }
 
-export function renderFrame(r: Renderer, cssW: number, yaw?: number, fit?: Fit): HTMLCanvasElement {
+export function renderFrame(r: Renderer, cssW: number, yaw?: number, fit?: Fit, transparent = transparentOf()): HTMLCanvasElement {
   const { w, h, ss } = exportSize()
   const W = w * ss
   const H = h * ss
-  const transparent = transparentOf()
   const big = newCanvas(W, H)
   const ctx = big.getContext('2d')!
   const T = r.maxTile()
@@ -158,24 +158,52 @@ export function copyImage(r: Renderer, canvas: HTMLCanvasElement) {
   }, 'toast.copyFailed')
 }
 
+const SPIN_FRAMES = 36
+
+async function spinFrames(r: Renderer, canvas: HTMLCanvasElement, transparent: boolean, each: (c: HTMLCanvasElement, i: number) => Promise<void>) {
+  const start = r.view.yaw
+  const yaws = Array.from({ length: SPIN_FRAMES }, (_, i) => start + (i * 2 * Math.PI) / SPIN_FRAMES)
+  const fit = r.fitFor(yaws)
+  const css = cssWidth(canvas)
+  for (let i = 0; i < yaws.length; i++) {
+    await each(renderFrame(r, css, yaws[i], fit, transparent), i)
+    await nextFrame()
+  }
+}
+
 export function exportTurntable(r: Renderer, canvas: HTMLCanvasElement) {
   return guarded(async () => {
-    const start = r.view.yaw
-    const yaws = Array.from({ length: 36 }, (_, i) => start + (i * Math.PI) / 18)
-    const fit = r.fitFor(yaws)
-    const css = cssWidth(canvas)
     const fmt = store.get().export.fmt
     const base = fileName()
     const files: Array<{ name: string; data: Uint8Array }> = []
-    for (let i = 0; i < yaws.length; i++) {
-      const c = renderFrame(r, css, yaws[i], fit)
+    await spinFrames(r, canvas, transparentOf(), async (c, i) => {
       const blob = await encode(c, fmt)
       const name = `${base}_${String(i + 1).padStart(3, '0')}.${ext()}`
       files.push({ name, data: new Uint8Array(await blob.arrayBuffer()) })
-      await nextFrame()
-    }
+    })
     const name = `${base}_turntable.zip`
     download(zipStore(files), name)
-    actions.toast(keyed('toast.downloadedFile', { file: name, detail: keyed('units.frames', { count: 36 }) }))
+    actions.toast(keyed('toast.downloadedFile', { file: name, detail: keyed('units.frames', { count: SPIN_FRAMES }) }))
+  }, 'toast.turntableFailed')
+}
+
+export function exportSpinWebp(r: Renderer, canvas: HTMLCanvasElement) {
+  return guarded(async () => {
+    const s = store.get()
+    const transparent = s.export.transparent || s.scene.bg === 'transparent'
+    const frames: Uint8Array[] = []
+    let w = 0
+    let h = 0
+    await spinFrames(r, canvas, transparent, async (c) => {
+      const blob = await new Promise<Blob | null>((ok) => c.toBlob(ok, 'image/webp', 0.8))
+      if (!blob) throw new Error(keyed('errors.encoding'))
+      if (blob.type !== 'image/webp') throw new Error(keyed('errors.noWebp'))
+      frames.push(new Uint8Array(await blob.arrayBuffer()))
+      w = c.width
+      h = c.height
+    })
+    const name = `${fileName()}_turntable.webp`
+    download(animatedWebp(frames, w, h, 1000 / 24, transparent), name)
+    actions.toast(keyed('toast.downloadedFile', { file: name, detail: keyed('units.frames', { count: SPIN_FRAMES }) }))
   }, 'toast.turntableFailed')
 }

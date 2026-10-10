@@ -262,7 +262,8 @@
     "render": "Render & save {fmt}",
     "rendering": "Rendering…",
     "copy": "Copy to clipboard",
-    "turntable": "Turntable · 36 frames"
+    "turntable": "Turntable · 36 frames",
+    "spinWebp": "Spinning WebP · 24 fps"
   },
   "compose": {
     "stack": "Shape stack",
@@ -452,6 +453,7 @@
     "offsetRange": "Shape {n}: offset must be three whole numbers from {min} to {max}",
     "unknownGrid": "Unknown grid size {v}",
     "encoding": "Encoding failed",
+    "noWebp": "This browser cannot encode WebP images",
     "notBlueprint": "Not a Space Engineers blueprint",
     "damagedGzip": "The compressed file is damaged or incomplete"
   }

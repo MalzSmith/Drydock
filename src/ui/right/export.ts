@@ -1,6 +1,6 @@
 import { actions, store } from '../../state/app.ts'
 import { aspectOf } from '../../render/camera.ts'
-import { copyImage, exportImage, exportTurntable } from '../../render/exportImage.ts'
+import { copyImage, exportImage, exportSpinWebp, exportTurntable } from '../../render/exportImage.ts'
 import type { Renderer } from '../../render/renderer.ts'
 import { fmt as fmtN, tr } from '../../i18n.ts'
 import { check, corners, h, kicker, seg, t, text } from '../dom.ts'
@@ -68,6 +68,7 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
       { class: 'col g8' },
       render,
       h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' }, h('button', { class: 'btn btn-secondary', onClick: () => void copyImage(renderer, renderer.canvas) }, t('export.copy')), h('button', { class: 'btn btn-secondary', onClick: () => void exportTurntable(renderer, renderer.canvas) }, t('export.turntable'))),
+      h('button', { class: 'btn btn-secondary', onClick: () => void exportSpinWebp(renderer, renderer.canvas) }, t('export.spinWebp')),
     ),
   )
 

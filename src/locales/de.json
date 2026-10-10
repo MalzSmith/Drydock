@@ -262,7 +262,8 @@
     "render": "{fmt} rendern & speichern",
     "rendering": "Rendert…",
     "copy": "In Zwischenablage kopieren",
-    "turntable": "Drehteller · 36 Bilder"
+    "turntable": "Drehteller · 36 Bilder",
+    "spinWebp": "Rotierendes WebP · 24 fps"
   },
   "compose": {
     "stack": "Formstapel",
@@ -452,6 +453,7 @@
     "offsetRange": "Form {n}: Versatz muss aus drei ganzen Zahlen von {min} bis {max} bestehen",
     "unknownGrid": "Unbekannte Grid-Größe {v}",
     "encoding": "Kodierung fehlgeschlagen",
+    "noWebp": "Dieser Browser kann keine WebP-Bilder kodieren",
     "notBlueprint": "Keine Space-Engineers-Blaupause",
     "damagedGzip": "Die komprimierte Datei ist beschädigt oder unvollständig"
   }

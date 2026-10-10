@@ -18,7 +18,7 @@ Drydock is a browser application for viewing and rendering Space Engineers bluep
 
 - PNG, JPG or WEBP up to 64 megapixels, with supersampling and optional transparent background.
 - Copy to clipboard.
-- Turntable: 36 frames as a ZIP file.
+- Turntable: 36 frames as a ZIP file, or as a looping animated WebP at 24 fps.
 
 **Compose**
 

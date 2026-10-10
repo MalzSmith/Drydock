@@ -248,7 +248,8 @@
     "render": "渲染并保存 {fmt}",
     "rendering": "渲染中…",
     "copy": "复制到剪贴板",
-    "turntable": "转台 · 36 帧"
+    "turntable": "转台 · 36 帧",
+    "spinWebp": "旋转 WebP · 24 fps"
   },
   "compose": {
     "stack": "形状堆栈",
@@ -438,6 +439,7 @@
     "offsetRange": "形状 {n}：偏移必须是 {min} 到 {max} 之间的三个整数",
     "unknownGrid": "未知的网格尺寸 {v}",
     "encoding": "编码失败",
+    "noWebp": "此浏览器无法编码 WebP 图像",
     "notBlueprint": "不是《太空工程师》蓝图",
     "damagedGzip": "压缩文件已损坏或不完整"
   }
