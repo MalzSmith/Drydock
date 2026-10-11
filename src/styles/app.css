@@ -217,6 +217,7 @@ button { font: inherit; color: inherit; }
 .src-row .txt { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 2px; }
 .src-row .seg-opt { padding: 4px 8px; font-size: 11px; }
 .src-row .src-act { display: flex; flex-direction: column; align-items: stretch; gap: 4px; flex: none; min-width: 84px; text-align: center; }
+.src-row .src-act .tag { justify-content: center; }
 .src-row .src-moves { display: flex; flex-direction: column; gap: 2px; flex: none; }
 .src-row .src-move { width: 28px; height: 22px; }
 .src-row .src-move:disabled { opacity: 0.3; cursor: default; }
