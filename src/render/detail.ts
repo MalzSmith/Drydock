@@ -1,4 +1,4 @@
-import { modelCandidates } from '../assets/keys.ts'
+import { isTurretType, modelCandidates } from '../assets/keys.ts'
 import type { MeshData, Status } from '../assets/build.ts'
 import { FLAG_MODDED, FLAG_PLACEHOLDER, FLAG_SELECTED, FLAG_SHRINK, TOPO_BOX, type DefRecord, type RenderModel, type SideDef, type SkinRecord } from '../se/defs.ts'
 import { BASE6_VEC, createWorld } from '../se/orient.ts'
@@ -91,7 +91,7 @@ const cellKey = (x: number, y: number, z: number) => ((x + 32768) * 65536 + (y +
 
 const isMod = (d: DefRecord) => d.source !== 'vanilla' && d.source !== 'game'
 
-export type MeshLookup = (cands: string[]) => MeshState
+export type MeshLookup = (cands: string[], turret: boolean) => MeshState
 
 export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLookup): DetailScene {
   type Group = { mesh: MeshState; skin: SkinRecord | null; buf: Grow; behind: boolean }
@@ -123,16 +123,16 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
   const cmin = model.cellMin
   const tileM = new Float32Array(9)
   const uvo = new Float32Array(2)
-  const meshOf = (path: string, def: DefRecord) => {
+  const meshOf = (path: string, def: DefRecord, turret: boolean) => {
     const c = modelCandidates(path, isMod(def) ? def.source : null)
-    const m = lookup(c)
+    const m = lookup(c, turret)
     used.set(m.key, m)
     return m
   }
   const modelCache = new Map<DefRecord, MeshState>()
   const modelOf = (path: string, def: DefRecord) => {
     let m = modelCache.get(def)
-    if (!m) modelCache.set(def, (m = meshOf(path, def)))
+    if (!m) modelCache.set(def, (m = meshOf(path, def, isTurretType(def.type))))
     return m
   }
   const sideCache = new Map<DefRecord, { meshes: MeshState[]; pending: boolean; ok: boolean }>()
@@ -140,7 +140,7 @@ export function buildDetail(model: RenderModel, table: TileTable, lookup: MeshLo
     let s = sideCache.get(def)
     if (!s) {
       const meshes: MeshState[] = []
-      for (let t = 0; t < n; t++) meshes.push(meshOf(sides[t][0], def))
+      for (let t = 0; t < n; t++) meshes.push(meshOf(sides[t][0], def, false))
       sideCache.set(def, (s = { meshes, pending: meshes.some((m) => m.status === 'pending'), ok: meshes.every((m) => m.status === 'ok') }))
     }
     return s

@@ -105,12 +105,12 @@ serve({
       const rec = await idbGet<ModCacheRec>('mods', m.key)
       if (rec) lists.push(...defModels(rec.defs, m.key))
     }
-    const todo = lists.filter((c) => files.has(c[0]))
+    const todo = lists.filter((m) => files.has(m.cands[0]))
     let done = 0
     let cached = 0
-    await mapPool(todo, 4, async (cands) => {
+    await mapPool(todo, 4, async (m) => {
       if (assetFiles.get(arg.sourceId) !== files) return
-      const r = await loadMesh(assetEnv, cands).catch(() => null)
+      const r = await loadMesh(assetEnv, m.cands, m.turret).catch(() => null)
       if (r?.status === 'ok') cached++
       done++
       if (done % 10 === 0 || done === todo.length) emit('progress', { sourceId: arg.sourceId, text: keyed('progress.cachingModels', { done, total: todo.length }), frac: done / todo.length })
@@ -163,8 +163,8 @@ serve({
     for (const l of data.faces) for (const m of l) buffers.add(m.buffer as ArrayBuffer)
     return { result, transfer: [...buffers] }
   },
-  async loadMesh(arg: { cands: string[] }) {
-    const r = await loadMesh(assetEnv, arg.cands)
+  async loadMesh(arg: { cands: string[]; turret: boolean }) {
+    const r = await loadMesh(assetEnv, arg.cands, arg.turret)
     const d = r.data
     return { result: r, transfer: d ? [d.pos.buffer, d.nrm.buffer, d.uv.buffer, d.idx.buffer] : [] }
   },

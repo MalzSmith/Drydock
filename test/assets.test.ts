@@ -61,9 +61,15 @@ describe('asset keys', () => {
       ['BatteryBlock', 'B', 1, 1, 1, 1, 'B', { model: 'models/battery.mwm' }],
       ['BatteryBlock', 'C', 0, 1, 1, 1, 'C', { model: 'models/battery.mwm' }],
       ['Door', 'D', 1, 1, 1, 1, 'D'],
+      ['InteriorTurret', 'E', 1, 1, 1, 1, 'E', { model: 'models/battery.mwm' }],
     ]
-    expect(defModels(defs, null)).toEqual([['c:models/side.mwm'], ['c:models/side2.mwm'], ['c:models/battery.mwm']])
-    expect(defModels(defs.slice(1, 2), '1/2')).toEqual([['m:1/2:models/battery.mwm', 'c:models/battery.mwm']])
+    expect(defModels(defs, null)).toEqual([
+      { cands: ['c:models/side.mwm'], turret: false },
+      { cands: ['c:models/side2.mwm'], turret: false },
+      { cands: ['c:models/battery.mwm'], turret: false },
+      { cands: ['c:models/battery.mwm'], turret: true },
+    ])
+    expect(defModels(defs.slice(1, 2), '1/2')).toEqual([{ cands: ['m:1/2:models/battery.mwm', 'c:models/battery.mwm'], turret: false }])
   })
 })
 
@@ -91,6 +97,16 @@ describe.skipIf(!have)('game assets', () => {
     expect(door.data!.pos.length).toBeGreaterThan(root.positions.length)
     expect(door.data!.parts.some((p) => p.kind === KIND_GLASS)).toBe(true)
     expect(root.parts.filter((p) => p.technique === 'GLASS').every((p) => typeof p.glassCcw === 'string')).toBe(true)
+  })
+
+  it('keeps turret subparts upright', async () => {
+    const env = diskEnv()
+    const cands = modelCandidates('models/cubes/large/interiorturret.mwm', null)
+    const plain = (await loadMesh(env, cands)).data!
+    const turret = (await loadMesh(env, cands, true)).data!
+    expect(turret).not.toBe(plain)
+    expect(turret.max[1]).toBeGreaterThan(plain.max[1] + 0.5)
+    expect(turret.max[1]).toBeLessThanOrEqual(1.25)
   })
 
   it('decodes textures to rgba without gpu formats', async () => {

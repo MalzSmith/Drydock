@@ -64,17 +64,23 @@ export function modelCandidates(path: string, mod: string | null): string[] {
   return mod ? [`m:${mod}:${p}`, `c:${p}`] : [`c:${p}`]
 }
 
-export function defModels(defs: DefTuple[], mod: string | null): string[][] {
-  const out = new Map<string, string[]>()
-  const add = (path: string) => {
-    const c = modelCandidates(path, mod)
-    out.set(c[0], c)
+const TURRET_TYPES = new Set(['InteriorTurret', 'LargeGatlingTurret', 'LargeMissileTurret'])
+
+export const isTurretType = (type: string) => TURRET_TYPES.has(type)
+
+export type ModelRequest = { cands: string[]; turret: boolean }
+
+export function defModels(defs: DefTuple[], mod: string | null): ModelRequest[] {
+  const out = new Map<string, ModelRequest>()
+  const add = (path: string, turret: boolean) => {
+    const cands = modelCandidates(path, mod)
+    out.set(cands[0] + (turret ? '#turret' : ''), { cands, turret })
   }
   for (const d of defs) {
     const r = d[7]
     if (!r) continue
-    if (r.model) add(r.model)
-    if (r.topo !== undefined) for (const s of r.sides ?? []) add(s[0])
+    if (r.model) add(r.model, isTurretType(d[0]))
+    if (r.topo !== undefined) for (const s of r.sides ?? []) add(s[0], false)
   }
   return [...out.values()]
 }

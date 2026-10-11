@@ -137,8 +137,8 @@ export function createAssets(caps: Caps, upload: (t: Texture) => void, onMesh: (
     uploadRaf = document.hidden ? window.setTimeout(drainUploads, 0) : requestAnimationFrame(drainUploads)
   }
 
-  function mesh(cands: string[]): MeshEntry {
-    const key = cands.join('|')
+  function mesh(cands: string[], turret: boolean): MeshEntry {
+    const key = cands.join('|') + (turret ? '#turret' : '')
     let e = meshes.get(key)
     if (e) return e
     const entry: MeshEntry = { status: 'pending', key }
@@ -148,7 +148,7 @@ export function createAssets(caps: Caps, upload: (t: Texture) => void, onMesh: (
       if (my !== gen) return
       let r: AssetResult<MeshData>
       try {
-        r = await assetRpc().call<AssetResult<MeshData>>('loadMesh', { cands })
+        r = await assetRpc().call<AssetResult<MeshData>>('loadMesh', { cands, turret })
       } catch (err) {
         r = { data: null, status: 'error', error: String(err) }
       }

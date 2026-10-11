@@ -472,7 +472,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
       hooks.requestFrame()
       return
     }
-    const scene = buildDetail(model, table, (c) => assets.mesh(c))
+    const scene = buildDetail(model, table, (c, turret) => assets.mesh(c, turret))
     built = scene
     active = scene.groups.length > 0
     if (!active) {

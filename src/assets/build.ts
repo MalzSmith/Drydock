@@ -56,15 +56,15 @@ type CacheRec<T> = { v: number; fp: string; data: T }
 
 const fpOf = (f: File) => `${f.size}|${f.lastModified}`
 
-async function resolve<T>(env: AssetEnv, store: 'meshes' | 'textures', cands: string[], v: number, build: (key: string, f: File) => Promise<T | null>): Promise<AssetResult<T>> {
+async function resolve<T>(env: AssetEnv, store: 'meshes' | 'textures', cands: string[], v: number, build: (key: string, f: File) => Promise<T | null>, variant = ''): Promise<AssetResult<T>> {
   let anyFiles = false
   for (const key of cands) {
-    const [f, hit] = await Promise.all([env.has(key) ? env.file(key) : undefined, env.cacheGet<CacheRec<T | null>>(store, key).catch(() => undefined)])
+    const [f, hit] = await Promise.all([env.has(key) ? env.file(key) : undefined, env.cacheGet<CacheRec<T | null>>(store, key + variant).catch(() => undefined)])
     if (f) {
       if (hit && hit.v === v && hit.fp === fpOf(f)) return hit.data ? { data: hit.data, status: 'ok', key } : { data: null, status: 'error', key }
       try {
         const data = await build(key, f)
-        await env.cachePut(store, key, { v, fp: fpOf(f), data } satisfies CacheRec<T | null>).catch(() => undefined)
+        await env.cachePut(store, key + variant, { v, fp: fpOf(f), data } satisfies CacheRec<T | null>).catch(() => undefined)
         return data ? { data, status: 'ok', key } : { data: null, status: 'error', key, error: 'no geometry' }
       } catch (err) {
         return { data: null, status: 'error', key, error: err instanceof Error ? err.message : String(err) }
@@ -133,7 +133,15 @@ function textures(t: Record<string, string>, root: string | null): TexRefs | nul
   return cm || ng || add || am ? r : null
 }
 
-async function append(env: AssetEnv, key: string, file: File, transform: Float32Array, acc: Acc, depth: number): Promise<number> {
+function stripRotation(m: Float32Array): Float32Array {
+  const r = IDENTITY.slice()
+  r[12] = m[12]
+  r[13] = m[13]
+  r[14] = m[14]
+  return r
+}
+
+async function append(env: AssetEnv, key: string, file: File, transform: Float32Array, acc: Acc, depth: number, turret: boolean): Promise<number> {
   const mwm = parseMwm(await file.arrayBuffer())
   let geo = mwm
   if (mwm.positions.length === 0 && mwm.geometryAsset) {
@@ -210,7 +218,8 @@ async function append(env: AssetEnv, key: string, file: File, transform: Float32
     const f = env.has(sk) ? await env.file(sk) : undefined
     if (!f) continue
     try {
-      await append(env, sk, f, mul(normalizeRows(d.matrix), transform), acc, depth + 1)
+      const local = turret && depth < 2 ? stripRotation(d.matrix) : normalizeRows(d.matrix)
+      await append(env, sk, f, mul(local, transform), acc, depth + 1, turret)
     } catch {
       continue
     }
@@ -218,9 +227,9 @@ async function append(env: AssetEnv, key: string, file: File, transform: Float32
   return mwm.patternScale
 }
 
-async function buildMesh(env: AssetEnv, key: string, file: File): Promise<MeshData | null> {
+async function buildMesh(env: AssetEnv, key: string, file: File, turret: boolean): Promise<MeshData | null> {
   const acc = new Acc()
-  const patternScale = await append(env, key, file, IDENTITY, acc, 0)
+  const patternScale = await append(env, key, file, IDENTITY, acc, 0, turret)
   if (acc.pos.length === 0 || acc.parts.every((p) => p.kind === KIND_DECAL)) return null
   const pos = new Float32Array(acc.pos)
   const min: [number, number, number] = [Infinity, Infinity, Infinity]
@@ -240,8 +249,8 @@ async function buildMesh(env: AssetEnv, key: string, file: File): Promise<MeshDa
   return { pos, nrm: new Float32Array(acc.nrm), uv: new Float32Array(acc.uv), idx: new Uint32Array(acc.idx), parts: acc.parts, min, max, patternScale, tris }
 }
 
-export function loadMesh(env: AssetEnv, cands: string[]): Promise<AssetResult<MeshData>> {
-  return resolve(env, 'meshes', cands, MESH_V, (key, f) => buildMesh(env, key, f))
+export function loadMesh(env: AssetEnv, cands: string[], turret = false): Promise<AssetResult<MeshData>> {
+  return resolve(env, 'meshes', cands, MESH_V, (key, f) => buildMesh(env, key, f, turret), turret ? '#turret' : '')
 }
 
 const GPU_FORMATS = new Set(['bc1', 'bc2', 'bc3', 'bc7'])
