@@ -249,7 +249,14 @@
     "rendering": "渲染中…",
     "copy": "复制到剪贴板",
     "turntable": "转台 · 36 帧",
-    "spinWebp": "旋转 WebP · 24 fps"
+    "spinWebp": "旋转 WebP · 24 fps",
+    "cancel": "取消",
+    "progressTitle": "正在渲染 {dims}",
+    "progressNote": "请保持此标签页打开。所有图块完成后会下载 PNG。",
+    "percent": "{pct}%",
+    "res64k": "64K - 警告",
+    "res64kTip": "提示：64K 图像可能达到数百 MB，许多图像查看器和编辑器无法打开这么大的文件。",
+    "ssTip": "以更高分辨率渲染图像再缩小，使锯齿边缘和细节更平滑。数值越高效果越干净，但耗时越长。"
   },
   "compose": {
     "stack": "形状堆栈",
@@ -407,7 +414,9 @@
     "cacheFailed": "无法缓存所有蓝图（存储空间已满？）。未缓存的蓝图需刷新后才能打开。",
     "scanFailed": "扫描 {name} 失败：{error}",
     "emptyFolder": "该文件夹为空。",
-    "clearFailed": "无法清除已保存的快照。"
+    "clearFailed": "无法清除已保存的快照。",
+    "exportCancelled": "导出已取消",
+    "waitAssets": "请等待模型和纹理加载完成后再渲染"
   },
   "progress": {
     "waitingList": "正在等待浏览器列出文件…",

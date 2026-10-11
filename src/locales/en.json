@@ -263,7 +263,14 @@
     "rendering": "Rendering…",
     "copy": "Copy to clipboard",
     "turntable": "Turntable · 36 frames",
-    "spinWebp": "Spinning WebP · 24 fps"
+    "spinWebp": "Spinning WebP · 24 fps",
+    "cancel": "Cancel",
+    "progressTitle": "Rendering {dims}",
+    "progressNote": "Keep this tab open. The PNG downloads when every tile is done.",
+    "percent": "{pct}%",
+    "res64k": "64K - WARNING",
+    "res64kTip": "Heads-up: 64K images can run to several hundred megabytes, and many image viewers and editors can't open files this large.",
+    "ssTip": "Renders the image at a higher resolution and scales it down, smoothing jagged edges and fine details. Higher values look cleaner but take longer."
   },
   "compose": {
     "stack": "Shape stack",
@@ -421,7 +428,9 @@
     "cacheFailed": "Could not cache all blueprints (storage full?). Uncached ones need a refresh to open.",
     "scanFailed": "Scan failed for {name}: {error}",
     "emptyFolder": "That folder is empty.",
-    "clearFailed": "Could not clear the stored snapshot."
+    "clearFailed": "Could not clear the stored snapshot.",
+    "exportCancelled": "Export cancelled",
+    "waitAssets": "Wait until models and textures finish loading, then render again"
   },
   "progress": {
     "waitingList": "Waiting for browser to list files…",

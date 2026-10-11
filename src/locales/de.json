@@ -263,7 +263,14 @@
     "rendering": "Rendert…",
     "copy": "In Zwischenablage kopieren",
     "turntable": "Drehteller · 36 Bilder",
-    "spinWebp": "Rotierendes WebP · 24 fps"
+    "spinWebp": "Rotierendes WebP · 24 fps",
+    "cancel": "Abbrechen",
+    "progressTitle": "Rendert {dims}",
+    "progressNote": "Lass diesen Tab offen. Das PNG wird heruntergeladen, sobald alle Kacheln fertig sind.",
+    "percent": "{pct} %",
+    "res64k": "64K - WARNUNG",
+    "res64kTip": "Hinweis: 64K-Bilder können mehrere hundert Megabyte groß werden, und viele Bildbetrachter und -editoren können so große Dateien nicht öffnen.",
+    "ssTip": "Rendert das Bild in höherer Auflösung und skaliert es herunter. Das glättet gezackte Kanten und feine Details. Höhere Werte sehen sauberer aus, dauern aber länger."
   },
   "compose": {
     "stack": "Formstapel",
@@ -421,7 +428,9 @@
     "cacheFailed": "Nicht alle Blaupausen konnten zwischengespeichert werden (Speicher voll?). Nicht gespeicherte brauchen eine Aktualisierung zum Öffnen.",
     "scanFailed": "Scan von {name} fehlgeschlagen: {error}",
     "emptyFolder": "Dieser Ordner ist leer.",
-    "clearFailed": "Der gespeicherte Snapshot konnte nicht gelöscht werden."
+    "clearFailed": "Der gespeicherte Snapshot konnte nicht gelöscht werden.",
+    "exportCancelled": "Export abgebrochen",
+    "waitAssets": "Warte, bis Modelle und Texturen geladen sind, und rendere dann erneut"
   },
   "progress": {
     "waitingList": "Warte darauf, dass der Browser die Dateien auflistet…",

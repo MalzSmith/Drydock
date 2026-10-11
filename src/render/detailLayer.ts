@@ -97,7 +97,7 @@ function sphereOf(a: MeshAttrs): Sphere {
 
 type PartMat = { mat: ShaderMaterial; glassDepth?: ShaderMaterial; glassColor?: ShaderMaterial; texKeys: string[] }
 
-function quadGeometry(): BufferGeometry {
+export function quadGeometry(): BufferGeometry {
   const g = new BufferGeometry()
   g.setAttribute('position', new BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3))
   return g
@@ -734,14 +734,12 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     return [px[0], px[1]]
   }
 
-  function renderTile(p: DetailPass, zo: [number, number], read: { x: number; y: number; w: number; h: number }): Uint8Array {
+  function renderTile(p: DetailPass, zo: [number, number]): WebGLRenderTarget {
     ensureTargets(p.w, p.h)
     renderGBuffer(p.cam, p.w, p.h, p.ss)
     composite(p, null, zo)
-    const buf = new Uint8Array(read.w * read.h * 4)
-    gl.readRenderTargetPixels(compRT!, read.x, read.y, read.w, read.h, buf)
     gl.setRenderTarget(null)
-    return buf
+    return compRT!
   }
 
   return {

@@ -14,6 +14,7 @@ import { mountNav } from './ui/nav.ts'
 import { mountRight } from './ui/right/tabs.ts'
 import { mountSourcesDialog } from './ui/sourcesDialog.ts'
 import { mountMissingDialog } from './ui/missingDialog.ts'
+import { mountExportDialog } from './ui/exportDialog.ts'
 import { mountTour } from './ui/tour.ts'
 import { mountViewport } from './ui/viewport.ts'
 import { loadCounter } from './util/count.ts'
@@ -39,6 +40,7 @@ mountRight($('right'), renderer)
 mountFooter($('foot'))
 mountSourcesDialog(document.body)
 mountMissingDialog(document.body)
+mountExportDialog(document.body)
 mountTour($('app'))
 
 store.watch(

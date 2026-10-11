@@ -10,6 +10,7 @@ import { loadMesh, loadTexture, type AssetEnv, type Caps } from '../assets/build
 import { defModels } from '../assets/keys.ts'
 import { SKY_THUMB, panorama, readSky, skyForCaps, type SkyData, type SkyMeta, type SkyOrient } from '../assets/sky.ts'
 import type { SkyDef } from '../se/env.ts'
+import { pngStream, type PngStream } from '../util/png.ts'
 
 export type ScanArg = { files: File[]; kind: SourceKind; sourceId: number }
 export type ScanReply = { result: ScanResult; persisted: boolean; ms: number }
@@ -35,6 +36,9 @@ export type ParseResult = { parsed: ParsedBlueprint; ms: { read: number; decode:
 export type VoxelizeResult = { inst: ArrayBuffer; types: Uint8Array; count: number; fit: { inst: ArrayBuffer; count: number } | null; dims: [number, number, number]; total: number; counts: number[]; ms: number }
 export type WriteResult = { blob: Blob; total: number }
 
+export type PngArg = { w: number; h: number; alpha: boolean }
+
+let png: PngStream | null = null
 let lastVox: { key: string; v: Voxels } | null = null
 const assetFiles = new Map<number, Set<string>>()
 const prefixes = new Map<number, Set<string>>()
@@ -80,6 +84,29 @@ async function thumbnail(f: File, orient: SkyOrient): Promise<Blob | null> {
 }
 
 serve({
+  pngBegin(arg: PngArg) {
+    png?.abort()
+    png = pngStream(arg.w, arg.h, arg.alpha)
+    return { result: null }
+  },
+
+  async pngRows(arg: { rgba: ArrayBuffer; rows: number }) {
+    await png!.rows(new Uint8Array(arg.rgba), arg.rows)
+    return { result: null }
+  },
+
+  async pngEnd() {
+    const blob = await png!.finish()
+    png = null
+    return { result: blob }
+  },
+
+  pngAbort() {
+    png?.abort()
+    png = null
+    return { result: null }
+  },
+
   registerAssets(arg: AssetArg) {
     const m = new Set(arg.keys)
     const p = new Set<string>()

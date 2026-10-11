@@ -186,7 +186,7 @@ export function mountComposePanel(root: HTMLElement) {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Delete' || e.ctrlKey || e.altKey || e.metaKey) return
     const s = store.get()
-    if (s.mode !== 'compose' || s.compose.selShape === null || s.tour >= 0 || s.srcOpen || s.missingOpen) return
+    if (s.mode !== 'compose' || s.compose.selShape === null || s.tour >= 0 || s.srcOpen || s.missingOpen || s.busy) return
     if ((e.target as Element).closest?.('input, select, textarea, [contenteditable]')) return
     e.preventDefault()
     actions.deleteShape(s.compose.selShape)

@@ -1,9 +1,9 @@
-import { actions, PNG_ONLY_ABOVE, store } from '../../state/app.ts'
+import { actions, PNG_ONLY_ABOVE, STREAM_ABOVE, store } from '../../state/app.ts'
 import { aspectOf } from '../../render/camera.ts'
 import { copyImage, exportImage, exportSpinWebp, exportTurntable } from '../../render/exportImage.ts'
 import type { Renderer } from '../../render/renderer.ts'
 import { fmt as fmtN, tr } from '../../i18n.ts'
-import { check, corners, h, kicker, seg, t, text } from '../dom.ts'
+import { check, corners, h, kicker, seg, t, tAttr, text } from '../dom.ts'
 
 export function mountExportTab(renderer: Renderer): HTMLElement {
   const dims = text()
@@ -14,6 +14,15 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
     style: 'display:flex',
     onChange: (v) => actions.setExport({ res: v }),
   })
+  const huge = seg<number>({
+    options: [[34560, t('export.res64k')]],
+    value: 2160,
+    cls: 'seg-warn',
+    optCls: 'grow',
+    style: 'display:flex',
+    onChange: (v) => actions.setExport({ res: v }),
+  })
+  tAttr(huge.el.querySelector('label')!, 'title', 'export.res64kTip')
   const aspect = seg<string>({
     options: [['16:9', '16:9'], ['21:9', '21:9'], ['1:1', '1:1'], ['4:5', '4:5']],
     value: '16:9',
@@ -30,14 +39,16 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
   })
   const transparent = check(t('export.transparent'), (v) => actions.setExport({ transparent: v }))
   const ss = seg<number>({
-    options: [[1, '1×'], [2, '2×'], [4, '4×']],
-    value: 2,
+    options: [[1, '1×'], [2, '2×'], [4, '4×'], [8, '8×']],
+    value: 8,
     onChange: (v) => actions.setExport({ ss: v }),
   })
   const fileName = h('input', { class: 'input', style: 'font-size:13px', onChange: () => actions.setExport({ fileName: fileName.value }) })
   const render = h('button', { class: 'btn btn-primary blueprint btn-hero', onClick: () => void exportImage(renderer, renderer.canvas) }, ...corners(), '')
   const renderLabel = text()
   const spin = h('button', { class: 'btn btn-secondary', onClick: () => void exportSpinWebp(renderer, renderer.canvas) }, t('export.spinWebp'))
+  const copy = h('button', { class: 'btn btn-secondary', onClick: () => void copyImage(renderer, renderer.canvas) }, t('export.copy'))
+  const turntable = h('button', { class: 'btn btn-secondary', onClick: () => void exportTurntable(renderer, renderer.canvas) }, t('export.turntable'))
   render.append(renderLabel.el)
 
   const el = h(
@@ -48,6 +59,7 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
       { class: 'col g8' },
       h('div', { class: 'between' }, kicker(t('export.resolution')), h('span', { class: 'res-dims' }, dims.el)),
       res.el,
+      huge.el,
       aspect.el,
       h('span', { class: 's12 muted' }, t('export.framed')),
     ),
@@ -57,7 +69,7 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
       kicker(t('export.format')),
       fmt.el,
       transparent.el,
-      h('div', { class: 'ss-row' }, h('span', null, t('export.ss')), ss.el),
+      tAttr(h('div', { class: 'ss-row' }, h('span', null, t('export.ss')), ss.el), 'title', 'export.ssTip'),
     ),
     h(
       'div',
@@ -68,12 +80,13 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
       'div',
       { class: 'col g8' },
       render,
-      h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' }, h('button', { class: 'btn btn-secondary', onClick: () => void copyImage(renderer, renderer.canvas) }, t('export.copy')), h('button', { class: 'btn btn-secondary', onClick: () => void exportTurntable(renderer, renderer.canvas) }, t('export.turntable'))),
+      h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' }, copy, turntable),
       spin,
     ),
   )
 
   store.watch((s) => s.export.res, res.set)
+  store.watch((s) => s.export.res, huge.set)
   store.watch((s) => s.export.aspect, aspect.set)
   store.watch((s) => s.export.fmt, fmt.set)
   store.watch(
@@ -84,6 +97,13 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
     },
   )
   store.watch((s) => s.export.transparent, transparent.set)
+  store.watch(
+    (s) => s.export.res > STREAM_ABOVE,
+    (streamed) => {
+      copy.disabled = streamed
+      turntable.disabled = streamed
+    },
+  )
   store.watch((s) => s.export.ss, ss.set)
   store.watch((s) => s.export.fileName, (v) => (fileName.value = v))
   store.watch(

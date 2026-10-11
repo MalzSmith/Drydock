@@ -249,7 +249,14 @@
     "rendering": "算繪中…",
     "copy": "複製到剪貼簿",
     "turntable": "轉台 · 36 影格",
-    "spinWebp": "旋轉 WebP · 24 fps"
+    "spinWebp": "旋轉 WebP · 24 fps",
+    "cancel": "取消",
+    "progressTitle": "正在算繪 {dims}",
+    "progressNote": "請保持此分頁開啟。所有圖塊完成後會下載 PNG。",
+    "percent": "{pct}%",
+    "res64k": "64K - 警告",
+    "res64kTip": "提醒：64K 圖像可能達到數百 MB，許多圖像檢視器和編輯器無法開啟這麼大的檔案。",
+    "ssTip": "以更高解析度算繪圖像再縮小，使鋸齒邊緣和細節更平滑。數值越高效果越乾淨，但耗時越長。"
   },
   "compose": {
     "stack": "形狀堆疊",
@@ -407,7 +414,9 @@
     "cacheFailed": "無法快取所有藍圖（儲存空間已滿？）。未快取的藍圖需重新整理後才能開啟。",
     "scanFailed": "掃描 {name} 失敗：{error}",
     "emptyFolder": "該資料夾是空的。",
-    "clearFailed": "無法清除已儲存的快照。"
+    "clearFailed": "無法清除已儲存的快照。",
+    "exportCancelled": "匯出已取消",
+    "waitAssets": "請等待模型與材質載入完成後再算繪"
   },
   "progress": {
     "waitingList": "正在等待瀏覽器列出檔案…",

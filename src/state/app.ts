@@ -72,6 +72,7 @@ export type Info = {
 export type Tab = 'view' | 'section' | 'scene' | 'export'
 
 export const PNG_ONLY_ABOVE = 4320
+export const STREAM_ABOVE = 8640
 
 export type SkyItem = { id: string; name: string; src: string; thumb: string; ready: boolean }
 
@@ -117,6 +118,7 @@ export type AppState = {
   locale: Lang
   toast: string
   busy: boolean
+  progress: number | null
   spin: boolean
   preset: string
 }
@@ -182,7 +184,7 @@ export const store = createStore<AppState>({
   section: { on: false, axis: 0, pos: 0.5, mode: 'cut', flip: false, thick: 2, capHi: true },
   scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40, lighting: 'directional' },
   skies: [],
-  export: { res: 2160, aspect: '16:9', fmt: 'PNG', transparent: false, ss: 2, fileName: '{blueprint}_{date}' },
+  export: { res: 2160, aspect: '16:9', fmt: 'PNG', transparent: false, ss: 8, fileName: '{blueprint}_{date}' },
   compose: { shapes: shapes0, selShape: null, grid: 'Large', name: 'Drydock Hull' },
   sources: [],
   srcOpen: false,
@@ -191,6 +193,7 @@ export const store = createStore<AppState>({
   locale: currentLang(),
   toast: '',
   busy: false,
+  progress: null,
   spin: false,
   preset: 'iso',
 })

@@ -201,6 +201,9 @@ button { font: inherit; color: inherit; }
 .res-dims { font-family: var(--font-heading); font-size: 15px; color: var(--color-accent-700); }
 .ss-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; gap: 10px; }
 .ss-row .seg-opt { padding: 5px 10px; }
+.seg-warn .seg-opt { background: color-mix(in srgb, #b34747 9%, transparent); color: #8a3a3a; }
+.seg-warn .seg-opt:has(input:checked) { background: #a65959; color: var(--color-bg); }
+.seg-warn .seg-opt:not(:has(input:checked, input:disabled)):hover { background: color-mix(in srgb, #b34747 16%, transparent); }
 .defs { table-layout: fixed; }
 .defs th:nth-child(2), .defs td:nth-child(2) { width: 34%; }
 .defs th:nth-child(3), .defs td:nth-child(3) { width: 22%; }

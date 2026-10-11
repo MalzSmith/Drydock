@@ -39,6 +39,7 @@ import {
 import { bgFrag, bgVert, boxFrag, boxVert } from './shaders.ts'
 import { cubeGeometry, gridGeometry } from './cube.ts'
 import { createDetailLayer } from './detailLayer.ts'
+import { createResolver, type Resolver, type TilePlan } from './lanczos.ts'
 import { capsOf, type AssetCounts } from './assets.ts'
 import { makeSkyTexture } from './sky.ts'
 import { skyMatrix } from '../assets/sky.ts'
@@ -191,6 +192,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
   let spin = false
   let bgId = 'sky-default'
   let exportState: { W: number; H: number; cssW: number; ss: number; transparent: boolean; rt: WebGLRenderTarget | null; zo: [number, number] | null } | null = null
+  let resolver: Resolver | null = null
 
   const opts: RenderOptions = {
     style: 'textured',
@@ -314,6 +316,42 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     requestFrame()
   }
 
+  function exportRegion(x0: number, y0: number, w0: number, h0: number): WebGLRenderTarget {
+    const e = exportState!
+    const cam = (proj === 'persp' ? cameras.persp : cameras.ortho) as PerspectiveCamera | OrthographicCamera
+    cam.setViewOffset(e.W, e.H, x0, y0, w0, h0)
+    if (e.zo) {
+      gl.autoClear = false
+      const rt = detail.renderTile(
+        {
+          cam,
+          w: w0,
+          h: h0,
+          ss: e.ss,
+          transparent: e.transparent,
+          drawBackground: () => {
+            bgMat.uniforms.u_origin.value.set(x0, e.H - y0 - h0)
+            root.visible = false
+            gl.render(scene, cam)
+          },
+        },
+        e.zo,
+      )
+      gl.autoClear = true
+      return rt
+    }
+    if (!e.rt || e.rt.width !== w0 || e.rt.height !== h0) {
+      e.rt?.dispose()
+      e.rt = new WebGLRenderTarget(w0, h0, { samples: 4, depthBuffer: true })
+    }
+    bgMat.uniforms.u_origin.value.set(x0, e.H - y0 - h0)
+    gl.setRenderTarget(e.rt)
+    gl.setClearColor(0x000000, e.transparent ? 0 : 1)
+    gl.render(scene, cam)
+    gl.setRenderTarget(null)
+    return e.rt
+  }
+
   function draw() {
     const fr = frameRect(W, H, aspectOf(aspect))
     placeCameras(cameras, view, viewBounds(), W, H, fr, fitState)
@@ -363,6 +401,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
 
   function frame(t: number) {
     raf = 0
+    if (exportState) return
     const dt = Math.min(0.05, (t - last) / 1000)
     last = t
     let again = false
@@ -477,55 +516,15 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
         gl.autoClear = true
       }
     },
-    exportTile(x: number, y: number, tw: number, th: number): Uint8Array {
+    exportLanczos(plan: TilePlan, ox: number, oy: number, ow: number, oh: number): Uint8Array {
       const e = exportState!
-      const cam = (proj === 'persp' ? cameras.persp : cameras.ortho) as PerspectiveCamera | OrthographicCamera
-      if (e.zo) {
-        const pl = x > 0 ? 1 : 0
-        const pt = y > 0 ? 1 : 0
-        const pr = x + tw < e.W ? 1 : 0
-        const pb = y + th < e.H ? 1 : 0
-        const x0 = x - pl
-        const y0 = y - pt
-        const w0 = tw + pl + pr
-        const h0 = th + pt + pb
-        cam.setViewOffset(e.W, e.H, x0, y0, w0, h0)
-        gl.autoClear = false
-        const out = detail.renderTile(
-          {
-            cam,
-            w: w0,
-            h: h0,
-            ss: e.ss,
-            transparent: e.transparent,
-            drawBackground: () => {
-              bgMat.uniforms.u_origin.value.set(x0, e.H - y0 - h0)
-              root.visible = false
-              gl.render(scene, cam)
-            },
-          },
-          e.zo,
-          { x: pl, y: pb, w: tw, h: th },
-        )
-        gl.autoClear = true
-        return out
-      }
-      cam.setViewOffset(e.W, e.H, x, y, tw, th)
-      if (!e.rt || e.rt.width !== tw || e.rt.height !== th) {
-        e.rt?.dispose()
-        e.rt = new WebGLRenderTarget(tw, th, { samples: 4, depthBuffer: true })
-      }
-      bgMat.uniforms.u_origin.value.set(x, e.H - y - th)
-      gl.setRenderTarget(e.rt)
-      gl.setClearColor(0x000000, e.transparent ? 0 : 1)
-      gl.render(scene, cam)
-      const buf = new Uint8Array(tw * th * 4)
-      gl.readRenderTargetPixels(e.rt, 0, 0, tw, th, buf)
-      gl.setRenderTarget(null)
-      return buf
+      const rt = exportRegion(ox * plan.ss - plan.apron, oy * plan.ss - plan.apron, plan.tw, plan.th)
+      resolver ??= createResolver(gl)
+      return resolver.run(rt.texture, plan, ow, oh, !e.transparent)
     },
     exportEnd() {
       const e = exportState
+      resolver?.dispose()
       if (e?.rt) e.rt.dispose()
       exportState = null
       cameras.persp.clearViewOffset()
