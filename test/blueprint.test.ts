@@ -19,7 +19,17 @@ describe('parseBlueprint', () => {
     expect(Array.from(g.orient)).toEqual([2 * 6 + 4, 5 * 6 + 0])
     expect(g.hsv[0]).toBeCloseTo(0.5)
     expect(g.hsv[4]).toBeCloseTo(-0.8)
-    expect(g.world[12]).toBe(1)
+    expect(g.world[12]).toBe(0)
+  })
+
+  it('keeps subgrid offsets exact at large world coordinates', () => {
+    const grid = (x: string, y: string, z: string) => `<CubeGrid><PositionAndOrientation><Position x="${x}" y="${y}" z="${z}" /><Forward x="0" y="0" z="-1" /><Up x="0" y="1" z="0" /></PositionAndOrientation>
+<GridSizeEnum>Large</GridSizeEnum><CubeBlocks><MyObjectBuilder_CubeBlock><SubtypeName>A</SubtypeName><Min x="0" y="0" z="0" /></MyObjectBuilder_CubeBlock></CubeBlocks></CubeGrid>`
+    const bp = parseBlueprint(`<CubeGrids>${grid('-36431061.83568352', '-35731852.250961095', '-16486719.357631192')}${grid('-36431050.76912906', '-35731842.15380201', '-16486720.26249414')}</CubeGrids>`)
+    const w = bp.grids[1].world
+    expect(w[12]).toBeCloseTo(11.0666, 3)
+    expect(w[13]).toBeCloseTo(10.0971, 3)
+    expect(w[14]).toBeCloseTo(-0.9049, 3)
   })
 
   it('ignores nested blocks and nested CubeBlocks outside the grid list', () => {

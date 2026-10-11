@@ -239,6 +239,7 @@ export function parseBlueprint(text: string, fallbackName = ''): ParsedBlueprint
   }
 
   const grids: ParsedGrid[] = []
+  let origin: number[] | null = null
   for (let gi = 0; gi < starts.length; gi++) {
     const gs = starts[gi]
     const ge = gi + 1 < starts.length ? starts[gi + 1] : text.length
@@ -330,7 +331,9 @@ export function parseBlueprint(text: string, fallbackName = ''): ParsedBlueprint
     if (poAt >= 0) {
       const poEnd = text.indexOf('</PositionAndOrientation>', poAt)
       const to = poEnd < 0 ? poTo : Math.min(poEnd, poTo)
-      world = createWorld(vecTag(text, 'Position', poAt + 1, to, [0, 0, 0]), vecTag(text, 'Forward', poAt + 1, to, [0, 0, -1]), vecTag(text, 'Up', poAt + 1, to, [0, 1, 0]))
+      const at = vecTag(text, 'Position', poAt + 1, to, [0, 0, 0])
+      origin ??= at
+      world = createWorld([at[0] - origin[0], at[1] - origin[1], at[2] - origin[2]], vecTag(text, 'Forward', poAt + 1, to, [0, 0, -1]), vecTag(text, 'Up', poAt + 1, to, [0, 1, 0]))
     } else {
       world = createWorld([0, 0, 0], [0, 0, -1], [0, 1, 0])
     }
