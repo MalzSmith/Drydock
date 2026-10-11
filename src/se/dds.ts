@@ -190,6 +190,19 @@ const weights = (bits: number) => (bits === 2 ? W2 : bits === 3 ? W3 : W4)
 const ep = new Int32Array(24)
 const idx1 = new Int32Array(16)
 const idx2 = new Int32Array(16)
+const COLOR_BITS = [4, 6, 5, 7, 5, 7, 7, 5]
+let bs: Uint8Array = new Uint8Array(0)
+let bo = 0
+let bpos = 0
+
+function read(n: number) {
+  let v = 0
+  for (let i = 0; i < n; i++) {
+    v |= ((bs[bo + (bpos >> 3)] >> (bpos & 7)) & 1) << i
+    bpos++
+  }
+  return v
+}
 
 export function bc7(s: Uint8Array, o: number, dst: Uint8Array) {
   let mode = 0
@@ -198,21 +211,15 @@ export function bc7(s: Uint8Array, o: number, dst: Uint8Array) {
     dst.fill(0, 0, 64)
     return
   }
-  let pos = 0
-  const read = (n: number) => {
-    let v = 0
-    for (let i = 0; i < n; i++) {
-      v |= ((s[o + (pos >> 3)] >> (pos & 7)) & 1) << i
-      pos++
-    }
-    return v
-  }
+  bs = s
+  bo = o
+  bpos = 0
   read(mode + 1)
   const subsets = mode === 0 || mode === 2 ? 3 : mode === 1 || mode === 3 || mode === 7 ? 2 : 1
   const partitionBits = mode === 0 ? 4 : mode === 1 || mode === 2 || mode === 3 || mode === 7 ? 6 : 0
   const rotationBits = mode === 4 || mode === 5 ? 2 : 0
   const indexSelBits = mode === 4 ? 1 : 0
-  const colorBits = [4, 6, 5, 7, 5, 7, 7, 5][mode]
+  const colorBits = COLOR_BITS[mode]
   const alphaBits = mode === 4 ? 6 : mode === 5 ? 8 : mode === 6 ? 7 : mode === 7 ? 5 : 0
   const endpointP = mode === 0 || mode === 3 || mode === 6 || mode === 7
   const sharedP = mode === 1
@@ -274,9 +281,17 @@ export function bc7(s: Uint8Array, o: number, dst: Uint8Array) {
       b = interp(ep[e0 + 2], ep[e1 + 2], wc)
       a = interp(ep[e0 + 3], ep[e1 + 3], wa)
     }
-    if (rotation === 1) [a, r] = [r, a]
-    else if (rotation === 2) [a, g] = [g, a]
-    else if (rotation === 3) [a, b] = [b, a]
+    const t = a
+    if (rotation === 1) {
+      a = r
+      r = t
+    } else if (rotation === 2) {
+      a = g
+      g = t
+    } else if (rotation === 3) {
+      a = b
+      b = t
+    }
     dst[i * 4] = r
     dst[i * 4 + 1] = g
     dst[i * 4 + 2] = b
@@ -331,14 +346,13 @@ export function decodeLevel(f: DdsFormat, data: Uint8Array, w: number, h: number
     for (let by = 0; by < bh; by++)
       for (let bx = 0; bx < bw; bx++) {
         decodeBlock(f, data, (by * bw + bx) * bb, block)
+        const len = Math.min(4, w - bx * 4) * 4
         for (let py = 0; py < 4; py++) {
           const y = by * 4 + py
           if (y >= h) break
-          for (let px = 0; px < 4; px++) {
-            const x = bx * 4 + px
-            if (x >= w) break
-            rgba.set(block.subarray((py * 4 + px) * 4, (py * 4 + px) * 4 + 4), (y * w + x) * 4)
-          }
+          const src = py * 16
+          const dst = (y * w + bx * 4) * 4
+          for (let k = 0; k < len; k++) rgba[dst + k] = block[src + k]
         }
       }
     return rgba

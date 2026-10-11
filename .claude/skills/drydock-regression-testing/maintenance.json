@@ -1,5 +1,5 @@
 {
-  "commit": "83da2d3f606e92542349d722d1bd88aec058ddb2",
-  "date": "2026-10-10",
-  "note": "Run 20261010-022403: added X13 spinning WebP export and the animInfo helper."
+  "commit": "eec57ab2ac37cab263e581744e927014626e67ce",
+  "date": "2026-10-11",
+  "note": "Runs 20261011-050846 and 20261011-075402-eec57ab: no step changes needed; focus checks compare the perf refactor against a HEAD baseline build outside the repo."
 }

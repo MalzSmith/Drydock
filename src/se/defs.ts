@@ -453,9 +453,9 @@ export function resolveBlueprint(
     grids.push({
       cell,
       toMain,
-      inst: buf.slice(0, w * 32),
+      inst: w === n ? buf : buf.slice(0, w * 32),
       count: w,
-      detail: { def: dDef.slice(0, w), orient: dOrient.slice(0, w), hsv: dHsv.slice(0, w * 3), skin: dSkin.slice(0, w) },
+      detail: w === n ? { def: dDef, orient: dOrient, hsv: dHsv, skin: dSkin } : { def: dDef.slice(0, w), orient: dOrient.slice(0, w), hsv: dHsv.slice(0, w * 3), skin: dSkin.slice(0, w) },
     })
   })
 

@@ -59,8 +59,7 @@ const fpOf = (f: File) => `${f.size}|${f.lastModified}`
 async function resolve<T>(env: AssetEnv, store: 'meshes' | 'textures', cands: string[], v: number, build: (key: string, f: File) => Promise<T | null>): Promise<AssetResult<T>> {
   let anyFiles = false
   for (const key of cands) {
-    const f = env.has(key) ? await env.file(key) : undefined
-    const hit = await env.cacheGet<CacheRec<T | null>>(store, key).catch(() => undefined)
+    const [f, hit] = await Promise.all([env.has(key) ? env.file(key) : undefined, env.cacheGet<CacheRec<T | null>>(store, key).catch(() => undefined)])
     if (f) {
       if (hit && hit.v === v && hit.fp === fpOf(f)) return hit.data ? { data: hit.data, status: 'ok', key } : { data: null, status: 'error', key }
       try {

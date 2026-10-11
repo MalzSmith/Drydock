@@ -59,11 +59,14 @@ export function renderFrame(r: Renderer, cssW: number, yaw?: number, fit?: Fit, 
         const tw = Math.min(T, W - x)
         const th = Math.min(T, H - y)
         const px = r.exportTile(x, y, tw, th)
-        const img = new ImageData(tw, th)
-        for (let row = 0; row < th; row++) {
-          const src = (th - 1 - row) * tw * 4
-          img.data.set(px.subarray(src, src + tw * 4), row * tw * 4)
+        const stride = tw * 4
+        const tmp = new Uint8Array(stride)
+        for (let a = 0, b = (th - 1) * stride; a < b; a += stride, b -= stride) {
+          tmp.set(px.subarray(a, a + stride))
+          px.copyWithin(a, b, b + stride)
+          px.set(tmp, b)
         }
+        const img = new ImageData(new Uint8ClampedArray(px.buffer as ArrayBuffer, px.byteOffset, px.length), tw, th)
         if (transparent) unpremultiply(img.data)
         ctx.putImageData(img, x, y)
       }
@@ -82,6 +85,7 @@ function downsample(c: HTMLCanvasElement, w: number, h: number): HTMLCanvasEleme
     const ctx = next.getContext('2d')!
     ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(cur, 0, 0, nw, nh)
+    cur.width = cur.height = 0
     cur = next
   }
   return cur
@@ -167,7 +171,7 @@ async function spinFrames(r: Renderer, canvas: HTMLCanvasElement, transparent: b
   const css = cssWidth(canvas)
   for (let i = 0; i < yaws.length; i++) {
     await each(renderFrame(r, css, yaws[i], fit, transparent), i)
-    await nextFrame()
+    await new Promise((ok) => setTimeout(ok, 0))
   }
 }
 

@@ -62,13 +62,23 @@ export function mountBlueprintPanel(root: HTMLElement) {
       h('span', { class: 'txt' }, h('span', { class: 'nm' }, e.name), h('span', { class: 's11 muted' }, msg(entryMeta(e)))),
     )
 
+  const rows = new WeakMap<ListEntry, { on: boolean; loc: string; el: HTMLElement }>()
+  const rowFor = (e: ListEntry, on: boolean, loc: string) => {
+    const c = rows.get(e)
+    if (c && c.on === on && c.loc === loc) return c.el
+    const el = row(e, on)
+    rows.set(e, { on, loc, el })
+    return el
+  }
+
   store.watch(
     (s) => [s.entries, s.pinned, s.search, s.bp, s.listSource, s.locale] as const,
-    ([entries, pinned, q, sel, src]) => {
-      const vis = entries.filter((e) => e.list === src && e.name.toLowerCase().includes(q.toLowerCase()))
+    ([entries, pinned, q, sel, src, loc]) => {
+      const lq = q.toLowerCase()
+      const vis = entries.filter((e) => e.list === src && e.name.toLowerCase().includes(lq))
       count.set(tr('library.found', { count: vis.length }))
       const pinnedRow = pinned ? h('button', { class: 'blueprint bp-row' + (sel === pinned.id ? ' sel' : '') }, ...(sel === pinned.id ? corners() : []), h('span', { class: 'glyph' }, pinned.large ? 'L' : 'S'), h('span', { class: 'txt' }, h('span', { class: 'nm' }, pinned.name), h('span', { class: 's11 muted' }, msg(entryMeta(pinned))))) : null
-      replaceChildren(list, pinnedRow, ...vis.map((e) => row(e, e.id === sel)), drop)
+      replaceChildren(list, pinnedRow, ...vis.map((e) => rowFor(e, e.id === sel, loc)), drop)
     },
     (a, b) => a.every((v, i) => v === b[i]),
   )

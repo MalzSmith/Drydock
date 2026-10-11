@@ -595,7 +595,7 @@ void main() {
   float cue = 1.0 - (z - zr.x) * zInv;
   float edge = (line && u_line == 0 ? 1.0 - 0.28 * fade : 1.0) * cue;
   bool flagged = false;
-  for (int k = 0; k < 4; k++) {
+  if (u_refLook > 0.0) for (int k = 0; k < 4; k++) {
     ivec2 q = p + (k == 0 ? ivec2(1, 0) : k == 1 ? ivec2(-1, 0) : k == 2 ? ivec2(0, 1) : ivec2(0, -1));
     if (q.x < 0 || q.y < 0 || q.x >= size.x || q.y >= size.y) continue;
     float dq = texelFetch(u_dep, q, 0).r;

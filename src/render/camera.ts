@@ -99,10 +99,12 @@ export function computeFit(yaw: number, pitch: number, grids: FitGrid[], center:
   const vy = [s * sp, cp, -c * sp]
   const vz = [-s * cp, sp, c * cp]
   const dot = (v: number[], a: number[]) => v[0] * a[0] + v[1] * a[1] + v[2] * a[2]
-  let total = 0
-  for (const g of grids) total += g.count
-  const P = new Float32Array(total * 6)
-  let n = 0
+  const kx = 1 / (tanV * aspect * FIT_FILL)
+  const ky = 1 / (tanV * FIT_FILL)
+  const f32 = Math.fround
+  let dist = 1e-3
+  let hx = 0
+  let hy = 0
   for (const g of grids) {
     const m = g.toMain
     const ax = [m[0], m[1], m[2]]
@@ -123,34 +125,19 @@ export function computeFit(yaw: number, pitch: number, grids: FitGrid[], center:
     const ex0 = Math.abs(px[0]), ex1 = Math.abs(px[1]), ex2 = Math.abs(px[2])
     const ey0 = Math.abs(py[0]), ey1 = Math.abs(py[1]), ey2 = Math.abs(py[2])
     const ez0 = Math.abs(pz[0]), ez1 = Math.abs(pz[1]), ez2 = Math.abs(pz[2])
-    for (let i = 0; i < g.count; i++, n++) {
+    for (let i = 0; i < g.count; i++) {
       const o = i * 8
       const sx = f[o + 3], sy = f[o + 4], sz = f[o + 5]
       const lx = (f[o] + (sx - 1) * 0.5) * cell
       const ly = (f[o + 1] + (sy - 1) * 0.5) * cell
       const lz = (f[o + 2] + (sz - 1) * 0.5) * cell
-      const q = n * 6
-      P[q] = t0 + lx * px[0] + ly * px[1] + lz * px[2]
-      P[q + 1] = t1 + lx * py[0] + ly * py[1] + lz * py[2]
-      P[q + 2] = t2 + lx * pz[0] + ly * pz[1] + lz * pz[2]
-      P[q + 3] = h * (sx * ex0 + sy * ex1 + sz * ex2)
-      P[q + 4] = h * (sx * ey0 + sy * ey1 + sz * ey2)
-      P[q + 5] = h * (sx * ez0 + sy * ez1 + sz * ez2)
+      const ax = Math.abs(f32(t0 + lx * px[0] + ly * px[1] + lz * px[2])) + f32(h * (sx * ex0 + sy * ex1 + sz * ex2))
+      const ay = Math.abs(f32(t1 + lx * py[0] + ly * py[1] + lz * py[2])) + f32(h * (sx * ey0 + sy * ey1 + sz * ey2))
+      const d = f32(t2 + lx * pz[0] + ly * pz[1] + lz * pz[2]) + f32(h * (sx * ez0 + sy * ez1 + sz * ez2)) + Math.max(ax * kx, ay * ky)
+      if (d > dist) dist = d
+      if (ax > hx) hx = ax
+      if (ay > hy) hy = ay
     }
-  }
-  const kx = 1 / (tanV * aspect * FIT_FILL)
-  const ky = 1 / (tanV * FIT_FILL)
-  let dist = 1e-3
-  let hx = 0
-  let hy = 0
-  for (let i = 0; i < total; i++) {
-    const q = i * 6
-    const ax = Math.abs(P[q]) + P[q + 3]
-    const ay = Math.abs(P[q + 1]) + P[q + 4]
-    const d = P[q + 2] + P[q + 5] + Math.max(ax * kx, ay * ky)
-    if (d > dist) dist = d
-    if (ax > hx) hx = ax
-    if (ay > hy) hy = ay
   }
   const half = Math.max(hy, hx / aspect, 1e-3) / FIT_FILL
   return { dist, half }

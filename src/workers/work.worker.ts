@@ -1,10 +1,10 @@
 import { keyed } from '../util/keyed.ts'
 import { PARSE_VERSION, decodeBlueprint, parseBlueprint, type ParsedBlueprint } from '../se/blueprint.ts'
-import { idbDelete, idbGet, idbKeys, idbPut } from '../sources/idb.ts'
+import { idbDeleteMany, idbGet, idbKeys, idbPut } from '../sources/idb.ts'
 import { mapPool, treeFromFiles } from '../sources/fs.ts'
 import { scanSource, type BpMeta, type ModCacheRec, type ScanResult, type ScanCache, type SourceKind } from '../sources/scan.ts'
 import { MAX_EXPORT_BLOCKS, writeSbc } from '../se/sbcWrite.ts'
-import { surfaceInstances, voxelize, type CutSpec, type VShape } from '../compose/csg.ts'
+import { surfaceInstances, voxelize, type CutSpec, type Voxels, type VShape } from '../compose/csg.ts'
 import { request, serve } from './rpc.ts'
 import { loadMesh, loadTexture, type AssetEnv, type Caps } from '../assets/build.ts'
 import { defModels } from '../assets/keys.ts'
@@ -20,7 +20,7 @@ export type BpRec = { fp: string; v?: number; parsed: ParsedBlueprint }
 
 async function prune(store: 'mods' | 'bps', sourceId: number, keep: Set<string>) {
   const prefix = `${sourceId}/`
-  for (const k of await idbKeys(store)) if (typeof k === 'string' && k.startsWith(prefix) && !keep.has(k)) await idbDelete(store, k)
+  await idbDeleteMany(store, (await idbKeys(store)).filter((k) => typeof k === 'string' && k.startsWith(prefix) && !keep.has(k)))
 }
 
 const cache: ScanCache = {
@@ -35,6 +35,7 @@ export type ParseResult = { parsed: ParsedBlueprint; ms: { read: number; decode:
 export type VoxelizeResult = { inst: ArrayBuffer; types: Uint8Array; count: number; fit: { inst: ArrayBuffer; count: number } | null; dims: [number, number, number]; total: number; counts: number[]; ms: number }
 export type WriteResult = { blob: Blob; total: number }
 
+let lastVox: { key: string; v: Voxels } | null = null
 const assetFiles = new Map<number, Set<string>>()
 const prefixes = new Map<number, Set<string>>()
 const fetched = new Map<string, Promise<File | undefined>>()
@@ -175,7 +176,9 @@ serve({
   },
   voxelize(arg: { shapes: VShape[]; sel: number; cut: CutSpec | null }) {
     const t0 = performance.now()
-    const v = voxelize(arg.shapes, arg.sel)
+    const key = JSON.stringify([arg.shapes, arg.sel])
+    if (lastVox?.key !== key) lastVox = { key, v: voxelize(arg.shapes, arg.sel) }
+    const v = lastVox.v
     const s = surfaceInstances(v, arg.cut)
     const f = arg.cut ? surfaceInstances(v, null) : null
     const fit = f ? { inst: f.inst, count: f.count } : null

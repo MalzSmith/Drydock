@@ -171,7 +171,9 @@ function test(p: Prep, x: number, y: number, z: number): boolean {
   const lx = x - p.mlo[0]
   const ly = y - p.mlo[1]
   const lz = z - p.mlo[2]
-  const [X, Y, Z] = p.mdim
+  const X = p.mdim[0]
+  const Y = p.mdim[1]
+  const Z = p.mdim[2]
   if (lx < 0 || ly < 0 || lz < 0 || lx >= X || ly >= Y || lz >= Z) return false
   return p.mask[lx + X * (ly + Y * lz)] === 1
 }
@@ -223,20 +225,24 @@ export function voxelize(shapes: VShape[], sel = -1): Voxels {
   const mark = sp ? new Uint8Array(X * Y * Z) : null
   let total = 0
   let i = 0
+  const ns = ps.length
+  const x0 = ps.map((p) => p.lo[0] - 1)
+  const x1 = ps.map((p) => p.hi[0] + 1)
+  const row = new Uint8Array(ns)
   for (let z = 0; z < Z; z++)
-    for (let y = 0; y < Y; y++)
+    for (let y = 0; y < Y; y++) {
+      const gy = y + o[1]
+      const gz = z + o[2]
+      for (let j = 0; j < ns; j++) row[j] = gy >= ps[j].lo[1] - 1 && gy <= ps[j].hi[1] + 1 && gz >= ps[j].lo[2] - 1 && gz <= ps[j].hi[2] + 1 ? 1 : 0
       for (let x = 0; x < X; x++, i++) {
         const gx = x + o[0]
-        const gy = y + o[1]
-        const gz = z + o[2]
         let t = 0
-        for (const p of ps) {
-          const inn = test(p, gx, gy, gz)
+        for (let j = 0; j < ns; j++) {
+          const p = ps[j]
+          const inBox = row[j] === 1 && gx >= x0[j] && gx <= x1[j]
           if (p.op === 0) {
-            if (inn && !t) t = p.block
-          } else if (p.op === 1) {
-            if (inn) t = 0
-          } else if (!inn) t = 0
+            if (!t && inBox && test(p, gx, gy, gz)) t = p.block
+          } else if (t && (p.op === 1) === (inBox && test(p, gx, gy, gz))) t = 0
         }
         if (t) {
           grid[i] = t
@@ -245,6 +251,7 @@ export function voxelize(shapes: VShape[], sel = -1): Voxels {
           total++
         }
       }
+    }
   return crop({ grid, dims, counts, total, mark })
 }
 

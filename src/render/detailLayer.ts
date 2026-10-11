@@ -714,8 +714,8 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   function render(p: DetailPass, out: { w: number; h: number }) {
     ensureTargets(p.w, p.h)
     renderGBuffer(p.cam, p.w, p.h, p.ss)
-    const zr = reduce(p.w, p.h)
-    composite(p, zr, null)
+    if (compMat.uniforms.u_refLook.value === 0) composite(p, null, [0, 0])
+    else composite(p, reduce(p.w, p.h), null)
     downMat.uniforms.u_src.value = compRT!.texture
     downMat.uniforms.u_ss.value = p.ss
     gl.setRenderTarget(null)
@@ -724,6 +724,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   }
 
   function depthRange(cam: Camera, w: number, h: number, ss: number): [number, number] {
+    if (compMat.uniforms.u_refLook.value === 0) return [0, 0]
     ensureTargets(w, h)
     renderGBuffer(cam, w, h, ss)
     const zr = reduce(w, h)

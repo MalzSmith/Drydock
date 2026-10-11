@@ -6,6 +6,7 @@ import {
   resolveBlueprint,
   type DefRecord,
   type DefTuple,
+  type Lookup,
   type MissingMode,
   type RenderModel,
   type Resolved,
@@ -225,6 +226,10 @@ const modDefCache = new Map<string, { defs: DefRecord[]; skins: SkinRecord[]; gl
 
 const getVanilla = () => (vanillaP ??= loadVanilla())
 
+let baseLookup: { game: DefRecord[]; vanilla: DefRecord[]; lookup: Lookup } | null = null
+const baseFor = (vanilla: DefRecord[]) =>
+  baseLookup?.game === gameDefs && baseLookup.vanilla === vanilla ? baseLookup.lookup : (baseLookup = { game: gameDefs, vanilla, lookup: buildLookup([vanilla, gameDefs]) }).lookup
+
 async function loadModDefs(key: string): Promise<{ defs: DefRecord[]; skins: SkinRecord[]; glass: GlassRecord[] }> {
   let d = modDefCache.get(key)
   if (!d) {
@@ -375,8 +380,7 @@ async function fillEntryMods() {
   const run = ++fillRun
   const todo = store.get().entries.filter((e) => e.mods === null || e.blocks === null)
   if (!todo.length) return
-  const vanilla = await getVanilla()
-  const base = buildLookup([vanilla, gameDefs])
+  const base = baseFor(await getVanilla())
   const version = indexVersion
   const found = new Map<string, BpMeta>()
   const flush = () => {
@@ -415,9 +419,8 @@ async function resolveCurrent() {
   const my = ++seq
   const t0 = performance.now()
   const vanilla = await getVanilla()
-  const base = buildLookup([vanilla, gameDefs])
   if (c.picksVersion !== indexVersion || !c.picks) {
-    c.picks = pickMods(c.parsed, base, modIndex)
+    c.picks = pickMods(c.parsed, baseFor(vanilla), modIndex)
     c.picksVersion = indexVersion
   }
   const picks = c.picks

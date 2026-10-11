@@ -34,6 +34,18 @@ export const idbGet = <T>(store: Store, key: IDBValidKey) => run<T | undefined>(
 export const idbPut = (store: Store, key: IDBValidKey | undefined, value: unknown) =>
   run(store, 'readwrite', (s) => (key === undefined ? s.put(value) : s.put(value, key)))
 export const idbDelete = (store: Store, key: IDBValidKey) => run(store, 'readwrite', (s) => s.delete(key))
+export const idbDeleteMany = (store: Store, keys: IDBValidKey[]) =>
+  open().then(
+    (db) =>
+      new Promise<void>((ok, fail) => {
+        const tx = db.transaction(store, 'readwrite')
+        const s = tx.objectStore(store)
+        for (const k of keys) s.delete(k)
+        tx.oncomplete = () => ok()
+        tx.onerror = () => fail(tx.error)
+        tx.onabort = () => fail(tx.error)
+      }),
+  )
 export const idbAll = <T>(store: Store) => run<T[]>(store, 'readonly', (s) => s.getAll())
 export const idbClear = (store: Store) => run(store, 'readwrite', (s) => s.clear())
 export const idbKeys = (store: Store) => run<IDBValidKey[]>(store, 'readonly', (s) => s.getAllKeys())

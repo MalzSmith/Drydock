@@ -65,9 +65,7 @@ export function writeSbc(v: Voxels, name: string, size: 'Large' | 'Small'): Blob
       for (let x = 0; x < X; x++, i++) {
         const t = v.grid[i]
         if (!t) continue
-        chunk.push(
-          `            <MyObjectBuilder_CubeBlock xsi:type="MyObjectBuilder_CubeBlock"><SubtypeName>${subs[t - 1]}</SubtypeName><Min x="${x}" y="${y}" z="${z}" /><BlockOrientation Forward="Forward" Up="Up" /><ColorMaskHSV x="0" y="-1" z="0" /><SkinSubtypeId /></MyObjectBuilder_CubeBlock>\n`,
-        )
+        chunk.push(blockLine(subs[t - 1]!, x, y, z))
         if (chunk.length >= 20000) {
           parts.push(chunk.join(''))
           chunk = []

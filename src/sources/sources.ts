@@ -6,7 +6,7 @@ import type { CacheArg, CacheReply, ScanReply, SnapRec } from '../workers/work.w
 import { isRelevantFile } from './fs.ts'
 import { assetKeys, isAssetFile } from '../assets/keys.ts'
 import { assetFile, dropAssetFiles, setAssetFiles } from '../assets/files.ts'
-import { idbAll, idbClear, idbDelete, idbGet, idbKeys, idbPut } from './idb.ts'
+import { idbAll, idbClear, idbDelete, idbDeleteMany, idbGet, idbKeys, idbPut } from './idb.ts'
 import type { ScanResult } from './scan.ts'
 import type { SkyMeta } from '../assets/sky.ts'
 
@@ -203,8 +203,8 @@ export async function unlinkSource(id: number) {
     await idbDelete('sources', id)
     await idbDelete('snap', id)
     const prefix = `${id}/`
-    for (const st of ['mods', 'bps'] as const) for (const k of await idbKeys(st)) if (typeof k === 'string' && k.startsWith(prefix)) await idbDelete(st, k)
-    for (const st of ['meshes', 'textures', 'skymeta'] as const) for (const k of await idbKeys(st)) if (typeof k === 'string' && k.startsWith('m:' + prefix)) await idbDelete(st, k)
+    for (const st of ['mods', 'bps'] as const) await idbDeleteMany(st, (await idbKeys(st)).filter((k) => typeof k === 'string' && k.startsWith(prefix)))
+    for (const st of ['meshes', 'textures', 'skymeta'] as const) await idbDeleteMany(st, (await idbKeys(st)).filter((k) => typeof k === 'string' && k.startsWith('m:' + prefix)))
   } catch {
     actions.toast(keyed('toast.clearFailed'))
   }
