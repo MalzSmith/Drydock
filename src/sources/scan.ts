@@ -39,7 +39,7 @@ export function bpMetaOf(v: BpMeta | number | undefined): { mods: number | null;
   return v ? { mods: v.mods, unresolved: v.unresolved, blocks: v.blocks } : { mods: null, blocks: null }
 }
 
-export type ModInfo = { key: string; sourceId: number; folder: string; name: string; subs: string[] }
+export type ModInfo = { key: string; sourceId: number; folder: string; name: string; subs: string[]; bare?: string[] }
 
 export type ModCacheRec = { fp: string; name: string; subs: string[]; defs: DefTuple[]; skins?: SkinDef[]; glass?: GlassDef[]; skies?: SkyDef[] }
 
@@ -134,7 +134,7 @@ export async function scanBlueprints(root: FsDir, kind: SourceKind, sourceId: nu
 type Indexed = { info: ModInfo | null; skies: ModSkies | null }
 
 const indexed = (key: string, sourceId: number, folder: string, rec: ModCacheRec): Indexed => ({
-  info: rec.subs.length ? { key, sourceId, folder, name: rec.name, subs: rec.subs } : null,
+  info: rec.subs.length ? { key, sourceId, folder, name: rec.name, subs: rec.subs, bare: rec.defs.filter((d) => !d[1]).map((d) => d[0].toLowerCase()) } : null,
   skies: rec.skies?.length ? { key, name: rec.name, skies: rec.skies } : null,
 })
 
@@ -187,7 +187,7 @@ async function indexMod(sourceId: number, dir: FsDir, cache: ScanCache): Promise
 export async function scanMods(root: FsDir, kind: SourceKind, sourceId: number, cache: ScanCache, progress?: Progress): Promise<{ mods: ModInfo[]; skies: ModSkies[]; seen: string[] }> {
   const base = kind === 'mods' ? root : await findWorkshopRoot(root, kind === 'torch' ? 'torch' : 'workshop')
   if (!base) return { mods: [], skies: [], seen: [] }
-  const dirs = await childDirs(base)
+  const dirs = kind === 'mods' && (await tryDir(root, 'Data')) ? [root] : await childDirs(base)
   let done = 0
   const list = await mapPool(dirs, 8, async (d) => {
     const m = await indexMod(sourceId, d, cache).catch(() => null)

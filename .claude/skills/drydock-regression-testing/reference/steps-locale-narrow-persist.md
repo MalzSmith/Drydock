@@ -72,7 +72,7 @@ Pass: `narrow` and `notice` true, `app` and `booted` false, one language link pe
 
 ## P Persistence across a reload (main profile)
 
-**P0 Before closing.** In the main session: set the language to Русский (menu row nth 3), make sure seams are on (R4), then save the reference state:
+**P0 Before closing.** In the main session: set the language to Русский (menu row nth 3), make sure seams are on (R4), and in the Sources dialog move the `bp` source (kind blueprints, it defines no blocks, so resolution is unchanged) one row down with its move-down `button.src-move` so the list is no longer in ascending id order (if `bp` is the last row, move it up instead); close the dialog, then save the reference state:
 ```js
 return lib.save('P0', { sum: await lib.summary(s), entries: await lib.entries(s), storage: await lib.storage(s), errs: lib.drain(s) })
 ```
@@ -93,7 +93,7 @@ return {
   nav: sum.nav, shot: await lib.shot(s, 'P1-reloaded', null), errs: lib.drain(s),
 }
 ```
-Pass: `sourcesSame` true, entry counts equal, `locale` and `html` `ru`, `edges` and `seamsBox` true, `welcome` false, `nav` reports the linked sources. A `@toast.uncached` toast may appear later (files are gone); that is expected.
+Pass: `sourcesSame` true (order-sensitive, so it also checks the non-id order set in P0), entry counts equal, `locale` and `html` `ru`, `edges` and `seamsBox` true, `welcome` false, `nav` reports the linked sources. A `@toast.uncached` toast may appear later (files are gone); that is expected.
 
 **P2 Pairs from the snapshot.** For every pair open plain and gzipped entry with `lib.openEntry`. Pass: both load; plain and gzipped `lib.pick` are equal; name, `large` and `blockCount` equal G3 (`lib.load('G3')`), while `dims` and `lengthM` are compared with the game-linked values from G8/R1 (G3 ran before the game was linked, and game definitions give multi-cell blocks their real size); `perf` read/decode/parse are 0 (the cached parse was used because the files are no longer available); the unicode entry opens with the O3 values.
 

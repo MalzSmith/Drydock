@@ -1,10 +1,10 @@
 import { errText, keyed, keyedList } from '../util/keyed.ts'
 import { fromTuples } from '../se/defs.ts'
-import { actions, store, type ListEntry, type ModMeta, type Source, type SourceKind } from '../state/app.ts'
+import { actions, store, type IndexLayer, type ListEntry, type Source, type SourceKind } from '../state/app.ts'
 import { assetRpc, scanRpc } from '../workers/client.ts'
 import type { CacheArg, CacheReply, ScanReply, SnapRec } from '../workers/work.worker.ts'
 import { isRelevantFile } from './fs.ts'
-import { assetKeys, isAssetFile } from '../assets/keys.ts'
+import { assetKeys, isAssetFile, isSingleMod } from '../assets/keys.ts'
 import { assetFile, dropAssetFiles, setAssetFiles } from '../assets/files.ts'
 import { idbAll, idbClear, idbDelete, idbDeleteMany, idbGet, idbKeys, idbPut } from './idb.ts'
 import type { ScanResult } from './scan.ts'
@@ -24,18 +24,17 @@ function setStatus() {
 
 function publish() {
   const entries: ListEntry[] = []
-  const game = []
-  const skins = []
-  const glass = []
-  const mods: ModMeta[] = []
+  const layers: IndexLayer[] = []
   for (const src of store.get().sources) {
     const r = results.get(src.id)
     if (!r) continue
-    if (r.kind === 'game') {
-      game.push(...fromTuples(r.defs, 'game'))
-      skins.push(...(r.skins ?? []))
-      glass.push(...(r.glass ?? []))
-    }
+    if (r.kind === 'game')
+      layers.push({
+        kind: 'game',
+        defs: fromTuples(r.defs, 'game'),
+        skins: (r.skins ?? []).map((x) => ({ ...x, source: 'game' })),
+        glass: (r.glass ?? []).map((x) => ({ ...x, source: 'game' })),
+      })
     for (const e of r.entries)
       entries.push({
         id: e.id,
@@ -49,10 +48,11 @@ function publish() {
         modified: e.modified,
         file: e.file,
       })
-    for (const m of r.mods) mods.push({ key: m.key, name: m.name, label: r.kind, folder: m.folder, subs: m.subs })
+    for (const m of [...r.mods].sort((a, b) => a.folder.localeCompare(b.folder, undefined, { numeric: true })))
+      layers.push({ kind: 'mod', meta: { key: m.key, name: m.name, label: r.kind, folder: m.folder, subs: m.subs, bare: m.bare ?? [] } })
   }
   actions.setEntries(entries)
-  return actions.setIndex(game, mods, skins, glass)
+  return actions.setIndex(layers)
 }
 
 let thumbUrls: string[] = []
@@ -108,9 +108,9 @@ function pick(): Promise<Picked | null> {
   })
 }
 
-async function persistSource(src: Source) {
+async function persistSources() {
   try {
-    await idbPut('sources', undefined, src)
+    for (const [pos, src] of store.get().sources.entries()) await idbPut('sources', undefined, { ...src, pos })
   } catch {
     actions.toast(keyed('toast.storeListFailed'))
   }
@@ -121,7 +121,7 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
   setStatus()
   try {
     if (kind !== 'blueprints') {
-      const keys = assetKeys(kind, id, assets)
+      const keys = assetKeys(kind, id, assets, kind === 'mods' && isSingleMod(files))
       setAssetFiles(id, new Map(keys))
       await assetRpc().call<number>('registerAssets', { sourceId: id, keys: keys.map((k) => k[0]) })
       actions.assetsChanged()
@@ -137,7 +137,7 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
     ])
     const src: Source = { id, name, kind, when: Date.now(), note }
     store.set((s) => ({ sources: s.sources.some((x) => x.id === id) ? s.sources.map((x) => (x.id === id ? src : x)) : [...s.sources, src] }))
-    await persistSource(src)
+    await persistSources()
     if (kind === 'game' && !res.found) actions.toast(keyed('toast.notGameFolder'))
     if (!rep.persisted) actions.toast(keyed('toast.snapshotFailed'))
     await publish()
@@ -164,7 +164,7 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
 export async function restoreSources() {
   listen()
   try {
-    const sources = (await idbAll<Source>('sources')).sort((a, b) => a.id - b.id)
+    const sources = (await idbAll<Source>('sources')).sort((a, b) => (a.pos ?? a.id) - (b.pos ?? b.id))
     for (const s of sources) {
       const snap = await idbGet<SnapRec>('snap', s.id)
       if (snap) results.set(s.id, snap)
@@ -190,6 +190,18 @@ export async function linkSource(kind: SourceKind, replaceId?: number) {
   const sources = store.get().sources
   const old = replaceId !== undefined ? sources.find((s) => s.id === replaceId) : sources.find((s) => s.kind === kind && s.name === picked.name)
   await scanOne(old?.id ?? Date.now(), kind, picked.name, picked.files, picked.assets, picked.total)
+}
+
+export async function moveSource(id: number, by: -1 | 1) {
+  const list = [...store.get().sources]
+  const i = list.findIndex((s) => s.id === id)
+  const j = i + by
+  if (i < 0 || j < 0 || j >= list.length) return
+  ;[list[i], list[j]] = [list[j], list[i]]
+  store.set({ sources: list })
+  await persistSources()
+  await publish()
+  void actions.fillMods()
 }
 
 export async function unlinkSource(id: number) {

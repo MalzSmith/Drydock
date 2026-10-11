@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { loadMesh, loadTexture, type AssetEnv } from '../src/assets/build.ts'
-import { assetKeys, defModels, modelCandidates } from '../src/assets/keys.ts'
+import { assetKeys, defModels, isSingleMod, modelCandidates } from '../src/assets/keys.ts'
 import type { DefTuple } from '../src/se/defs.ts'
 import { KIND_GLASS } from '../src/assets/material.ts'
 import { parseMwm } from '../src/se/mwm.ts'
@@ -43,6 +43,13 @@ describe('asset keys', () => {
   it('maps torch instances', () => {
     const keys = assetKeys('torch', 3, [f('Torch/Instance/content/244850/55/Models/C.mwm')])
     expect(keys.map((k) => k[0])).toEqual(['m:3/55:models/c.mwm'])
+  })
+  it('maps a linked mod folder to a single mod key', () => {
+    const sbc = [f('TheMod/Data/a.sbc'), f('TheMod/modinfo.sbmi')]
+    expect(isSingleMod(sbc)).toBe(true)
+    expect(isSingleMod([f('Mods/TheMod/Data/a.sbc')])).toBe(false)
+    const keys = assetKeys('mods', 2, [f('TheMod/Models/B.mwm'), f('TheMod/Textures/T.dds')], true)
+    expect(keys.map((k) => k[0])).toEqual(['m:2/TheMod:models/b.mwm', 'm:2/TheMod:textures/t.dds'])
   })
   it('falls back from mod to content', () => {
     expect(modelCandidates('models/x.mwm', '1/2')).toEqual(['m:1/2:models/x.mwm', 'c:models/x.mwm'])

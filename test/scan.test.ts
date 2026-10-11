@@ -2,7 +2,7 @@ import { gzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { fromTuples, buildLookup, resolveBlueprint } from '../src/se/defs.ts'
 import { parseBlueprint } from '../src/se/blueprint.ts'
-import { buildModIndex, pickMods } from '../src/se/mods.ts'
+import { defLayer, modLayer, pickMods } from '../src/se/mods.ts'
 import { scanSource, type ModCacheRec, type ScanCache } from '../src/sources/scan.ts'
 import { dirHandle, tmpTree } from './fakefs.ts'
 import { treeFromFiles } from '../src/sources/fs.ts'
@@ -90,22 +90,49 @@ describe('scanSource', () => {
 })
 
 describe('pickMods', () => {
-  it('picks greedily by covered blocks and reports the uncovered rest', () => {
+  it('gives each block to the highest layer that defines it and reports the uncovered rest', () => {
     const parsed = parseBlueprint(bp('B', 'LargeBlockArmorBlock', 'A', 'A', 'A', 'B', 'C', 'Z'))
-    const base = buildLookup([fromTuples([['CubeBlock', 'LargeBlockArmorBlock', 1, 1, 1, 1, 'Armor']], 'vanilla')])
-    const index = buildModIndex([
-      { key: 'm1', subs: ['a'] },
-      { key: 'm2', subs: ['a', 'b'] },
-      { key: 'm3', subs: ['c'] },
-    ])
-    const p = pickMods(parsed, base, index)
+    const game = defLayer(null, fromTuples([['CubeBlock', 'LargeBlockArmorBlock', 1, 1, 1, 1, 'Armor']], 'game'))
+    const mods = [
+      modLayer({ key: 'm1', subs: ['a'], bare: [] }),
+      modLayer({ key: 'm2', subs: ['a', 'b', 'largeblockarmorblock'], bare: [] }),
+      modLayer({ key: 'm3', subs: ['c', 'z'], bare: [] }),
+    ]
+    const p = pickMods(parsed, [mods[0], mods[1], game, modLayer({ key: 'm4', subs: ['c'], bare: [] })])
     expect(p.picked).toEqual([
-      { key: 'm2', blocks: 4 },
-      { key: 'm3', blocks: 1 },
+      { key: 'm1', blocks: 3 },
+      { key: 'm2', blocks: 2 },
+      { key: 'm4', blocks: 1 },
     ])
+    const below = pickMods(parsed, [game, ...mods])
+    expect(below.picked).toEqual([
+      { key: 'm1', blocks: 3 },
+      { key: 'm2', blocks: 1 },
+      { key: 'm3', blocks: 2 },
+    ])
+    expect(below.uncoveredBlocks).toBe(0)
     expect(p.uncoveredBlocks).toBe(1)
     expect(p.uncoveredTypes).toBe(1)
     expect(p.uncovered).toEqual([{ key: parsed.strings.find((k) => k.endsWith('/Z')), blocks: 1 }])
+  })
+
+  it('matches empty subtypes only by type', () => {
+    const parsed = parseBlueprint(bp('B', ''))
+    const k = parsed.strings.find((s) => s.endsWith('/'))!
+    const type = k.slice(0, -1)
+    expect(pickMods(parsed, [modLayer({ key: 'm1', subs: [''], bare: ['other'] })]).uncoveredTypes).toBe(1)
+    expect(pickMods(parsed, [modLayer({ key: 'm1', subs: [''], bare: [type.toLowerCase()] })]).picked).toEqual([{ key: 'm1', blocks: 1 }])
+  })
+
+  it('looks blocks up in the highest layer that has them', () => {
+    const top = fromTuples([['Thrust', 'Shared', 1, 2, 2, 2, 'Top'], ['Thrust', 'SmallOnly', 0, 1, 1, 1, 'Top small']], 'm1')
+    const low = fromTuples([['CubeBlock', 'Shared', 1, 1, 1, 1, 'Low'], ['CubeBlock', 'SmallOnly', 1, 1, 1, 1, 'Low large']], 'game')
+    const l = buildLookup([top, low])
+    expect(l.find('CubeBlock', 'Shared', true)?.name).toBe('Top')
+    expect(l.find('CubeBlock', 'SmallOnly', true)?.name).toBe('Top small')
+    expect(buildLookup([low, top]).find('Thrust', 'Shared', true)?.name).toBe('Low')
+    const dup = buildLookup([[...fromTuples([['CubeBlock', 'X', 1, 1, 1, 1, 'First']], 'g'), ...fromTuples([['CubeBlock', 'X', 1, 1, 1, 1, 'Second']], 'g')]])
+    expect(dup.find('CubeBlock', 'X', true)?.name).toBe('First')
   })
 
   it('resolves mod blocks with their sizes and marks them modded', () => {
@@ -154,6 +181,15 @@ describe('scan from an uploaded file list', () => {
     const r = await scanSource(root, { kind: 'workshop', sourceId: 4, cache: memCache() })
     expect(r.mods.map((m) => m.name).sort()).toEqual(['1002', 'Up Mod'])
     expect(r.entries.map((e) => [e.name, e.file?.name])).toEqual([['Boat', 'bp.sbc']])
+  })
+
+  it('indexes a linked mod folder as one mod', async () => {
+    const one = { 'Data/a.sbc': defs(def('CubeBlock', 'ModArmor')), 'modinfo.sbmi': '<ModInfo><Name>Up Mod</Name></ModInfo>' }
+    const r = await scanSource(treeFromFiles(upload(one, 'TheMod')), { kind: 'mods', sourceId: 6, cache: memCache() })
+    expect(r.mods.map((m) => [m.key, m.name, m.subs])).toEqual([['6/TheMod', 'Up Mod', ['modarmor']]])
+    expect(r.seenMods).toEqual(['TheMod'])
+    const ws = await scanSource(treeFromFiles(upload(one, 'TheMod')), { kind: 'workshop', sourceId: 6, cache: memCache() })
+    expect(ws.mods).toEqual([])
   })
 
   it('reuses a cached mod when path, size and mtime are unchanged and re-parses when they change', async () => {

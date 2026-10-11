@@ -273,23 +273,25 @@ export function parseDefinitions(text: string, source: string, names?: Map<strin
 }
 
 export function buildLookup(layers: DefRecord[][]): Lookup {
-  const exact = new Map<string, DefRecord>()
-  const bySub = new Map<string, DefRecord[]>()
-  for (const layer of layers)
+  const exact = new Map<string, { d: DefRecord; at: number }>()
+  const bySub = new Map<string, { defs: DefRecord[]; at: number }>()
+  layers.forEach((layer, at) => {
     for (const d of layer) {
-      exact.set((d.type + '/' + d.subtype).toLowerCase(), d)
+      const e = (d.type + '/' + d.subtype).toLowerCase()
+      if (!exact.has(e)) exact.set(e, { d, at })
+      if (!d.subtype) continue
       const k = d.subtype.toLowerCase()
       const l = bySub.get(k)
-      if (l) l.unshift(d)
-      else bySub.set(k, [d])
+      if (!l) bySub.set(k, { defs: [d], at })
+      else if (l.at === at) l.defs.push(d)
     }
+  })
   return {
     find(type, subtype, large) {
-      const d = exact.get((type + '/' + subtype).toLowerCase())
-      if (d) return d
-      if (!subtype) return undefined
-      const l = bySub.get(subtype.toLowerCase())
-      return l ? (l.find((x) => x.large === large) ?? l[0]) : undefined
+      const e = exact.get((type + '/' + subtype).toLowerCase())
+      const l = subtype ? bySub.get(subtype.toLowerCase()) : undefined
+      if (e && (!l || e.at <= l.at)) return e.d
+      return l ? (l.defs.find((x) => x.large === large) ?? l.defs[0]) : undefined
     },
   }
 }

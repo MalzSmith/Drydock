@@ -1,5 +1,5 @@
 {
-  "commit": "eec57ab2ac37cab263e581744e927014626e67ce",
+  "commit": "c7baddb637d0e0f0f36f1339e13ef1907ee3db68",
   "date": "2026-10-11",
-  "note": "Runs 20261011-050846 and 20261011-075402-eec57ab: no step changes needed; focus checks compare the perf refactor against a HEAD baseline build outside the repo."
+  "note": "Run 20261011-175948: stacked move buttons on source rows (remove selector button.btn-ghost:not(.src-move)), new step L15 (order, layout, top-down priority, pos records, no reload), P0 sets a non-id source order so P1 checks it survives a reopen, M5/M9 follow the top-down rule."
 }

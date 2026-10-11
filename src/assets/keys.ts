@@ -21,7 +21,13 @@ function workshopBase(rootName: string, rests: string[][], kind: SourceKind): st
   return kind === 'workshop' ? [] : null
 }
 
-export function assetKeys(kind: SourceKind, sourceId: number, files: File[]): Array<[string, File]> {
+export const isSingleMod = (files: File[]) =>
+  files.some((f) => {
+    const parts = (f.webkitRelativePath || f.name).split('/')
+    return parts.length > 2 && parts[1] === 'Data'
+  })
+
+export function assetKeys(kind: SourceKind, sourceId: number, files: File[], single = false): Array<[string, File]> {
   const out: Array<[string, File]> = []
   if (kind === 'blueprints' || !files.length) return out
   const split = files.map((f) => (f.webkitRelativePath || f.name).split('/'))
@@ -33,6 +39,12 @@ export function assetKeys(kind: SourceKind, sourceId: number, files: File[]): Ar
     low.forEach((r, i) => {
       if (inContent) out.push(['c:' + r.join('/'), files[i]])
       else if (r.length > 1 && r[0] === 'content') out.push(['c:' + r.slice(1).join('/'), files[i]])
+    })
+    return out
+  }
+  if (kind === 'mods' && single) {
+    low.forEach((r, i) => {
+      if (r.length > 1 && !r[0].startsWith('.')) out.push([`m:${sourceId}/${rootName}:` + r.join('/'), files[i]])
     })
     return out
   }

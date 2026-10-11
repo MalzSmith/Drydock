@@ -328,7 +328,7 @@
   },
   "sources": {
     "title": "Content sources",
-    "desc": "Block definitions, models and textures are read from these folders, top to bottom. Later sources override earlier ones.",
+    "desc": "Block definitions, models and textures are read from these folders, top to bottom. When several sources define the same block, the highest one wins.",
     "close": "Close",
     "empty": "Nothing linked yet. Without a game folder only the built-in vanilla block set is available.",
     "link": "Link a folder",
@@ -336,6 +336,8 @@
     "refresh": "Refresh",
     "refreshTitle": "Pick the folder again to update this snapshot",
     "remove": "Remove",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
     "rowMeta": "{meta} · linked {time} · Snapshot from {date}",
     "meta": {
       "game": "SpaceEngineers\\Content · vanilla blocks, models, textures",

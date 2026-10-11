@@ -6,7 +6,6 @@ import {
   resolveBlueprint,
   type DefRecord,
   type DefTuple,
-  type Lookup,
   type MissingMode,
   type RenderModel,
   type Resolved,
@@ -17,7 +16,7 @@ import {
   type TableRow,
 } from '../se/defs.ts'
 import { identity } from '../se/orient.ts'
-import { buildModIndex, pickMods, type ModIndex, type Picks } from '../se/mods.ts'
+import { defLayer, modLayer, pickMods, type PickLayer, type Picks } from '../se/mods.ts'
 import { idbGet, idbPut } from '../sources/idb.ts'
 import type { BpMeta, SourceKind } from '../sources/scan.ts'
 import { COMP_BLOCKS } from '../compose/blocks.ts'
@@ -32,7 +31,7 @@ import { currentLang, ensureLocale, applyLocale, readLangSetting, resolveLang, s
 import { errText, keyed, keyedList } from '../util/keyed.ts'
 
 export type { SourceKind }
-export type Source = { id: number; name: string; kind: SourceKind; when: number; note: string }
+export type Source = { id: number; name: string; kind: SourceKind; when: number; note: string; pos?: number }
 export type ShapeOp = 'add' | 'subtract' | 'intersect'
 export type ShapeType = 'box' | 'sphere' | 'cylinder' | 'ellipsoid' | 'torus' | 'pyramid'
 export const ROTATABLE: ShapeType[] = ['cylinder', 'torus', 'pyramid']
@@ -203,7 +202,9 @@ type Perf ={ read: number; decode: number; parse: number; resolve: number; first
 
 export const perf: { last: Perf | null; t0: number } = { last: null, t0: 0 }
 
-export type ModMeta = { key: string; name: string; label: string; folder: string; subs: string[] }
+export type ModMeta = { key: string; name: string; label: string; folder: string; subs: string[]; bare: string[] }
+
+export type IndexLayer = { kind: 'game'; defs: DefRecord[]; skins: SkinRecord[]; glass: GlassRecord[] } | { kind: 'mod'; meta: ModMeta }
 
 type Current = {
   parsed: ParsedBlueprint
@@ -215,20 +216,21 @@ type Current = {
 
 let current: Current | null = null
 let vanillaP: Promise<DefRecord[]> | null = null
+let indexLayers: IndexLayer[] = []
 let gameDefs: DefRecord[] = []
-let gameSkins: SkinRecord[] = []
 let gameGlass: GlassRecord[] = []
 let modMeta: ModMeta[] = []
-let modIndex: ModIndex = buildModIndex([])
 let indexVersion = 0
 let seq = 0
 const modDefCache = new Map<string, { defs: DefRecord[]; skins: SkinRecord[]; glass: GlassRecord[] }>()
 
 const getVanilla = () => (vanillaP ??= loadVanilla())
 
-let baseLookup: { game: DefRecord[]; vanilla: DefRecord[]; lookup: Lookup } | null = null
-const baseFor = (vanilla: DefRecord[]) =>
-  baseLookup?.game === gameDefs && baseLookup.vanilla === vanilla ? baseLookup.lookup : (baseLookup = { game: gameDefs, vanilla, lookup: buildLookup([vanilla, gameDefs]) }).lookup
+let pickCache: { layers: IndexLayer[]; vanilla: DefRecord[]; pick: PickLayer[] } | null = null
+const pickLayersFor = (vanilla: DefRecord[]) =>
+  pickCache?.layers === indexLayers && pickCache.vanilla === vanilla
+    ? pickCache.pick
+    : (pickCache = { layers: indexLayers, vanilla, pick: [...indexLayers.map((l) => (l.kind === 'game' ? defLayer(null, l.defs) : modLayer(l.meta))), defLayer(null, vanilla)] }).pick
 
 async function loadModDefs(key: string): Promise<{ defs: DefRecord[]; skins: SkinRecord[]; glass: GlassRecord[] }> {
   let d = modDefCache.get(key)
@@ -242,18 +244,18 @@ async function loadModDefs(key: string): Promise<{ defs: DefRecord[]; skins: Ski
 
 function skinLookup(layers: SkinRecord[][]): (sub: string) => SkinRecord | undefined {
   const m = new Map<string, SkinRecord>()
-  for (const l of layers) for (const sk of l) m.set(sk.sub.toLowerCase(), sk)
+  for (const l of layers) for (const sk of l) if (!m.has(sk.sub.toLowerCase())) m.set(sk.sub.toLowerCase(), sk)
   return (sub) => m.get(sub.toLowerCase())
 }
 
 function glassMap(layers: GlassRecord[][]): Record<string, GlassRecord> {
   const m: Record<string, GlassRecord> = {}
-  for (const l of layers) for (const g of l) m[g.sub.toLowerCase()] = g
+  for (const l of layers) for (const g of l) m[g.sub.toLowerCase()] ??= g
   return m
 }
 
 export function indexStats() {
-  return { game: gameDefs.length, mods: modMeta.length, subs: modIndex.bySub.size, version: indexVersion }
+  return { game: gameDefs.length, mods: modMeta.length, subs: new Set(modMeta.flatMap((m) => m.subs)).size, version: indexVersion }
 }
 
 export function getModel(): RenderModel | null {
@@ -380,7 +382,7 @@ async function fillEntryMods() {
   const run = ++fillRun
   const todo = store.get().entries.filter((e) => e.mods === null || e.blocks === null)
   if (!todo.length) return
-  const base = baseFor(await getVanilla())
+  const layers = pickLayersFor(await getVanilla())
   const version = indexVersion
   const found = new Map<string, BpMeta>()
   const flush = () => {
@@ -394,7 +396,7 @@ async function fillEntryMods() {
     try {
       const rec = await idbGet<{ fp: string; parsed: ParsedBlueprint }>('bps', e.id)
       if (!rec || rec.fp !== `${e.size}|${e.modified}`) continue
-      const p = e.mods === null ? pickMods(rec.parsed, base, modIndex) : null
+      const p = e.mods === null ? pickMods(rec.parsed, layers) : null
       const meta: BpMeta = { mods: p ? p.picked.length : e.mods!, unresolved: p ? p.uncoveredTypes > 0 : e.unresolved, blocks: rec.parsed.grids.reduce((a, g) => a + g.key.length, 0) }
       found.set(e.id, meta)
       void idbPut('bpmeta', `${e.id}|${e.modified}`, meta).catch(() => undefined)
@@ -420,24 +422,27 @@ async function resolveCurrent() {
   const t0 = performance.now()
   const vanilla = await getVanilla()
   if (c.picksVersion !== indexVersion || !c.picks) {
-    c.picks = pickMods(c.parsed, baseFor(vanilla), modIndex)
+    c.picks = pickMods(c.parsed, pickLayersFor(vanilla))
     c.picksVersion = indexVersion
   }
   const picks = c.picks
   const toggles = store.get().mods
-  const pos = new Map(modMeta.map((m, i) => [m.key, i]))
-  const enabled = picks.picked.filter((p) => toggles[p.key] !== false).sort((a, b) => (pos.get(a.key) ?? 0) - (pos.get(b.key) ?? 0))
-  const layers = await Promise.all(enabled.map((p) => loadModDefs(p.key)))
+  const enabled = picks.picked.filter((p) => toggles[p.key] !== false)
+  const loaded = new Map(await Promise.all(enabled.map(async (p) => [p.key, await loadModDefs(p.key)] as const)))
   if (my !== seq) return
+  const layers = indexLayers.flatMap((l) => {
+    const d = l.kind === 'game' ? l : loaded.get(l.meta.key)
+    return d ? [d] : []
+  })
   const labels = new Map(modMeta.map((m) => [m.key, m.name]))
   const resolved = resolveBlueprint(
     c.parsed,
-    buildLookup([vanilla, gameDefs, ...layers.map((l) => l.defs)]),
+    buildLookup([...layers.map((l) => l.defs), vanilla]),
     store.get().render.missing,
     labels,
-    skinLookup([gameSkins, ...layers.map((l) => l.skins)]),
+    skinLookup(layers.map((l) => l.skins)),
   )
-  resolved.model.glass = glassMap([gameGlass, ...layers.map((l) => l.glass)])
+  resolved.model.glass = glassMap(layers.map((l) => l.glass))
   c.resolved = resolved
   const meta = new Map(modMeta.map((m) => [m.key, m]))
   const rows: ModRow[] = picks.picked.map((p) => {
@@ -620,14 +625,13 @@ export const actions = {
     store.set({ entries })
   },
 
-  setIndex(game: DefRecord[], mods: ModMeta[], skins: SkinDef[] = [], glass: GlassDef[] = []) {
-    gameDefs = game
-    gameSkins = skins.map((x) => ({ ...x, source: 'game' }))
-    gameGlass = glass.map((x) => ({ ...x, source: 'game' }))
+  setIndex(layers: IndexLayer[]) {
+    indexLayers = layers
+    gameDefs = layers.flatMap((l) => (l.kind === 'game' ? l.defs : []))
+    gameGlass = layers.flatMap((l) => (l.kind === 'game' ? l.glass : []))
     composeLookup = null
     if (composeModel) void voxelizeLatest()
-    modMeta = mods
-    modIndex = buildModIndex(mods)
+    modMeta = layers.flatMap((l) => (l.kind === 'mod' ? [l.meta] : []))
     indexVersion++
     return resolveCurrent()
   },

@@ -79,7 +79,7 @@ All selectors come from the app's DOM (`src/ui`). Right-hand panes are addressed
 | Mod rows | `.lib-mods .mod-row`, `input[type=checkbox]`, `.tag` | |
 | Missing blocks button | `.missing-btn` | hidden when there are none |
 | Sources dialog | `.dlg-backdrop:has(.link-grid)`; cards `.link-card` | cards: nth 0 game, 1 workshop, 2 torch, 3 mods, 4 blueprints |
-| Source rows | `.src-row`, `.nm`, `.tag`, refresh `button.btn-secondary`, remove `button.btn-ghost` | |
+| Source rows | `.src-row`, `.nm`; `.src-act` holds the kind `.tag` above the refresh `button.btn-secondary`; move up `button.src-move` nth 0, move down nth 1, stacked in `.src-moves` (disabled on the first / last row); remove `button.btn-ghost:not(.src-move)` | rows follow `store.sources` order; the highest source that defines a block wins |
 | Missing dialog | `.dlg-backdrop:has(.missing-table)`; rows `.missing-table tbody tr` | |
 | Dialog close | `.dlg > div > button.btn-icon` inside the backdrop | Escape and a click on the backdrop also close |
 | View presets | `.vp-top > div:nth-child(1) .seg label` | iso, front, side, top, rear |

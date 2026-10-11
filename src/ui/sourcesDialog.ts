@@ -1,5 +1,5 @@
 import { currentLang, msg, tr } from '../i18n.ts'
-import { linkSource, unlinkSource } from '../sources/sources.ts'
+import { linkSource, moveSource, unlinkSource } from '../sources/sources.ts'
 import { actions, store, type SourceKind } from '../state/app.ts'
 import { kindLabel } from '../state/derive.ts'
 import { corners, h, icon, kicker, progressBar, replaceChildren, t, tAttr, text } from './dom.ts'
@@ -57,7 +57,7 @@ export function mountSourcesDialog(root: HTMLElement) {
       empty.hidden = sources.length > 0
       replaceChildren(
         rows,
-        ...sources.map((r) => {
+        ...sources.map((r, i) => {
           return h(
             'div',
             { class: 'src-row' },
@@ -75,8 +75,18 @@ export function mountSourcesDialog(root: HTMLElement) {
                 }) + (r.note ? ' · ' + msg(r.note) : ''),
               ),
             ),
-            h('span', { class: 'tag tag-neutral' }, kindLabel(r.kind)),
-            h('button', { class: 'btn btn-secondary', style: 'padding:4px 10px;font-size:12px', title: tr('sources.refreshTitle'), onClick: () => void linkSource(r.kind, r.id) }, tr('sources.refresh')),
+            h(
+              'div',
+              { class: 'src-act' },
+              h('span', { class: 'tag tag-neutral' }, kindLabel(r.kind)),
+              h('button', { class: 'btn btn-secondary', style: 'padding:4px 10px;font-size:12px', title: tr('sources.refreshTitle'), onClick: () => void linkSource(r.kind, r.id) }, tr('sources.refresh')),
+            ),
+            h(
+              'div',
+              { class: 'src-moves' },
+              h('button', { class: 'btn btn-ghost btn-icon src-move', title: tr('sources.moveUp'), disabled: i === 0, onClick: () => void moveSource(r.id, -1) }, icon('chevron-up', 15)),
+              h('button', { class: 'btn btn-ghost btn-icon src-move', title: tr('sources.moveDown'), disabled: i === sources.length - 1, onClick: () => void moveSource(r.id, 1) }, icon('chevron-down', 15)),
+            ),
             h('button', { class: 'btn btn-ghost btn-icon', title: tr('sources.remove'), onClick: () => void unlinkSource(r.id) }, icon('x', 15)),
           )
         }),

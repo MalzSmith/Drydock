@@ -35,7 +35,7 @@ Keep this table current; it is how step 2 finds what to re-read.
 | `src/ui/tour.ts`, `src/styles/app.css` (tour) | T1–T5, I4 |
 | `src/ui/nav.ts`, `src/ui/langMenu.ts` | B1, T3, I2, I3, L2 |
 | `src/ui/blueprintPanel.ts` | O2, L2, L13, L14, G1, G4, M1, M4–M8 |
-| `src/ui/sourcesDialog.ts`, `src/sources/*` | L1–L12, P1, P6 |
+| `src/ui/sourcesDialog.ts`, `src/sources/*` | L1–L12, L15, P1, P6 |
 | `src/ui/missingDialog.ts` | M1, M2 |
 | `src/ui/viewport.ts`, `src/render/camera.ts` | R5–R9, C18, C19 |
 | `src/ui/right/view.ts` | R2–R4, M3, M7, P1, P7 |
@@ -44,7 +44,7 @@ Keep this table current; it is how step 2 finds what to re-read.
 | `src/ui/right/export.ts`, `src/render/exportImage.ts`, `src/util/save.ts`, `src/util/zip.ts`, `src/util/webp.ts` | X1–X13 |
 | `src/ui/composePanel.ts`, `src/compose/*`, `src/se/sbcWrite.ts` | C1–C20 |
 | `src/se/blueprint.ts`, `src/workers/*` | O1–O6, O9, G1–G8, P2, P3, S1 test names |
-| `src/sources/scan.ts`, `src/se/mods.ts`, `src/se/defs.ts` | L2–L4, L7–L10, M5, M8, M9 |
+| `src/sources/scan.ts`, `src/se/mods.ts`, `src/se/defs.ts` | L2–L4, L7–L10, L15, M5, M8, M9 |
 | `src/sources/idb.ts`, `src/state/derive.ts` | G7, P1–P6 |
 | `src/render/*` (shaders, pbr, detail) | R1–R4, R12, G8, X2–X9 |
 | `src/i18n.ts`, `src/locales/*.json` | S3, T1, I2–I4, N1, N2, every toast text |

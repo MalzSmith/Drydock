@@ -328,7 +328,7 @@
   },
   "sources": {
     "title": "Inhaltsquellen",
-    "desc": "Blockdefinitionen, Modelle und Texturen werden von oben nach unten aus diesen Ordnern gelesen. Spätere Quellen überschreiben frühere.",
+    "desc": "Blockdefinitionen, Modelle und Texturen werden von oben nach unten aus diesen Ordnern gelesen. Definieren mehrere Quellen denselben Block, gewinnt die oberste.",
     "close": "Schließen",
     "empty": "Noch nichts verknüpft. Ohne Spielordner gibt es nur die eingebauten Vanilla-Blöcke.",
     "link": "Ordner verknüpfen",
@@ -336,6 +336,8 @@
     "refresh": "Aktualisieren",
     "refreshTitle": "Ordner erneut auswählen, um diesen Snapshot zu aktualisieren",
     "remove": "Entfernen",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten",
     "rowMeta": "{meta} · verknüpft {time} · Snapshot vom {date}",
     "meta": {
       "game": "SpaceEngineers\\Content · Vanilla-Blöcke, Modelle, Texturen",
