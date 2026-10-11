@@ -72,7 +72,7 @@ Pass: suggested name `<blueprint name with non-alphanumerics as _>_<YYYY-MM-DD>.
 
 **X9 Supersampling cap.** 4K, 16:9, 4× PNG. Pass: 3840×2160 output, no failure toast; record `await s.page.evaluate(() => window.__drydock.exportMs())`.
 
-**X10 Clipboard.** Headless only (a headed browser shares the system clipboard with the other runner: then SKIP). 1080p, click `${P} button.btn-secondary` nth 0, wait for `busy` false.
+**X10 Clipboard.** Headless only (a headed browser shares the system clipboard with the other runners: then SKIP). Runner C: SKIP, `clipboard permissions not available in Playwright Firefox` (it rejects `clipboard-read`, so `lib.open` grants nothing there). 1080p, click `${P} button.btn-secondary` nth 0, wait for `busy` false.
 ```js
 const clip = await s.page.evaluate(async () => {
   const items = await navigator.clipboard.read()

@@ -1,14 +1,14 @@
 # Runner report
 
-Write the report to `$DD_OUT/report.md` and also return the same text as your final message. A shell heredoc of the whole report breaks on quoting, and the Write tool may refuse report files in a subagent; if so, write it with the editor tool to a scratch file under `$DD_WORK` and `cp` it to `$DD_OUT/report.md`. If every way fails, say so in Deviations; the coordinator then saves the returned text before the merge. `scripts/run.mjs merge` parses the header bullets, the Results table, the `### D…` defect blocks and the Observations and Deviations sections, so keep the format exactly:
+Write the report to `$DD_OUT/report.md` and also return the same text as your final message. A shell heredoc of the whole report breaks on quoting, and the Write tool may refuse report files in a subagent; if so, write it with the editor tool to `$DD_OUT/logs/report-draft.md` (it survives Z4, which deletes `$DD_WORK`) and `cp` it to `$DD_OUT/report.md`. If every way fails, say so in Deviations; the coordinator then saves the returned text before the merge. `scripts/run.mjs merge` parses the header bullets, the Results table, the `### D…` defect blocks and the Observations and Deviations sections, so keep the format exactly:
 
 ```markdown
-# Drydock regression report — runner <A|B>
+# Drydock regression report — runner <A|B|C>
 
 - Date/time (start, end):
 - Commit: <git rev-parse HEAD>; working tree: <modified files from E3>; diff sha256: <value>
 - Server: <preview of $DD_DIST | vite dev>, <url>
-- Node <v>, playwright-core <v>, Edge <v>, WebGL renderer <string>
+- Node <v>, playwright-core <v>, browser <Edge or Firefox> <v>, WebGL renderer <string>
 - Test data: game <yes/no>, workshop <n blueprints, n mod folders>, local <n>, cloud <n gzipped>, fixture mod <id or none>
 - Other activity on the machine that may matter: <other runner, a developer server, none>
 

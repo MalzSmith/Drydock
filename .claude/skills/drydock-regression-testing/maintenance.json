@@ -1,5 +1,5 @@
 {
-  "commit": "c7baddb637d0e0f0f36f1339e13ef1907ee3db68",
+  "commit": "fc6a1ddf5e290cc8876dbe7e05d7104b0d1bdbef",
   "date": "2026-10-11",
-  "note": "Run 20261011-175948: stacked move buttons on source rows (remove selector button.btn-ghost:not(.src-move)), new step L15 (order, layout, top-down priority, pos records, no reload), P0 sets a non-id source order so P1 checks it survives a reopen, M5/M9 follow the top-down rule."
+  "note": "Run 20261011-191109: added runner C (Playwright Firefox, DD_BROWSER, ports 6630/6631, own production build in E5, X10 SKIP); shot.mjs --browser in O1; run.mjs merges any subset of A/B/C; Z1 stops only the runner own browser by profile path. After the run: L15 row-overflow check fixed, report fallback path moved to DD_OUT/logs."
 }

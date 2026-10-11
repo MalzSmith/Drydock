@@ -2,7 +2,7 @@
 
 ## I Localisation
 
-**I1 Locale files.** Covered by S3 (runner A). Runner B: SKIP, owned by A.
+**I1 Locale files.** Covered by S3 (runner A). Runners B and C: SKIP, owned by A.
 
 **I2 Every locale in every main state.** Load `S Missing` first (it gives the mods panel and the missing dialog). The `codes` array must list every file in `src/locales` in the order of the language menu (the audit compares it with the folder):
 ```js

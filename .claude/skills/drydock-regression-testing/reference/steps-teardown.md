@@ -4,11 +4,12 @@
 ```sh
 echo 'for (const k of Object.keys(s)) if (s[k]?.ctx) await lib.close(s[k]); await lib.close(s); setTimeout(() => process.exit(0), 200); return "bye"' | sh "$DD_SKILL/scripts/dd.sh"
 ```
-Then stop any Edge process still using one of your profiles, and nothing else:
+Then stop any browser process still using one of your profiles, and nothing else (`msedge.exe` for runners A and B, `firefox.exe` for runner C):
 ```sh
-powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | Where-Object { \$_.CommandLine -like '*drydock-regression-testing?work?$DD_RUNNER?profile*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"
+EXE="$([ "$DD_BROWSER" = firefox ] && echo firefox.exe || echo msedge.exe)"
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='$EXE'\" | Where-Object { \$_.CommandLine -like '*drydock-regression-testing?work?$DD_RUNNER?profile*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"
 ```
-The match is on your own work directory (`work/A/profile…` or `work/B/profile…`, `?` matching either slash), which appears in the `--user-data-dir` argument of your browsers only.
+The match is on your own work directory (`work/A/profile…`, `work/B/profile…` or `work/C/profile…`, `?` matching either slash), which appears in the profile argument of your browsers only (`--user-data-dir` for Edge, `-profile` for Firefox), so a Firefox or Edge the user has open is never touched.
 
 **Z2 Stop your servers, by your ports only.**
 ```sh

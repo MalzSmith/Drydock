@@ -20,7 +20,7 @@ drydock/
   public/THIRD_PARTY_NOTICES.txt  licence notices, copied to the site root by the build
   scripts/gen-vanilla.mjs    game Content -> src/data/vanilla-blocks.json (committed)
   scripts/gen-tiles/         dotnet tool: loads Sandbox.Game.dll from SE_GAME_ROOT/Bin64, reads MyCubeGridDefinitions.GetTopologyInfo (tiles with Id, edges), GetTopologyUniqueOrientation for all 24 orientations and TileGridOrientations -> src/data/tile-table.json v2 (committed)
-  scripts/shot.mjs           playwright-core + msedge: screenshots of the built app
+  scripts/shot.mjs           playwright-core + msedge (or Playwright's Firefox with --browser firefox): screenshots of the built app
   src/
     main.ts                  entry: loads app.ts, or waits for "Continue anyway" when index.html flagged a window narrower than 1120 px
     i18n.ts                  locales (en, de, ru, zh-Hans, zh-Hant): browser detection, drydock.lang setting, lazy JSON chunks (en bundled as fallback), tr() with plurals and {params}, Intl number formats
@@ -235,7 +235,7 @@ Flow: after a scan the worker writes `snap` and prunes removed mods, the list is
 - `?bp=<path>` loads a bp.sbc from the same origin on start, through the same path as a drop. Other origins are ignored. Vite dev serves repo files under `/@fs/`.
 - `?view=iso|front|side|top|rear`, `?style=textured|shaded|clay|line`, `?light=directional|uniform`, `?proj=persp|ortho`, `?missing=placeholder|substitute|hide`, `?tab=view|section|scene|export`, `?bg=<id>`, `?mode=compose`, `?seams=0|1`, `?tint=1`, `?sources=1`, `?tour=1` and `?w=..&h=..` (app size in px) exist for screenshot scripts.
 - `window.__drydock` exposes the store, the actions, the renderer, the live `PBR` constants (`pbr`), timing helpers (`bench`, `fps`, `perf`, `index`, `compose`, `exportMs`) used by `scripts/shot.mjs`, and `probe` / `info` for pixel and renderer checks.
-- `scripts/shot.mjs <url> <out.png>` drives `playwright-core` with `channel: 'msedge'`, marks the tour as seen, and waits for `document.body.dataset.ready === '1'`, which the app sets after the first frame of a loaded model.
+- `scripts/shot.mjs <url> <out.png>` drives `playwright-core` with `channel: 'msedge'` (`--browser firefox` uses Playwright's Firefox build, installed with `node node_modules/playwright-core/cli.js install firefox`), marks the tour as seen, and waits for `document.body.dataset.ready === '1'`, which the app sets after the first frame of a loaded model.
 - Tests are self-contained (synthetic XML, in-memory trees) except the `game assets` suite in `test/assets.test.ts`, which builds real meshes and textures from the game's `Content` folder. It reads `SE_GAME_ROOT`, defaults to `C:/Program Files (x86)/Steam/steamapps/common/SpaceEngineers`, and is skipped when no install is found there.
 
 ## Welcome card and visit counter

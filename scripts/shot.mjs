@@ -1,4 +1,4 @@
-import { chromium } from 'playwright-core'
+import { chromium, firefox } from 'playwright-core'
 import { readFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 
@@ -17,18 +17,21 @@ for (let i = 0; i < argv.length; i++) {
 }
 const [url, out] = pos
 if (!url || !out) {
-  console.error('usage: shot.mjs <url> <out.png> [--bp file] [--w 1440] [--h 900] [--click selector]... [--eval js]... [--bench frames] [--headed] [--timeout ms]')
+  console.error('usage: shot.mjs <url> <out.png> [--bp file] [--w 1440] [--h 900] [--click selector]... [--eval js]... [--bench frames] [--headed] [--timeout ms] [--browser msedge|firefox]')
   process.exit(1)
 }
 
 const width = +(opt.w ?? 1440)
 const height = +(opt.h ?? 900)
 const timeout = +(opt.timeout ?? 60000)
-const browser = await chromium.launch({
-  channel: 'msedge',
-  headless: !opt.headed,
-  args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--use-angle=d3d11'],
-})
+const browser =
+  opt.browser === 'firefox'
+    ? await firefox.launch({ headless: !opt.headed })
+    : await chromium.launch({
+        channel: 'msedge',
+        headless: !opt.headed,
+        args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--use-angle=d3d11'],
+      })
 const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: +(opt.dpr ?? 1) })
 await page.addInitScript(() => localStorage.setItem('drydock.tourSeen', '1'))
 page.on('console', (m) => console.log('[page]', m.text()))

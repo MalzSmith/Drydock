@@ -1,11 +1,11 @@
 ---
 name: drydock-regression-testing
-description: Full end-to-end regression test of the Drydock app (unit tests, build, boot, tour, blueprints, sources, gzip, mods, rendering, export, compose, locales, narrow page, persistence) with two parallel browser runners, a self-maintaining step catalogue, merged reports with run-to-run comparison, and its own report storage. Use when asked to regression test Drydock, run the regression suite, check a change end to end, or before a release.
+description: Full end-to-end regression test of the Drydock app (unit tests, build, boot, tour, blueprints, sources, gzip, mods, rendering, export, compose, locales, narrow page, persistence) with three parallel browser runners (two in Edge, one in Firefox), a self-maintaining step catalogue, merged reports with run-to-run comparison, and its own report storage. Use when asked to regression test Drydock, run the regression suite, check a change end to end, or before a release.
 ---
 
 # Drydock regression testing
 
-This skill runs a complete regression test of the Drydock checkout at `<repo>` and keeps itself in line with the code. The agent that invokes it is the **coordinator**; it maintains the skill, prepares a run, launches two **runners** (A and B) as subagents, and merges their reports. Runners test and report. They never fix anything.
+This skill runs a complete regression test of the Drydock checkout at `<repo>` and keeps itself in line with the code. The agent that invokes it is the **coordinator**; it maintains the skill, prepares a run, launches three **runners** (A and B in Edge, C in Playwright's Firefox) as subagents, and merges their reports. Runners test and report. They never fix anything.
 
 ## Layout
 
@@ -30,10 +30,10 @@ This skill runs a complete regression test of the Drydock checkout at `<repo>` a
     lib.mjs, driver.mjs, dd.sh, make-fixtures.mjs   browser harness
     audit.mjs             checks the documents against the code
     run.mjs               new | merge | prune | list run folders
-  work/<A|B>/             transient per-runner state (profiles, fixtures, build). git-ignored, deleted in Z4
+  work/<A|B|C>/           transient per-runner state (profiles, fixtures, build). git-ignored, deleted in Z4
   reports/<id>/           one folder per run. git-ignored, pruned to 10
     run.json, focus.md, audit.json, maintenance.md, report.md (merged)
-    A/ B/                 runner output: report.md, logs/, shots/, files/
+    A/ B/ C/              runner output: report.md, logs/, shots/, files/
 ```
 
 Run id: `YYYYMMDD-HHMMSS-<sha7>`. `run.mjs merge` keeps the 10 newest run folders and deletes `shots/` and `files/` from all but the 3 newest, so complete evidence exists for recent runs and report plus logs for older ones.
@@ -42,7 +42,7 @@ Run id: `YYYYMMDD-HHMMSS-<sha7>`. `run.mjs merge` keeps the 10 newest run folder
 
 Work from the repository root. `SKILL` below is the absolute path of this folder, with forward slashes.
 
-1. **Preconditions.** `node_modules` present, Edge installed, no uncommitted change you did not expect (`git status`). Read `reference/environment.md` once. If `node_modules` is missing, stop and say so; do not install it as part of a test run without being asked.
+1. **Preconditions.** `node_modules` present, Edge installed, Playwright's Firefox build installed for runner C (`node -e "require('fs').accessSync(require('playwright-core').firefox.executablePath())"` from the repo root succeeds; if not, run `node node_modules/playwright-core/cli.js install firefox` only when the user agrees, otherwise run A and B alone and say so), no uncommitted change you did not expect (`git status`). Read `reference/environment.md` once. If `node_modules` is missing, stop and say so; do not install it as part of a test run without being asked.
 2. **Maintenance before the run** (`reference/maintenance.md`, "Before the run"): create the run folder first so the audit has a place to write:
    ```sh
    RUN="$(node "$SKILL/scripts/run.mjs" new)"
@@ -50,27 +50,27 @@ Work from the repository root. `SKILL` below is the absolute path of this folder
    git log --oneline "$(node -p "require('$SKILL/maintenance.json').commit")"..HEAD
    ```
    Fix every `MISSING` item in the documents, review the commits, update steps, write `$RUN/focus.md`, rerun the audit until it exits 0, update `maintenance.json`. Edits to the skill are ordinary uncommitted working-tree changes; do not commit them unless the user asks. Do this before the runners take their E3 baseline, so the baseline includes your edits.
-3. **Launch the runners** in parallel with the Agent tool (`subagent_type: general-purpose`), one prompt each, using the template below. They run 25–40 minutes. Do not poll; wait for both completion notifications.
+3. **Launch the runners** in parallel with the Agent tool (`subagent_type: general-purpose`), one prompt each, using the template below. They run 25–40 minutes. Do not poll; wait for every completion notification.
 4. **Maintenance after the run** ("After the run" in `reference/maintenance.md`): check defects marked as suspected stale steps against the code, fix stale steps and harness problems, write `$RUN/maintenance.md`.
 5. **Merge:** `node "$SKILL/scripts/run.mjs" merge "$RUN"`. It writes `$RUN/report.md`, compares with the previous merged run (new failures, fixed, added and removed steps), prunes old runs and prints the summary.
 6. **Report to the user:** the overall counts, the changes since the previous run, every defect with its severity in one line each, the maintenance edits made to the skill, and the path of `report.md`. Do not fix app defects as part of the run; list them. If a defect's cause is a stale step, say so and that the step has been corrected.
 
-If only one runner can run (for example the machine is busy), run A alone with its lanes (it carries the static checks) and say so in the report; `run.mjs merge` handles a single runner.
+If only one runner can run (for example the machine is busy), run A alone with its lanes (it carries the static checks) and say so in the report; `run.mjs merge` handles any subset of A, B and C.
 
 ### Runner prompt template
 
 Replace the angle-bracket values. Give the runner the absolute paths; it has no other context.
 
 ```
-You are runner <A|B> of the Drydock regression test. Follow the skill at <SKILL> exactly.
+You are runner <A|B|C> of the Drydock regression test. Follow the skill at <SKILL> exactly.
 
 Read, in this order: <SKILL>/reference/environment.md, harness.md, steps-setup.md, steps-boot.md, steps-blueprints.md, steps-render-export.md, steps-compose.md, steps-locale-narrow-persist.md, steps-teardown.md, report.md, and the focus checks in <RUN>/focus.md.
 
-Settings: DD_SKILL=<SKILL>, runner id <A|B>, run folder <RUN>, repo <REPO>.
-Start with: sh "<SKILL>/scripts/env.sh" <A|B> "<RUN>"   and begin every later shell command with   . "<SKILL>/work/<A|B>/env.sh"
+Settings: DD_SKILL=<SKILL>, runner id <A|B|C>, run folder <RUN>, repo <REPO>.
+Start with: sh "<SKILL>/scripts/env.sh" <A|B|C> "<RUN>"   and begin every later shell command with   . "<SKILL>/work/<A|B|C>/env.sh"
 
 Rules you must keep:
-1. Do not modify the repository. Write only under $DD_WORK and $DD_OUT. No npm install/ci/build, no git add/commit/stash/checkout. Runner B does not run the static checks (S1–S5 are SKIP, owned by runner A).
+1. Do not modify the repository. Write only under $DD_WORK and $DD_OUT. No npm install/ci/build, no git add/commit/stash/checkout. Runners B and C do not run the static checks (S1–S5 are SKIP, owned by runner A). Runner C uses Playwright's Firefox build (DD_BROWSER=firefox); steps that say "Edge" mean your browser.
 2. Do not fix code or steps. A failure is a defect with repro steps; continue with the next independent step. When you believe the step, not the app, is wrong, still report FAIL and set "Suspected stale step: yes" in the defect.
 3. Report faithfully: PASS only when every criterion was checked and met with evidence. A step that passes only on retry is PASS with the note "flaky: failed first attempt" plus a defect of severity minor or higher. One retry at most per step.
 4. Stay in your lane: your ports, your profiles, your driver. Never stop a process you did not start, never kill by image name.
@@ -86,7 +86,7 @@ Deliver: write the report in the exact format of report.md to $DD_OUT/report.md 
 
 ## Rules for runners (summary; the prompt above carries them)
 
-Result values: **PASS** executed, every criterion met, evidence recorded. **FAIL** executed, a criterion not met, at least one defect. **BLOCKED** not executable because of an earlier failure or a harness/environment problem, with reason. **SKIP** not applicable for this runner or machine (owned by the other runner, test data missing, manual-only), with reason. A step that depends on a failed step is `BLOCKED by <id>`.
+Result values: **PASS** executed, every criterion met, evidence recorded. **FAIL** executed, a criterion not met, at least one defect. **BLOCKED** not executable because of an earlier failure or a harness/environment problem, with reason. **SKIP** not applicable for this runner or machine (owned by another runner, not available in the runner's browser, test data missing, manual-only), with reason. A step that depends on a failed step is `BLOCKED by <id>`.
 
 ## Rules for the coordinator
 

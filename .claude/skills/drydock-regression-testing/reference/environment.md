@@ -5,7 +5,8 @@
 - Windows with Microsoft Edge installed (`scripts/shot.mjs` and the driver launch Playwright's `msedge` channel). Check: `"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"` exists.
 - Node.js 22.12 or newer. Check: `node -v`.
 - The repository checkout with `node_modules` already installed (`node_modules/playwright-core`, `node_modules/vite`, `node_modules/vitest`, `node_modules/typescript`). If `node_modules` is missing, stop: every step is BLOCKED (runners do not install it).
-- A working WebGL 2 in headless Edge (checked in step B2).
+- Runner C: Playwright's own Firefox build, the version pinned by the checkout's `playwright-core`. Install it once per machine with `node node_modules/playwright-core/cli.js install firefox` from the repository root; it goes into Playwright's per-user browser cache (`%LOCALAPPDATA%/ms-playwright`), not into the repository. Check: `node -e "require('fs').accessSync(require('playwright-core').firefox.executablePath())"` from the repository root. A stock Firefox installation is not used: Playwright cannot hand it a folder for the link cards. Without the build every runner C step is BLOCKED with the reason `Playwright Firefox not installed`.
+- A working WebGL 2 in the headless browser (checked in step B2).
 - `curl` (ships with Windows and Git Bash) for talking to the driver.
 
 Commands in the step files use POSIX shell syntax (Git Bash). Paths are written with forward slashes (`C:/...`), which Node, Edge and Git Bash all accept. PowerShell is used only through `powershell -NoProfile -Command` for process and port queries.
@@ -34,22 +35,24 @@ The output must be named `bp.sbc` inside its own folder, because the app lists f
 
 ## Parallel runner isolation
 
-Each runner gets a runner id, `A` or `B`. Everything that holds state is separate:
+Each runner gets a runner id, `A`, `B` or `C`. Everything that holds state is separate:
 
-| | Runner A | Runner B |
-|---|---|---|
-| App server | production build, `vite preview` on port **4610** | Vite dev server on port **5620** |
-| Driver port | **4611** | **5621** |
-| Static checks (S1–S5) | runs them | SKIP, `owned by runner A` |
-| Production build | builds into `$DD_DIST` (`work/A/dist`) | does not build |
-| Game folder pick (step L10) | the game root folder | the game's `Content` folder |
-| Work directory `DD_WORK` | `<skill>/work/A` | `<skill>/work/B` |
-| Output directory `DD_OUT` | `<run dir>/A` | `<run dir>/B` |
-| Browser profile | `$DD_WORK/profile` (+ `-de`, `-zh`, `-min`, `-narrow*` variants) | same layout under B's `DD_WORK` |
+| | Runner A | Runner B | Runner C |
+|---|---|---|---|
+| Browser (`DD_BROWSER`) | Edge (`msedge`) | Edge (`msedge`) | Playwright's Firefox (`firefox`) |
+| App server | production build, `vite preview` on port **4610** | Vite dev server on port **5620** | production build, `vite preview` on port **6630** |
+| Driver port | **4611** | **5621** | **6631** |
+| Static checks (S1–S5) | runs them | SKIP, `owned by runner A` | SKIP, `owned by runner A` |
+| Production build | builds into `$DD_DIST` (`work/A/dist`) in S4 | does not build | builds into `$DD_DIST` (`work/C/dist`) in E5 with the S4 build command |
+| Game folder pick (step L10) | the game root folder | the game's `Content` folder | the game root folder |
+| Clipboard (X10) | runs | runs | SKIP, `clipboard permissions not available in Playwright Firefox` |
+| Work directory `DD_WORK` | `<skill>/work/A` | `<skill>/work/B` | `<skill>/work/C` |
+| Output directory `DD_OUT` | `<run dir>/A` | `<run dir>/B` | `<run dir>/C` |
+| Browser profile | `$DD_WORK/profile` (+ `-de`, `-zh`, `-min`, `-narrow*` variants) | same layout under B's `DD_WORK` | same layout under C's `DD_WORK` |
 
-Why: IndexedDB (linked sources, snapshots, cached parses, cached models) and `localStorage` (tour, seams, language, narrow) are per browser profile, so each runner launches Edge with its own `--user-data-dir` through `launchPersistentContext`. The two app servers cover both the production bundle and the dev build. Only runner A runs Vitest, `tsc` and the build, so nothing races on `node_modules/.vite` and nothing writes `dist/` in the repo. Runner B is the only one that starts a Vite dev server, which writes its dependency cache under `node_modules/.vite` (git-ignored). If a developer is running `npm run dev` in the same checkout at the same time, note it in the report.
+Why: IndexedDB (linked sources, snapshots, cached parses, cached models) and `localStorage` (tour, seams, language, narrow) are per browser profile, so each runner launches its browser with its own profile directory through `launchPersistentContext`. The app servers cover both the production bundle (A in Edge, C in Firefox) and the dev build (B). Only runner A runs Vitest and `tsc`; A and C each build into their own `$DD_DIST`, so nothing races on `node_modules/.vite` and nothing writes `dist/` in the repo. Runner B is the only one that starts a Vite dev server, which writes its dependency cache under `node_modules/.vite` (git-ignored). If a developer is running `npm run dev` in the same checkout at the same time, note it in the report.
 
-The skill folder (`.claude/`) is excluded from the dev server's watcher and file serving in `vite.config.ts`, so screenshots and logs written under `work/` and `reports/` do not trigger reloads. If a port is taken by a process you did not start, pick the next free port (4620/4621 for A, 5630/5631 for B), edit the port lines in your `env.sh`, record it, and never stop the other process.
+The skill folder (`.claude/`) is excluded from the dev server's watcher and file serving in `vite.config.ts`, so screenshots and logs written under `work/` and `reports/` do not trigger reloads. If a port is taken by a process you did not start, pick the next free port (4620/4621 for A, 5630/5631 for B, 6640/6641 for C), edit the port lines in your `env.sh`, record it, and never stop the other process.
 
 ## Variables (step E1)
 
@@ -57,7 +60,8 @@ The skill folder (`.claude/`) is excluded from the dev server's watcher and file
 
 | Variable | Value |
 |---|---|
-| `DD_RUNNER` | `A` or `B` |
+| `DD_RUNNER` | `A`, `B` or `C` |
+| `DD_BROWSER` | `msedge` (A, B) or `firefox` (C); `lib.open` and `shot.mjs --browser` use it |
 | `DD_SKILL` | the skill folder |
 | `DD_REPO` | the checkout |
 | `DD_RUN` | this run's report folder, `<skill>/reports/<id>` |

@@ -4,19 +4,19 @@ A full run took 25–40 minutes per runner on the reference machine; L9/L10 (wor
 
 Execution order for the whole run: E1–E4 → S1–S5 (runner A only) → E5–E6 → B1–B2 → T1, T2, T2b, T3–T5 → U1–U6 → O1–O9 → L1–L6 → G1–G7 → M1–M4 → L7–L14 → M5–M9 → L15 → G8 → R1–R13 → X1–X13 → C1–C20 → I1–I4 → N1–N5 → P0–P7 → F1–Fn (focus.md) → Z1–Z4 → report.
 
-## E Setup (both runners)
+## E Setup (every runner)
 
 **E1 Environment.** The coordinator gives you `DD_SKILL` (absolute skill folder), your runner id and the run folder. Run once:
 ```sh
-sh "<DD_SKILL>/scripts/env.sh" <A|B> "<run dir>"
+sh "<DD_SKILL>/scripts/env.sh" <A|B|C> "<run dir>"
 ```
-Then start every later command with `. "<DD_SKILL>/work/<A|B>/env.sh"`. Record the file: `cp "$DD_WORK/env.sh" "$DD_OUT/logs/env.txt"`. Pass: the file exists, `DD_WORK` is under `$DD_SKILL/work`, `DD_OUT` under `$DD_RUN`, and the directories exist.
+Then start every later command with `. "<DD_SKILL>/work/<A|B|C>/env.sh"`. Record the file: `cp "$DD_WORK/env.sh" "$DD_OUT/logs/env.txt"`. Pass: the file exists, `DD_WORK` is under `$DD_SKILL/work`, `DD_OUT` under `$DD_RUN`, and the directories exist.
 
 **E2 Tool versions.**
 ```sh
-{ node -v; git -C "$DD_REPO" rev-parse HEAD; node -p "require('$DD_REPO/node_modules/playwright-core/package.json').version"; ls "C:/Program Files (x86)/Microsoft/Edge/Application" | grep -E '^[0-9]'; } > "$DD_OUT/logs/E2.txt" 2>&1
+{ node -v; git -C "$DD_REPO" rev-parse HEAD; node -p "require('$DD_REPO/node_modules/playwright-core/package.json').version"; ls "C:/Program Files (x86)/Microsoft/Edge/Application" | grep -E '^[0-9]'; (cd "$DD_REPO" && node -e "const f=require('playwright-core').firefox.executablePath();require('fs').accessSync(f);console.log('firefox',f)"); } > "$DD_OUT/logs/E2.txt" 2>&1
 ```
-Pass: Node ≥ 22.12, playwright-core present, an Edge version folder present.
+Pass: Node ≥ 22.12, playwright-core present; runners A and B: an Edge version folder present; runner C: the `firefox` line is printed (Playwright's Firefox build exists). Runner C without it: E2 FAIL and every later browser step BLOCKED by E2.
 
 **E3 Repository baseline.**
 ```sh
@@ -34,12 +34,12 @@ cp "$DD_FIX/manifest.json" "$DD_OUT/logs/manifest.json"
 ```
 Pass: exit 0; `manifest.json` exists; at least 3 pairs (2 local-based + the synthetic one); `cloud` lists every cloud folder with `gz: true` (a cloud file that is not gzipped is an observation, not a failure); `mod` is not null when the workshop exists. Evidence: `E4.txt`, `logs/manifest.json`.
 
-**E5 App server.** Runner A only after S4 (it serves the build from S4); runner B now. Start it in the background (agent background facility, or `&` with output redirected), from the checkout so Vite finds `vite.config.ts`:
+**E5 App server.** Runner A only after S4 (it serves the build from S4); runner B now; runner C first builds with the S4 build command (only its first line, into its own `$DD_DIST`, log `E5-build.txt`, exit 0 required), then serves it like runner A. Start it in the background (agent background facility, or `&` with output redirected), from the checkout so Vite finds `vite.config.ts`:
 ```sh
 cd "$DD_REPO" && node node_modules/vite/bin/vite.js preview --outDir "$DD_DIST" --host 127.0.0.1 --port "$DD_PORT" --strictPort > "$DD_OUT/logs/server.log" 2>&1
 cd "$DD_REPO" && node node_modules/vite/bin/vite.js --host 127.0.0.1 --port "$DD_PORT" --strictPort > "$DD_OUT/logs/server.log" 2>&1
 ```
-The first line is runner A's, the second runner B's. Wait until `curl -s -o /dev/null -w '%{http_code}' "$DD_BASE/"` prints `200`. Pass: 200 within 60 s and `server.log` shows the port. Record the listening PID: `powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort $DD_PORT -State Listen).OwningProcess" > "$DD_WORK/server.pid"`.
+The first line is runner A's and C's, the second runner B's. Wait until `curl -s -o /dev/null -w '%{http_code}' "$DD_BASE/"` prints `200`. Pass: 200 within 60 s and `server.log` shows the port. Record the listening PID: `powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort $DD_PORT -State Listen).OwningProcess" > "$DD_WORK/server.pid"`.
 
 **E6 Driver.** Start in the background with the environment sourced:
 ```sh
@@ -47,7 +47,7 @@ cd "$DD_SKILL/scripts" && node driver.mjs > "$DD_OUT/logs/driver.log" 2>&1
 ```
 Then wait until `echo 'return 1' | sh "$DD_SKILL/scripts/dd.sh"` returns `"ok": true`. Record the driver PID the same way as in E5 with `$DD_DRIVER_PORT` into `$DD_WORK/driver.pid`. Pass: the driver answers. (The browser is opened in B1.)
 
-## S Static checks (runner A only; runner B: SKIP, owned by runner A)
+## S Static checks (runner A only; runners B and C: SKIP, owned by runner A)
 
 **S1 Unit tests.**
 ```sh

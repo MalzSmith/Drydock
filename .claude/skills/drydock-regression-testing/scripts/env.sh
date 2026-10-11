@@ -1,11 +1,11 @@
 #!/bin/sh
 # Discovers test data and writes this runner's environment file.
-# usage: sh env.sh <A|B> <run dir>      -> writes work/<runner>/env.sh and prints it
+# usage: sh env.sh <A|B|C> <run dir>    -> writes work/<runner>/env.sh and prints it
 # Every later command starts with:  . "<skill>/work/<runner>/env.sh"
 set -e
 RUNNER="$1"
 RUN="$2"
-case "$RUNNER" in A|B) ;; *) echo "usage: env.sh <A|B> <run dir>" >&2; exit 2;; esac
+case "$RUNNER" in A|B|C) ;; *) echo "usage: env.sh <A|B|C> <run dir>" >&2; exit 2;; esac
 [ -d "$RUN" ] || { echo "run dir does not exist: $RUN (create it with: node scripts/run.mjs new)" >&2; exit 2; }
 
 SKILL="$(cygpath -m "$(cd "$(dirname "$0")/.." && pwd)")"
@@ -30,7 +30,11 @@ LOCAL_BP="$(cygpath -m "$APPDATA")/SpaceEngineers/Blueprints/local"
 CLOUD_BP="$(ls -d "$STEAM"/userdata/*/244850/remote/Blueprints/cloud 2>/dev/null | head -1)"
 
 WORK="$SKILL/work/$RUNNER"
-if [ "$RUNNER" = A ]; then PORT=4610 DPORT=4611; else PORT=5620 DPORT=5621; fi
+case "$RUNNER" in
+  A) PORT=4610 DPORT=4611 BROWSER=msedge ;;
+  B) PORT=5620 DPORT=5621 BROWSER=msedge ;;
+  C) PORT=6630 DPORT=6631 BROWSER=firefox ;;
+esac
 mkdir -p "$WORK" "$RUN/$RUNNER/logs" "$RUN/$RUNNER/shots" "$RUN/$RUNNER/files"
 
 ENVFILE="$WORK/env.sh"
@@ -47,6 +51,7 @@ ENVFILE="$WORK/env.sh"
   echo "export DD_PORT=$PORT"
   echo "export DD_DRIVER_PORT=$DPORT"
   echo "export DD_BASE='http://127.0.0.1:$PORT'"
+  echo "export DD_BROWSER='$BROWSER'"
   echo "export SE_GAME_ROOT='$GAME'"
   echo "export DD_WORKSHOP='$WORKSHOP'"
   echo "export DD_LOCAL_BP='$LOCAL_BP'"

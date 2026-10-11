@@ -5,13 +5,13 @@ The harness lives in `scripts/` and is run in place; nothing is copied or instal
 | File | Role |
 |---|---|
 | `scripts/env.sh` | discovers test data, writes `work/<runner>/env.sh` (see environment.md) |
-| `scripts/lib.mjs` | browser session and helpers; a session object `s` holds `ctx` (persistent Edge context), `page`, and the collected `problems` and `external` requests |
+| `scripts/lib.mjs` | browser session and helpers; a session object `s` holds `ctx` (persistent browser context: Edge for runners A and B, Playwright's Firefox for runner C, chosen by `DD_BROWSER`), `page`, and the collected `problems` and `external` requests |
 | `scripts/driver.mjs` | a small HTTP server on `127.0.0.1:$DD_DRIVER_PORT` that keeps one browser session alive between commands. Each request body is the body of an async function with the parameters `lib` and `s`; its return value comes back as JSON |
 | `scripts/dd.sh` | sends a command read from stdin to your driver |
 | `scripts/make-fixtures.mjs` | builds the test blueprints in `$DD_FIX` from the machine's data (read-only) and writes `$DD_FIX/manifest.json` with the expected values |
 | `scripts/audit.mjs` | coordinator only: checks every selector, key, parameter and path these documents mention against the code |
 | `scripts/run.mjs` | coordinator only: creates run folders, merges runner reports, compares with the previous run, prunes old reports |
-| `$DD_REPO/scripts/shot.mjs` | the app's own screenshot script, used for `?bp=` loads in a throw-away browser |
+| `$DD_REPO/scripts/shot.mjs` | the app's own screenshot script, used for `?bp=` loads in a throw-away browser; `--browser "$DD_BROWSER"` makes it use the runner's browser |
 
 The driver matters because linked `File`s exist only while the page is open: reloading the page in the middle of the run would lose them, so the runner works step by step against one long-lived page.
 

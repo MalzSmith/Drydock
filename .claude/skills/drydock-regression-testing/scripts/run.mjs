@@ -9,6 +9,7 @@ const REPORTS = join(SKILL, 'reports')
 const KEEP_REPORTS = 10
 const KEEP_EVIDENCE = 3
 const RANK = { FAIL: 3, BLOCKED: 2, PASS: 1, SKIP: 0 }
+const RUNNERS = ['A', 'B', 'C']
 
 const git = (args) => execSync(`git -C "${REPO}" ${args}`, { encoding: 'utf8' }).trim()
 const fwd = (p) => p.replace(/\\/g, '/')
@@ -77,9 +78,13 @@ function parseMerged(text) {
   const out = {}
   const inResults = /## Results[\s\S]*?(?=\n## |$)/.exec(text)
   if (!inResults) return out
+  const cells = (l) => l.split('|').slice(1, -1).map((c) => c.trim())
+  let at = -1
   for (const l of inResults[0].split(/\r?\n/)) {
-    const m = /^\|\s*([A-Z]+\d+[a-z]?)\s*\|\s*(PASS|FAIL|BLOCKED|SKIP|—)\s*\|\s*(PASS|FAIL|BLOCKED|SKIP|—)\s*\|\s*(PASS|FAIL|BLOCKED|SKIP)\s*\|/.exec(l)
-    if (m) out[m[1]] = m[4]
+    if (!l.startsWith('|')) continue
+    const c = cells(l)
+    if (c[0] === 'Step') at = c.indexOf('Overall')
+    else if (at > 0 && /^[A-Z]+\d+[a-z]?$/.test(c[0]) && RANK[c[at]] !== undefined) out[c[0]] = c[at]
   }
   return out
 }
@@ -95,27 +100,26 @@ function cmdMerge(arg) {
   if (!existsSync(join(dir, 'run.json'))) throw new Error(`no run.json in ${dir}`)
   const info = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8'))
   const runners = {}
-  for (const r of ['A', 'B']) {
+  for (const r of RUNNERS) {
     const p = join(dir, r, 'report.md')
     if (existsSync(p)) runners[r] = parseReport(readFileSync(p, 'utf8'))
   }
   const names = Object.keys(runners)
-  if (!names.length) throw new Error(`no A/report.md or B/report.md in ${dir}`)
+  if (!names.length) throw new Error(`no ${RUNNERS.map((r) => r + '/report.md').join(', ')} in ${dir}`)
 
   const order = []
   for (const r of names) for (const x of runners[r].results) if (!order.includes(x.step)) order.push(x.step)
   const byStep = (r, step) => runners[r]?.results.find((x) => x.step === step) ?? null
   const rows = order.map((step) => {
-    const a = byStep('A', step)
-    const b = byStep('B', step)
-    const overall = worst(a?.result, b?.result)
+    const got = names.map((r) => [r, byStep(r, step)])
+    const overall = worst(...got.map(([, x]) => x?.result))
     const notes = []
-    for (const [r, x] of [['A', a], ['B', b]]) {
+    for (const [r, x] of got) {
       if (!x) continue
       const bits = [x.notes, x.evidence && x.evidence !== '—' ? `evidence ${r}/${x.evidence.replace(/, /g, `, ${r}/`)}` : ''].filter(Boolean)
       if (bits.length) notes.push(`${r}: ${bits.join('; ')}`)
     }
-    return { step, a: a?.result ?? '—', b: b?.result ?? '—', overall, notes: notes.join(' · ') }
+    return { step, by: got.map(([, x]) => x?.result ?? '—'), overall, notes: notes.join(' · ') }
   })
   const count = (k) => rows.filter((r) => r.overall === k).length
   const per = (r) => {
@@ -152,7 +156,7 @@ function cmdMerge(arg) {
   for (const r of names) {
     out.push('', `### Runner ${r}`, ...runners[r].head)
   }
-  out.push('', '## Summary', '', `Overall (worst of A/B per step): PASS ${count('PASS')} · FAIL ${count('FAIL')} · BLOCKED ${count('BLOCKED')} · SKIP ${count('SKIP')}`, '')
+  out.push('', '## Summary', '', `Overall (worst of ${names.join('/')} per step): PASS ${count('PASS')} · FAIL ${count('FAIL')} · BLOCKED ${count('BLOCKED')} · SKIP ${count('SKIP')}`, '')
   for (const r of names) out.push(`- ${per(r)}`)
   out.push('', `## Changes since previous run${prevId ? ` (${prevId})` : ''}`, '')
   if (!prev) out.push('No previous merged report to compare with.')
@@ -164,8 +168,8 @@ function cmdMerge(arg) {
     out.push(`- Steps removed: ${list(changes.removed)}`)
   }
   if (focus) out.push('', '## Focus of this run', '', focus)
-  out.push('', '## Results', '', '| Step | A | B | Overall | Notes |', '|---|---|---|---|---|')
-  for (const r of rows) out.push(`| ${r.step} | ${r.a} | ${r.b} | ${r.overall} | ${r.notes.replace(/\|/g, '\\|')} |`)
+  out.push('', '## Results', '', `| Step | ${names.join(' | ')} | Overall | Notes |`, `|---|${names.map(() => '---|').join('')}---|---|`)
+  for (const r of rows) out.push(`| ${r.step} | ${r.by.join(' | ')} | ${r.overall} | ${r.notes.replace(/\|/g, '\\|')} |`)
   out.push('', '## Defects', '')
   let any = false
   for (const r of names)
@@ -203,7 +207,7 @@ function prune() {
   }
   const kept = runDirs()
   for (const f of kept.slice(0, Math.max(0, kept.length - KEEP_EVIDENCE))) {
-    for (const r of ['A', 'B'])
+    for (const r of RUNNERS)
       for (const sub of ['shots', 'files']) {
         const p = join(REPORTS, f, r, sub)
         if (existsSync(p)) {

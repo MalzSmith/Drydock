@@ -19,7 +19,8 @@ export const OUT = need('DD_OUT')
 export const PROFILE = need('DD_PROFILE')
 export const ORIGIN = new URL(BASE).origin
 export const KINDS = ['game', 'workshop', 'torch', 'mods', 'blueprints']
-const { chromium } = createRequire(join(REPO, 'package.json'))('playwright-core')
+export const BROWSER = process.env.DD_BROWSER || 'msedge'
+const pw = createRequire(join(REPO, 'package.json'))('playwright-core')
 for (const d of ['shots', 'logs', 'files']) mkdirSync(join(OUT, d), { recursive: true })
 
 export const pane = (tab) => `#right .rbody > div:nth-child(${['view', 'section', 'scene', 'export'].indexOf(tab) + 1})`
@@ -40,15 +41,17 @@ export const rows = (s) => s.page.evaluate(() => window.__drydock.store.get().in
 export async function open(o = {}) {
   const profile = o.profile ?? PROFILE
   mkdirSync(profile, { recursive: true })
-  const ctx = await chromium.launchPersistentContext(profile, {
-    channel: 'msedge',
+  const common = {
     headless: process.env.DD_HEADED !== '1',
     viewport: { width: o.w ?? 1440, height: o.h ?? 900 },
     locale: o.locale ?? 'en-US',
     acceptDownloads: true,
-    args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--use-angle=d3d11'],
-  })
-  await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: ORIGIN })
+  }
+  const ctx =
+    BROWSER === 'firefox'
+      ? await pw.firefox.launchPersistentContext(profile, common)
+      : await pw.chromium.launchPersistentContext(profile, { ...common, channel: 'msedge', args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--use-angle=d3d11'] })
+  if (BROWSER !== 'firefox') await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: ORIGIN })
   if (o.tourSeen !== false)
     await ctx.addInitScript(() => {
       try {
