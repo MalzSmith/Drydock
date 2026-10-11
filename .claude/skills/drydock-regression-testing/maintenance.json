@@ -1,5 +1,5 @@
 {
-  "commit": "fc6a1ddf5e290cc8876dbe7e05d7104b0d1bdbef",
-  "date": "2026-10-11",
-  "note": "Run 20261011-191109: added runner C (Playwright Firefox, DD_BROWSER, ports 6630/6631, own production build in E5, X10 SKIP); shot.mjs --browser in O1; run.mjs merges any subset of A/B/C; Z1 stops only the runner own browser by profile path. After the run: L15 row-overflow check fixed, report fallback path moved to DD_OUT/logs."
+  "commit": "1b70b2a62cd32f0323c2212919ea9ba5031cf691",
+  "date": "2026-10-12",
+  "note": "Run 20261012-000810: added X14 (16K PNG-only export, header check in Node), X ranges now X1–X14, shrink.ts mapped to X. After the run: Firefox truncated-gzip console.error expected for runner C (harness.md), L13 closes the Sources dialog first, L15 .dlg width tolerance up to 8 px."
 }
