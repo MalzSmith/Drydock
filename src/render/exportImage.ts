@@ -6,9 +6,10 @@ import { aspectOf, frameRect } from './camera.ts'
 import type { Fit } from './camera.ts'
 import type { Renderer } from './renderer.ts'
 import { errText, keyed } from '../util/keyed.ts'
+import { shrinkTile } from './shrink.ts'
 
 const MIME = { PNG: 'image/png', JPG: 'image/jpeg', WEBP: 'image/webp' } as const
-const MAX_PIXELS = 64e6
+const MAX_PIXELS = 700e6
 
 export type ExportSize = { w: number; h: number; ss: number }
 
@@ -26,18 +27,6 @@ function transparentOf(): boolean {
   return (s.export.transparent && s.export.fmt === 'PNG') || s.scene.bg === 'transparent'
 }
 
-function unpremultiply(d: Uint8ClampedArray) {
-  for (let i = 0; i < d.length; i += 4) {
-    const a = d[i + 3]
-    if (a > 0 && a < 255) {
-      const k = 255 / a
-      d[i] = Math.min(255, d[i] * k)
-      d[i + 1] = Math.min(255, d[i + 1] * k)
-      d[i + 2] = Math.min(255, d[i + 2] * k)
-    }
-  }
-}
-
 function newCanvas(w: number, h: number): HTMLCanvasElement {
   const c = document.createElement('canvas')
   c.width = w
@@ -49,46 +38,21 @@ export function renderFrame(r: Renderer, cssW: number, yaw?: number, fit?: Fit, 
   const { w, h, ss } = exportSize()
   const W = w * ss
   const H = h * ss
-  const big = newCanvas(W, H)
-  const ctx = big.getContext('2d')!
-  const T = r.maxTile()
+  const out = newCanvas(w, h)
+  const ctx = out.getContext('2d')!
+  const T = r.maxTile() - (r.maxTile() % ss)
   r.exportBegin({ W, H, cssW, ss, transparent, yaw, fit })
   try {
     for (let y = 0; y < H; y += T)
       for (let x = 0; x < W; x += T) {
         const tw = Math.min(T, W - x)
         const th = Math.min(T, H - y)
-        const px = r.exportTile(x, y, tw, th)
-        const stride = tw * 4
-        const tmp = new Uint8Array(stride)
-        for (let a = 0, b = (th - 1) * stride; a < b; a += stride, b -= stride) {
-          tmp.set(px.subarray(a, a + stride))
-          px.copyWithin(a, b, b + stride)
-          px.set(tmp, b)
-        }
-        const img = new ImageData(new Uint8ClampedArray(px.buffer as ArrayBuffer, px.byteOffset, px.length), tw, th)
-        if (transparent) unpremultiply(img.data)
-        ctx.putImageData(img, x, y)
+        ctx.putImageData(new ImageData(shrinkTile(r.exportTile(x, y, tw, th), tw, th, ss, transparent), tw / ss, th / ss), x / ss, y / ss)
       }
   } finally {
     r.exportEnd()
   }
-  return downsample(big, w, h)
-}
-
-function downsample(c: HTMLCanvasElement, w: number, h: number): HTMLCanvasElement {
-  let cur = c
-  while (cur.width > w) {
-    const nw = Math.max(w, Math.floor(cur.width / 2))
-    const nh = Math.max(h, Math.floor(cur.height / 2))
-    const next = newCanvas(nw, nh)
-    const ctx = next.getContext('2d')!
-    ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(cur, 0, 0, nw, nh)
-    cur.width = cur.height = 0
-    cur = next
-  }
-  return cur
+  return out
 }
 
 function flatten(c: HTMLCanvasElement): HTMLCanvasElement {

@@ -71,6 +71,8 @@ export type Info = {
 
 export type Tab = 'view' | 'section' | 'scene' | 'export'
 
+export const PNG_ONLY_ABOVE = 4320
+
 export type SkyItem = { id: string; name: string; src: string; thumb: string; ready: boolean }
 
 export type Lighting = 'directional' | 'uniform'
@@ -493,7 +495,12 @@ export const actions = {
   setScene: (p: Partial<AppState['scene']>) => store.set((s) => ({ scene: { ...s.scene, ...p } })),
   setSkies: (skies: SkyItem[]) =>
     store.set((s) => ({ skies, scene: s.scene.bg.startsWith('sky:') && !skies.some((k) => k.id === s.scene.bg && k.ready) ? { ...s.scene, bg: 'sky-default' } : s.scene })),
-  setExport: (p: Partial<AppState['export']>) => store.set((s) => ({ export: { ...s.export, ...p } })),
+  setExport: (p: Partial<AppState['export']>) =>
+    store.set((s) => {
+      const e = { ...s.export, ...p }
+      if (e.res > PNG_ONLY_ABOVE) e.fmt = 'PNG'
+      return { export: e }
+    }),
   setCompose: (p: Partial<AppState['compose']>) => store.set((s) => ({ compose: { ...s.compose, ...p } })),
   setAssets(c: AssetStatus) {
     const busy = c.meshesDone < c.meshes || c.texturesDone < c.textures

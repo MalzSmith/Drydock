@@ -62,7 +62,7 @@ drydock/
     render/camera.ts         orbit camera, presets + damped lerp, persp/ortho, centre of mass, fit
     render/shaders.ts        GLSL of the box renderer and the background (gradients, studio backdrops, procedural skies, skyboxes)
     render/sky.ts            skybox data -> three cube texture
-    render/exportImage.ts    tiled offscreen render, supersample downsample, encode, clipboard, turntable
+    render/exportImage.ts    tiled offscreen render, per-tile supersample shrink (render/shrink.ts), encode, clipboard, turntable
     render/cube.ts           unit cube + per-grid box instancing
     render/detail.ts         RenderModel + meshes + tile table -> model/tile instances, fallback boxes, seam edges (pure)
     render/detailLayer.ts    reference pipeline: materials, g-buffer, composite, glass, downsample, export tiles
@@ -191,7 +191,7 @@ Render style is `Textured | Shaded | Clay | Line`. Textured = full material shad
 
 ## Image export
 
-The framed region (aspect from the export settings) is rendered offscreen at resolution × SS. Total pixels are capped at 64 MP (halve SS until it fits). Tiles are at most min(4096, MAX_TEXTURE_SIZE), each via `camera.setViewOffset`. Tiles go through `readRenderTargetPixels` into a 2D canvas (flipped), the canvas is downsampled in halving steps with `imageSmoothingQuality = 'high'`, and `toBlob(type, 0.92)`; JPG is flattened onto white first. Transparent PNG, and the Transparent background, skip the background pass with clear alpha 0 and un-premultiply the pixels. The file name expands `{blueprint}` and `{date}`. All file exports are plain downloads (no File System Access writes). Clipboard copy uses `ClipboardItem` with a PNG. Turntable renders 36 frames at 10° yaw steps, with one fit that holds for all of them, in the selected format into a store-only zip download.
+The framed region (aspect from the export settings) is rendered offscreen at resolution × SS. Rendered pixels are capped at 700 MP (halve SS until it fits), so 8K keeps 4× and 16K keeps 2×. Tiles are at most min(4096, MAX_TEXTURE_SIZE) rounded down to a multiple of SS, each via `camera.setViewOffset`. Each tile goes through `readRenderTargetPixels`, is box-filtered SS×SS and flipped on the CPU (`render/shrink.ts`, averaging premultiplied values), and is put straight into the output-size 2D canvas, so the supersampled frame never exists as a whole; then `toBlob(type, 0.92)`. Resolutions above 8K are PNG only (enforced in `setExport`; JPG, WebP and the spinning WebP are disabled there), because WebP stops at 16383 px per side and a 16K JPG would need a second full-size canvas for flattening; JPG is flattened onto white first. Transparent PNG, and the Transparent background, skip the background pass with clear alpha 0 and un-premultiply the pixels. The file name expands `{blueprint}` and `{date}`. All file exports are plain downloads (no File System Access writes). Clipboard copy uses `ClipboardItem` with a PNG. Turntable renders 36 frames at 10° yaw steps, with one fit that holds for all of them, in the selected format into a store-only zip download.
 
 ## Compose
 

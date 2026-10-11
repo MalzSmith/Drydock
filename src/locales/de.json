@@ -385,7 +385,7 @@
       },
       "export": {
         "title": "Bild exportieren",
-        "body": "PNG, JPG oder WebP bis 8K mit Supersampling, in die Zwischenablage kopieren oder ein Drehteller-ZIP mit 36 Bildern."
+        "body": "PNG bis 16K, JPG oder WebP bis 8K, mit Supersampling, in die Zwischenablage kopieren oder ein Drehteller-ZIP mit 36 Bildern."
       },
       "mode": {
         "title": "Eigenen Rumpf bauen",

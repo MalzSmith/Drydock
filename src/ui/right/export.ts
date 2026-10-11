@@ -1,4 +1,4 @@
-import { actions, store } from '../../state/app.ts'
+import { actions, PNG_ONLY_ABOVE, store } from '../../state/app.ts'
 import { aspectOf } from '../../render/camera.ts'
 import { copyImage, exportImage, exportSpinWebp, exportTurntable } from '../../render/exportImage.ts'
 import type { Renderer } from '../../render/renderer.ts'
@@ -8,7 +8,7 @@ import { check, corners, h, kicker, seg, t, text } from '../dom.ts'
 export function mountExportTab(renderer: Renderer): HTMLElement {
   const dims = text()
   const res = seg<number>({
-    options: [[1080, '1080p'], [1440, '1440p'], [2160, '4K'], [4320, '8K']],
+    options: [[1080, '1080p'], [1440, '1440p'], [2160, '4K'], [4320, '8K'], [8640, '16K']],
     value: 2160,
     optCls: 'grow',
     style: 'display:flex',
@@ -37,6 +37,7 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
   const fileName = h('input', { class: 'input', style: 'font-size:13px', onChange: () => actions.setExport({ fileName: fileName.value }) })
   const render = h('button', { class: 'btn btn-primary blueprint btn-hero', onClick: () => void exportImage(renderer, renderer.canvas) }, ...corners(), '')
   const renderLabel = text()
+  const spin = h('button', { class: 'btn btn-secondary', onClick: () => void exportSpinWebp(renderer, renderer.canvas) }, t('export.spinWebp'))
   render.append(renderLabel.el)
 
   const el = h(
@@ -68,13 +69,20 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
       { class: 'col g8' },
       render,
       h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' }, h('button', { class: 'btn btn-secondary', onClick: () => void copyImage(renderer, renderer.canvas) }, t('export.copy')), h('button', { class: 'btn btn-secondary', onClick: () => void exportTurntable(renderer, renderer.canvas) }, t('export.turntable'))),
-      h('button', { class: 'btn btn-secondary', onClick: () => void exportSpinWebp(renderer, renderer.canvas) }, t('export.spinWebp')),
+      spin,
     ),
   )
 
   store.watch((s) => s.export.res, res.set)
   store.watch((s) => s.export.aspect, aspect.set)
   store.watch((s) => s.export.fmt, fmt.set)
+  store.watch(
+    (s) => s.export.res > PNG_ONLY_ABOVE,
+    (pngOnly) => {
+      fmt.disable(pngOnly ? ['JPG', 'WEBP'] : [])
+      spin.disabled = pngOnly
+    },
+  )
   store.watch((s) => s.export.transparent, transparent.set)
   store.watch((s) => s.export.ss, ss.set)
   store.watch((s) => s.export.fileName, (v) => (fileName.value = v))

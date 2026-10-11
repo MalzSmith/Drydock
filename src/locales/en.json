@@ -385,7 +385,7 @@
       },
       "export": {
         "title": "Export an image",
-        "body": "PNG, JPG or WebP up to 8K with supersampling, copy to clipboard, or a 36-frame turntable ZIP."
+        "body": "PNG up to 16K, JPG or WebP up to 8K, with supersampling, copy to clipboard, or a 36-frame turntable ZIP."
       },
       "mode": {
         "title": "Build your own hull",

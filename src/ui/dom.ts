@@ -42,7 +42,7 @@ export function corners(): HTMLElement[] {
   return ['tl', 'tr', 'bl', 'br'].map((c) => h('i', { class: 'corner ' + c }))
 }
 
-export type Seg<T> = { el: HTMLElement; set(v: T): void }
+export type Seg<T> = { el: HTMLElement; set(v: T): void; disable(vs: T[]): void }
 
 let segId = 0
 
@@ -71,6 +71,9 @@ export function seg<T extends string | number | boolean>(opts: {
     el,
     set(v) {
       for (const [x, i] of inputs) i.checked = x === v
+    },
+    disable(vs) {
+      for (const [x, i] of inputs) i.disabled = vs.includes(x)
     },
   }
 }
