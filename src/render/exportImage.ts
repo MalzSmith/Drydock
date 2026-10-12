@@ -114,7 +114,7 @@ export const exportPerf: { lastMs: number } = { lastMs: 0 }
 
 async function guarded(fn: () => Promise<void>, failKey: string) {
   if (store.get().busy) return
-  if (store.get().assetText) return actions.toast(keyed('toast.waitAssets'))
+  if (store.get().assetText) return actions.toast(keyed('toast.waitAssets'), true)
   cancelled = false
   store.set({ busy: true, progress: 0 })
   await nextFrame()
@@ -123,7 +123,8 @@ async function guarded(fn: () => Promise<void>, failKey: string) {
     await fn()
     exportPerf.lastMs = performance.now() - t0
   } catch (err) {
-    actions.toast(err === CANCELLED ? keyed('toast.exportCancelled') : keyed(failKey, { error: errText(err) }))
+    if (err === CANCELLED) actions.toast(keyed('toast.exportCancelled'))
+    else actions.toast(keyed(failKey, { error: errText(err) }), true)
   } finally {
     store.set({ busy: false, progress: null })
   }
@@ -184,7 +185,7 @@ export function copyImage(r: Renderer, canvas: HTMLCanvasElement) {
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
       actions.toast(keyed('toast.copied'))
     } catch {
-      actions.toast(keyed('toast.noClipboard'))
+      actions.toast(keyed('toast.noClipboard'), true)
     }
   }, 'toast.copyFailed')
 }

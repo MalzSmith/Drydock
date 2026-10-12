@@ -99,7 +99,7 @@ store.watch(
 
 installDrop(
   (d) => actions.loadBlueprint({ file: d.file, name: d.name }),
-  (e) => actions.toast(keyed('toast.dropFailed', { error: errText(e) })),
+  (e) => actions.toast(keyed('toast.dropFailed', { error: errText(e) }), true),
 )
 
 void restoreSources().then(() => {
@@ -162,7 +162,7 @@ if (bpUrl && bpUrl.origin === location.origin) {
       } catch {}
       return actions.loadBlueprint({ buffer, name })
     })
-    .catch((err) => actions.toast(keyed('toast.urlFailed', { error: errText(err) })))
+    .catch((err) => actions.toast(keyed('toast.urlFailed', { error: errText(err) }), true))
 }
 
 function bench(frames: number): { avgMs: number; frames: number } {

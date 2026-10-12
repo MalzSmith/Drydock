@@ -117,6 +117,7 @@ export type AppState = {
   lang: LangSetting
   locale: Lang
   toast: string
+  toastError: boolean
   busy: boolean
   progress: number | null
   spin: boolean
@@ -212,6 +213,7 @@ export const store = createStore<AppState>({
   lang: readLangSetting(),
   locale: currentLang(),
   toast: '',
+  toastError: false,
   busy: false,
   progress: null,
   spin: false,
@@ -379,7 +381,7 @@ async function voxelizeLatest() {
       store.set((st) => ({ composeInfo: info, composeVersion: st.composeVersion + 1, composeFrame: st.composeFrame + frame }))
     } while (voxPending)
   } catch (err) {
-    actions.toast(keyed('toast.composeFailed', { error: errText(err) }))
+    actions.toast(keyed('toast.composeFailed', { error: errText(err) }), true)
   } finally {
     voxInflight = false
     store.set({ composeBusy: false })
@@ -506,8 +508,8 @@ async function resolveCurrent() {
 }
 
 export const actions = {
-  toast(text: string) {
-    store.set({ toast: text })
+  toast(text: string, error = false) {
+    store.set({ toast: text, toastError: error })
     clearTimeout(toastTimer)
     toastTimer = window.setTimeout(() => store.set({ toast: '' }), 3200)
   },
@@ -539,7 +541,7 @@ export const actions = {
     if (!busy && (c.uncachedMeshes || c.uncachedTextures) && id && uncachedToast !== id) {
       uncachedToast = id
       const parts = [c.uncachedTextures ? keyed('toast.texturesMissing', { count: c.uncachedTextures }) : '', c.uncachedMeshes ? keyed('toast.modelsMissing', { count: c.uncachedMeshes }) : '']
-      actions.toast(keyed('toast.uncached', { parts: keyedList(parts) }))
+      actions.toast(keyed('toast.uncached', { parts: keyedList(parts) }), true)
     }
   },
   assetsChanged: () => store.set((s) => ({ assetsVersion: s.assetsVersion + 1 })),
@@ -678,12 +680,12 @@ export const actions = {
         return
       }
       if (!e.file) {
-        actions.toast(keyed('toast.notInSnapshot'))
+        actions.toast(keyed('toast.notInSnapshot'), true)
         return
       }
       await actions.loadBlueprint({ file: e.file, name: e.name }, e)
     } catch (err) {
-      actions.toast(keyed('toast.openFailed', { error: errText(err) }))
+      actions.toast(keyed('toast.openFailed', { error: errText(err) }), true)
     }
   },
 
@@ -707,7 +709,7 @@ export const actions = {
       await resolveCurrent()
     } catch (err) {
       store.set({ loading: false })
-      actions.toast(keyed('toast.readFailed', { error: errText(err) }))
+      actions.toast(keyed('toast.readFailed', { error: errText(err) }), true)
     }
   },
 
@@ -722,7 +724,7 @@ export const actions = {
     try {
       res = await composeRpc().call<WriteResult>('writeBlueprint', { shapes: vshapes(s.compose.shapes), name, size: s.compose.grid })
     } catch (err) {
-      actions.toast(errText(err))
+      actions.toast(errText(err), true)
       return
     }
     download(res.blob, 'bp.sbc')
@@ -745,7 +747,7 @@ export const actions = {
       store.set((s) => ({ mode: 'compose', compose: { ...s.compose, shapes, grid: c.grid, name: c.name || s.compose.name, selShape: null } }))
       actions.toast(keyed('toast.openedFile', { file: f.name, detail: plural('shapes', shapes.length) }))
     } catch (err) {
-      actions.toast(keyed('toast.openFileFailed', { file: f.name, error: errText(err) }))
+      actions.toast(keyed('toast.openFileFailed', { file: f.name, error: errText(err) }), true)
     }
   },
 }

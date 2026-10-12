@@ -88,7 +88,9 @@ export function mountViewport(root: HTMLElement) {
   const dims = h('span', { class: 'dm' })
   const toast = h('div', { class: 'toast', hidden: true })
   const toastText = h('span')
-  toast.append(icon('check', 14, 'var(--color-accent)'), toastText)
+  const toastOk = icon('check', 14, 'var(--color-accent)')
+  const toastErr = icon('circle-alert', 14, 'var(--color-accent)')
+  toast.append(toastOk, toastErr, toastText)
 
   const renderer = createRenderer(gl, {
     onFrame(f) {
@@ -204,6 +206,13 @@ export function mountViewport(root: HTMLElement) {
     (t) => {
       toast.hidden = !t
       toastText.textContent = t
+    },
+  )
+  store.watch(
+    (s) => s.toastError,
+    (e) => {
+      toastOk.style.display = e ? 'none' : ''
+      toastErr.style.display = e ? '' : 'none'
     },
   )
   store.watch((s) => s.tab, () => renderer.requestFrame())

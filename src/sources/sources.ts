@@ -112,7 +112,7 @@ async function persistSources() {
   try {
     for (const [pos, src] of store.get().sources.entries()) await idbPut('sources', undefined, { ...src, pos })
   } catch {
-    actions.toast(keyed('toast.storeListFailed'))
+    actions.toast(keyed('toast.storeListFailed'), true)
   }
 }
 
@@ -138,14 +138,14 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
     const src: Source = { id, name, kind, when: Date.now(), note }
     store.set((s) => ({ sources: s.sources.some((x) => x.id === id) ? s.sources.map((x) => (x.id === id ? src : x)) : [...s.sources, src] }))
     await persistSources()
-    if (kind === 'game' && !res.found) actions.toast(keyed('toast.notGameFolder'))
-    if (!rep.persisted) actions.toast(keyed('toast.snapshotFailed'))
+    if (kind === 'game' && !res.found) actions.toast(keyed('toast.notGameFolder'), true)
+    if (!rep.persisted) actions.toast(keyed('toast.snapshotFailed'), true)
     await publish()
     void actions.fillMods()
     if (rep.persisted && res.entries.length) {
       const arg: CacheArg = { sourceId: id, items: res.entries.filter((e) => e.file).map((e) => ({ id: e.id, name: e.name, file: e.file! })) }
       const c = await scanRpc().call<CacheReply>('cacheBlueprints', arg)
-      if (c.failed) actions.toast(keyed('toast.cacheFailed'))
+      if (c.failed) actions.toast(keyed('toast.cacheFailed'), true)
       void actions.fillMods()
     }
     if (rep.persisted && kind !== 'blueprints') {
@@ -154,7 +154,7 @@ async function scanOne(id: number, kind: SourceKind, name: string, files: File[]
       await assetRpc().call<number>('cacheModels', { sourceId: id })
     }
   } catch (err) {
-    actions.toast(keyed('toast.scanFailed', { name, error: errText(err) }))
+    actions.toast(keyed('toast.scanFailed', { name, error: errText(err) }), true)
   } finally {
     progress.delete(id)
     setStatus()
@@ -184,7 +184,7 @@ export async function linkSource(kind: SourceKind, replaceId?: number) {
   const picked = await pick()
   if (!picked) return
   if (!picked.total) {
-    actions.toast(keyed('toast.emptyFolder'))
+    actions.toast(keyed('toast.emptyFolder'), true)
     return
   }
   const sources = store.get().sources
@@ -218,7 +218,7 @@ export async function unlinkSource(id: number) {
     for (const st of ['mods', 'bps'] as const) await idbDeleteMany(st, (await idbKeys(st)).filter((k) => typeof k === 'string' && k.startsWith(prefix)))
     for (const st of ['meshes', 'textures', 'skymeta'] as const) await idbDeleteMany(st, (await idbKeys(st)).filter((k) => typeof k === 'string' && k.startsWith('m:' + prefix)))
   } catch {
-    actions.toast(keyed('toast.clearFailed'))
+    actions.toast(keyed('toast.clearFailed'), true)
   }
   await publish()
   await publishSkies()

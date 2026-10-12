@@ -478,7 +478,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   }
 
   function disposeMats(pm: PartMat) {
-    for (const m of Object.values(pm.mats)) m.dispose()
+    for (const m of Object.values(pm.mats)) m?.dispose()
   }
 
   function addDrawable(g: BufferGeometry, m: PassMats, decal = false): Drawable {
