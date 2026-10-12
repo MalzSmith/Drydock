@@ -73,6 +73,7 @@ export function bootLocale(): Promise<void> {
 export const currentLang = () => lang
 export const fmt = (n: number) => nf.format(n)
 export const fmt1 = (n: number) => nf1.format(n)
+export const fmtPercent = (n: number) => new Intl.NumberFormat(lang, { style: 'percent' }).format(n / 100)
 
 function lookup(d: Dict, key: string): Entry | undefined {
   let v: Entry | undefined = d

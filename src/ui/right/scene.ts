@@ -1,6 +1,6 @@
-import { actions, store } from '../../state/app.ts'
-import { tr } from '../../i18n.ts'
-import { h, kicker, seg, t, text } from '../dom.ts'
+import { actions, saveShadows, SHADOW_STRENGTH, store } from '../../state/app.ts'
+import { fmtPercent, tr } from '../../i18n.ts'
+import { check, h, kicker, seg, t, text } from '../dom.ts'
 
 const SKY = [
   { id: 'sky-default', label: 'scene.bg.sky-default', src: 'scene.src.procedural', css: 'radial-gradient(circle at 30% 40%, #2c455d 0, transparent 45%), #07090c' },
@@ -53,6 +53,28 @@ export function mountSceneTab(): HTMLElement {
     onChange: (v) => actions.setScene({ lighting: v }),
   })
 
+  const setShadows = (on: boolean, strength: number) => {
+    saveShadows(on, strength)
+    actions.setScene({ shadows: on, shadowStrength: strength })
+  }
+  const shadows = check(t('scene.shadows'), (v) => setShadows(v, store.get().scene.shadowStrength))
+  const strength = h('input', {
+    type: 'range',
+    min: 0,
+    max: 100,
+    step: 5,
+    onInput: () => setShadows(true, +strength.value),
+    onDblclick: () => setShadows(true, SHADOW_STRENGTH),
+  })
+  const strengthLabel = text()
+  const strengthBox = h(
+    'div',
+    { class: 'col g6' },
+    h('div', { class: 'between', style: 'font-size:13px' }, h('span', null, t('scene.shadowStrength')), h('span', { class: 'acc7' }, strengthLabel.el)),
+    strength,
+  )
+  const shadowBox = h('div', { class: 'col g10', style: 'margin-top:4px' }, shadows.el, strengthBox)
+
   const sunBox = h(
     'div',
     { class: 'col g6', style: 'margin-top:4px' },
@@ -71,6 +93,7 @@ export function mountSceneTab(): HTMLElement {
       kicker(t('scene.lighting')),
       lighting.el,
       sunBox,
+      shadowBox,
     ),
   )
 
@@ -95,6 +118,15 @@ export function mountSceneTab(): HTMLElement {
     lighting.set(v)
     sunBox.hidden = v === 'uniform'
   })
+  store.watch((s) => s.scene.lighting === 'directional' && s.render.mode === 'textured', (v) => (shadowBox.hidden = !v))
+  store.watch((s) => s.scene.shadows, (v) => {
+    shadows.set(v)
+    strengthBox.hidden = !v
+  })
+  store.watch((s) => [s.scene.shadowStrength, s.locale] as const, ([v]) => {
+    strength.value = String(v)
+    strengthLabel.set(fmtPercent(v))
+  }, (a, b) => a[0] === b[0] && a[1] === b[1])
   store.watch((s) => s.scene.sun, (v) => {
     sun.value = String(v)
     sunLabel.set(`${v}°`)

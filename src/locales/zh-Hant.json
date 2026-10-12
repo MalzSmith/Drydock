@@ -216,6 +216,8 @@
     "directional": "定向",
     "uniform": "均勻",
     "sun": "太陽方位角",
+    "shadows": "陰影",
+    "shadowStrength": "陰影強度",
     "top": "頂部",
     "bottom": "底部",
     "offNote": "灰色的天空盒需從遊戲檔案載入。連結遊戲資料夾後即可使用。",

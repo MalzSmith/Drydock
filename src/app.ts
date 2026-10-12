@@ -62,6 +62,7 @@ store.watch(
       proj: render.proj,
       sun: scene.sun,
       lighting: scene.lighting,
+      shadows: scene.shadows ? scene.shadowStrength / 100 : 0,
       bg: scene.bg,
       gradTop: scene.gradTop,
       gradBot: scene.gradBot,
@@ -125,6 +126,8 @@ if (bg) actions.setScene({ bg })
 if (q.get('mode') === 'compose') actions.setMode('compose')
 const seams = q.get('seams')
 if (seams === '0' || seams === '1') actions.setRender({ edges: seams === '1' })
+const shadows = q.get('shadows')
+if (shadows === '0' || shadows === '1') actions.setScene({ shadows: shadows === '1' })
 if (q.get('tint') === '1') actions.setRender({ tintMods: true })
 if (q.get('sources') === '1') actions.openSources()
 

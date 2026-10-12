@@ -230,6 +230,8 @@
     "directional": "Directional",
     "uniform": "Uniform",
     "sun": "Sun azimuth",
+    "shadows": "Shadows",
+    "shadowStrength": "Shadow strength",
     "top": "Top",
     "bottom": "Bottom",
     "offNote": "Greyed-out skyboxes load from the game files. Link the game folder to use them.",

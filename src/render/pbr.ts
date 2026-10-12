@@ -9,6 +9,7 @@ export const PBR = {
   glassDiffuse: 0.27,
   glassSky: [0.0024, 0.0028, 0.0036],
   glassGround: [0.0008, 0.0008, 0.0008],
+  shadowSoft: 0.05,
 }
 
 export type GlassFallback = { color: [number, number, number, number]; add: [number, number, number, number]; reflectivity: number; fresnel: number; glossAdd: number; light: number }

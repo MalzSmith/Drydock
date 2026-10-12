@@ -230,6 +230,8 @@
     "directional": "Gerichtet",
     "uniform": "Gleichmäßig",
     "sun": "Sonnenazimut",
+    "shadows": "Schatten",
+    "shadowStrength": "Schattenstärke",
     "top": "Oben",
     "bottom": "Unten",
     "offNote": "Ausgegraute Skyboxen werden aus den Spieldateien geladen. Verknüpfe den Spielordner, um sie zu nutzen.",

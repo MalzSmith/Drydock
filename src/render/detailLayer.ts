@@ -15,16 +15,21 @@ import {
   InstancedBufferGeometry,
   InstancedInterleavedBuffer,
   InterleavedBufferAttribute,
+  LessEqualCompare,
   LessEqualDepth,
+  LinearFilter,
+  Matrix4,
   Mesh,
   NearestFilter,
   OneFactor,
   OneMinusSrcAlphaFactor,
   OrthographicCamera,
+  RedFormat,
   Scene,
   ShaderMaterial,
   Sphere,
   SrcAlphaFactor,
+  UnsignedIntType,
   Vector2,
   Vector3,
   Vector4,
@@ -45,7 +50,7 @@ import { createAssets, type AssetCounts, type MeshAttrs, type MeshEntry, type Te
 import type { Caps } from '../assets/build.ts'
 import { cubeGeometry, gridGeometry } from './cube.ts'
 import { STRIDE, buildDetail, type DetailScene } from './detail.ts'
-import { compositeFrag, downFrag, glassFrag, lineFrag, lineVert, modelFrag, modelVert, quadVert, reduceFrag, refBoxFrag, refBoxVert } from './detailShaders.ts'
+import { compositeFrag, downFrag, glassFrag, lineFrag, lineVert, modelFrag, modelVert, quadVert, reduceFrag, refBoxFrag, refBoxVert, shadowBoxFrag, shadowFrag } from './detailShaders.ts'
 import { GLASS_INNER, GLASS_OUTER, PBR } from './pbr.ts'
 
 export type DetailOptions = {
@@ -55,6 +60,7 @@ export type DetailOptions = {
   exposure: number
   sun: number
   lighting: 'directional' | 'uniform'
+  shadows: number
   section: { on: boolean; axis: number; cut: number; mode: 'cut' | 'slice'; flip: boolean; thick: number; capHi: boolean }
 }
 
@@ -95,7 +101,13 @@ function sphereOf(a: MeshAttrs): Sphere {
   return s
 }
 
-type PartMat = { mat: ShaderMaterial; glassDepth?: ShaderMaterial; glassColor?: ShaderMaterial; texKeys: string[] }
+type Pass = 'gbuffer' | 'shadow' | 'glassDepth' | 'glassColor'
+
+type PassMats = Partial<Record<Pass, ShaderMaterial>>
+
+type PartMat = { mats: PassMats; texKeys: string[] }
+
+type Drawable = { mesh: Mesh; mats: PassMats; on: boolean; decal: boolean }
 
 export function quadGeometry(): BufferGeometry {
   const g = new BufferGeometry()
@@ -116,6 +128,13 @@ function lineGeometry(lines: Float32Array): InstancedBufferGeometry {
 
 function nearestRT(w: number, h: number, o: ConstructorParameters<typeof WebGLRenderTarget>[2] = {}) {
   return new WebGLRenderTarget(w, h, { minFilter: NearestFilter, magFilter: NearestFilter, generateMipmaps: false, ...o })
+}
+
+function shadowTarget(size: number): WebGLRenderTarget {
+  const dt = new DepthTexture(size, size, UnsignedIntType)
+  dt.minFilter = dt.magFilter = LinearFilter
+  dt.compareFunction = LessEqualCompare
+  return new WebGLRenderTarget(size, size, { format: RedFormat, depthTexture: dt, depthBuffer: true, generateMipmaps: false })
 }
 
 function releaseShared(g: InstancedBufferGeometry) {
@@ -149,9 +168,13 @@ function modelMaterial(uniforms: Record<string, IUniform>, decal: boolean): Shad
   return mat
 }
 
-function glassMaterials(uniforms: Record<string, IUniform>): { depth: ShaderMaterial; color: ShaderMaterial } {
+function shadowMaterial(uniforms: Record<string, IUniform>, vert: string, frag: string): ShaderMaterial {
+  return new ShaderMaterial({ glslVersion: GLSL3, vertexShader: vert, fragmentShader: frag, uniforms, side: DoubleSide, colorWrite: false })
+}
+
+function glassMaterials(uniforms: Record<string, IUniform>): { glassDepth: ShaderMaterial; glassColor: ShaderMaterial } {
   return {
-    depth: new ShaderMaterial({
+    glassDepth: new ShaderMaterial({
       glslVersion: GLSL3,
       vertexShader: modelVert,
       fragmentShader: glassFrag,
@@ -159,7 +182,7 @@ function glassMaterials(uniforms: Record<string, IUniform>): { depth: ShaderMate
       side: DoubleSide,
       colorWrite: false,
     }),
-    color: new ShaderMaterial({
+    glassColor: new ShaderMaterial({
       glslVersion: GLSL3,
       vertexShader: modelVert,
       fragmentShader: glassFrag,
@@ -185,7 +208,7 @@ const keepWarm: ShaderMaterial[] = []
 
 function warmPrograms(gl: WebGLRenderer, quad: BufferGeometry, cam: Camera, solid: ShaderMaterial[], flat: ShaderMaterial[], onscreen: ShaderMaterial) {
   const glass = glassMaterials({})
-  keepWarm.push(modelMaterial({}, false), modelMaterial({}, true), glass.depth, glass.color)
+  keepWarm.push(modelMaterial({}, false), modelMaterial({}, true), glass.glassDepth, glass.glassColor, shadowMaterial({}, modelVert, shadowFrag))
   const shaded = quad.clone()
   shaded.setAttribute('normal', new BufferAttribute(new Float32Array(9), 3))
   const scene = (list: Array<[BufferGeometry, ShaderMaterial[]]>) => {
@@ -231,13 +254,17 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     u_cut: { value: new Vector2(0, 1) },
     u_capHi: { value: 1 },
     u_px: { value: 1 },
+    u_shadowMap: { value: null },
+    u_shadowMat: { value: new Matrix4() },
+    u_shadow: { value: new Vector3() },
+    u_shadowInv: { value: new Vector3() },
   }
-  const sceneG = new Scene()
-  const sceneGlass = new Scene()
-  const rootG = new Group()
-  const rootGlass = new Group()
-  sceneG.add(rootG)
-  sceneGlass.add(rootGlass)
+  const noShadow = shadowTarget(1)
+  gl.initRenderTarget(noShadow)
+  shared.u_shadowMap.value = noShadow.depthTexture
+  const scene = new Scene()
+  const root = new Group()
+  scene.add(root)
   const cube = cubeGeometry()
   const quad = quadGeometry()
   const quadCam = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
@@ -248,6 +275,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     fragmentShader: refBoxFrag,
     uniforms: { ...shared, u_cmin: { value: new Vector3() }, u_mc: { value: 2.5 } },
   })
+  const refBoxShadowMat = shadowMaterial(refBoxMat.uniforms, refBoxVert, shadowBoxFrag)
   const lineMat = new ShaderMaterial({
     glslVersion: GLSL3,
     vertexShader: lineVert,
@@ -301,7 +329,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   const passMesh = new Mesh(quad, reduceMat)
   passMesh.frustumCulled = false
   passScene.add(passMesh)
-  if (gl.extensions.has('KHR_parallel_shader_compile')) setTimeout(() => warmPrograms(gl, quad, quadCam, [refBoxMat], [lineMat, reduceMat, compMat], downMat), 0)
+  if (gl.extensions.has('KHR_parallel_shader_compile')) setTimeout(() => warmPrograms(gl, quad, quadCam, [refBoxMat, refBoxShadowMat], [lineMat, reduceMat, compMat], downMat), 0)
 
   const assets = createAssets(caps, (t) => gl.initTexture(t), () => rebuild(), () => hooks.requestFrame(), hooks.onCounts)
   let table: TileTable | null = null
@@ -313,16 +341,18 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   let model: RenderModel | null = null
   let built: DetailScene | null = null
   let active = false
-  let lines: Mesh | null = null
+  let lines: Drawable | null = null
   const mats = new Map<string, PartMat>()
   const groupGeos: InstancedBufferGeometry[] = []
   const boxGeos: InstancedBufferGeometry[] = []
-  const decals: Mesh[] = []
-  const behind: Mesh[] = []
-  const glassMeshes: Array<{ mesh: Mesh; pm: PartMat }> = []
+  const drawables: Drawable[] = []
+  const decals: Drawable[] = []
+  const behind: Drawable[] = []
   let gRT: WebGLRenderTarget | null = null
   let compRT: WebGLRenderTarget | null = null
   let redRTs: WebGLRenderTarget[] = []
+  let shadowRT: WebGLRenderTarget | null = null
+  let shadowOn = false
   let opts: DetailOptions = {
     style: 'textured',
     edges: true,
@@ -330,11 +360,12 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     exposure: 0,
     sun: 40,
     lighting: 'directional',
+    shadows: 0,
     section: { on: false, axis: 0, cut: 0, mode: 'cut', flip: false, thick: 2, capHi: true },
   }
 
   function bindTextures(pm: PartMat, part: PartData, skin: SkinRecord | null) {
-    const u = pm.mat.uniforms
+    const u = pm.mats.gbuffer!.uniforms
     const t = { ...part.tex }
     const ch = skin?.changes[part.material]
     if (ch && part.tex) {
@@ -404,6 +435,26 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     let pm = mats.get(key)
     if (pm) return pm
     const decal = part.kind === KIND_DECAL
+    if (part.kind === KIND_GLASS) {
+      const gu: Record<string, IUniform> = {
+        ...shared,
+        u_pull: { value: 0 },
+        u_gColor: { value: new Vector4() },
+        u_gAdd: { value: new Vector4() },
+        u_gRefl: { value: 0 },
+        u_gFresnel: { value: 0 },
+        u_gGlossAdd: { value: 0 },
+        u_gLight: { value: 1 },
+        u_inner: { value: 0 },
+        u_gTex: { value: null },
+        u_gGloss: { value: null },
+        u_gHas: { value: new Vector2() },
+      }
+      pm = { mats: glassMaterials(gu), texKeys: [] }
+      bindGlass(pm, part, gu)
+      mats.set(key, pm)
+      return pm
+    }
     const uniforms: Record<string, IUniform> = {
       ...shared,
       u_pull: { value: decal ? 0.03 : 0 },
@@ -420,29 +471,32 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
       u_add: { value: null },
       u_am: { value: null },
     }
-    pm = { mat: modelMaterial(uniforms, decal), texKeys: [] }
-    if (part.kind === KIND_GLASS) {
-      const gu: Record<string, IUniform> = {
-        ...shared,
-        u_pull: { value: 0 },
-        u_gColor: { value: new Vector4() },
-        u_gAdd: { value: new Vector4() },
-        u_gRefl: { value: 0 },
-        u_gFresnel: { value: 0 },
-        u_gGlossAdd: { value: 0 },
-        u_gLight: { value: 1 },
-        u_inner: { value: 0 },
-        u_gTex: { value: null },
-        u_gGloss: { value: null },
-        u_gHas: { value: new Vector2() },
-      }
-      const g = glassMaterials(gu)
-      pm.glassDepth = g.depth
-      pm.glassColor = g.color
-      bindGlass(pm, part, gu)
-    } else bindTextures(pm, part, skin)
+    pm = { mats: { gbuffer: modelMaterial(uniforms, decal), shadow: decal ? undefined : shadowMaterial(uniforms, modelVert, shadowFrag) }, texKeys: [] }
+    bindTextures(pm, part, skin)
     mats.set(key, pm)
     return pm
+  }
+
+  function disposeMats(pm: PartMat) {
+    for (const m of Object.values(pm.mats)) m.dispose()
+  }
+
+  function addDrawable(g: BufferGeometry, m: PassMats, decal = false): Drawable {
+    const mesh = new Mesh(g, Object.values(m)[0])
+    mesh.frustumCulled = false
+    root.add(mesh)
+    const d = { mesh, mats: m, on: true, decal }
+    drawables.push(d)
+    return d
+  }
+
+  function drawPass(pass: Pass, cam: Camera) {
+    for (const d of drawables) {
+      const m = d.mats[pass]
+      d.mesh.visible = d.on && m !== undefined
+      if (m) d.mesh.material = m
+    }
+    gl.render(scene, cam)
   }
 
   function clear() {
@@ -455,12 +509,11 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     }
     groupGeos.length = 0
     boxGeos.length = 0
+    drawables.length = 0
     decals.length = 0
     behind.length = 0
-    glassMeshes.length = 0
-    rootG.clear()
-    rootGlass.clear()
-    lines?.geometry.dispose()
+    root.clear()
+    lines?.mesh.geometry.dispose()
     lines = null
   }
 
@@ -514,47 +567,33 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
         groupGeos.push(g)
         const pm = partMaterial(me, part, pi, gr.skin)
         usedMats.add(pm)
-        if (part.kind === KIND_GLASS) {
-          const mesh = new Mesh(g, pm.glassColor!)
-          mesh.frustumCulled = false
-          if (gr.behind) behind.push(mesh)
-          rootGlass.add(mesh)
-          glassMeshes.push({ mesh, pm })
-          return
+        const d = addDrawable(g, pm.mats, part.kind === KIND_DECAL)
+        if (gr.behind) behind.push(d)
+        if (d.decal) {
+          d.mesh.renderOrder = 1
+          decals.push(d)
         }
-        const mesh = new Mesh(g, pm.mat)
-        mesh.frustumCulled = false
-        if (gr.behind) behind.push(mesh)
-        if (part.kind === KIND_DECAL) {
-          mesh.renderOrder = 1
-          decals.push(mesh)
-        }
-        rootG.add(mesh)
       })
     }
     for (const b of scene.boxes) {
       const grid = model.grids[b.grid]
       const g = gridGeometry(b.inst.buffer as ArrayBuffer, b.count, cube)
       boxGeos.push(g)
-      const mesh = new Mesh(g, refBoxMat)
-      mesh.frustumCulled = false
+      const { mesh } = addDrawable(g, { gbuffer: refBoxMat, shadow: refBoxShadowMat })
       const sc = new Float32Array(16)
       sc[0] = sc[5] = sc[10] = grid.cell
       sc[15] = 1
       mesh.matrixAutoUpdate = false
       mesh.matrix.fromArray(mul(sc, grid.toMain))
       mesh.matrixWorldNeedsUpdate = true
-      rootG.add(mesh)
     }
     if (scene.lines.length) {
-      lines = new Mesh(lineGeometry(scene.lines), lineMat)
-      lines.frustumCulled = false
-      lines.renderOrder = 2
-      rootG.add(lines)
+      lines = addDrawable(lineGeometry(scene.lines), { gbuffer: lineMat })
+      lines.mesh.renderOrder = 2
     }
     for (const [k, pm] of mats)
-      if (!usedMats.has(pm) && pm.texKeys.length === 0 && !pm.glassDepth) {
-        pm.mat.dispose()
+      if (!usedMats.has(pm) && pm.texKeys.length === 0 && !pm.mats.glassDepth) {
+        disposeMats(pm)
         mats.delete(k)
       }
     applyVisibility()
@@ -562,9 +601,10 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
   }
 
   function applyVisibility() {
-    for (const d of decals) d.visible = opts.style === 'textured'
-    for (const b of behind) b.visible = opts.section.on && (opts.style === 'textured' || !decals.includes(b))
-    if (lines) lines.visible = opts.edges
+    const tex = opts.style === 'textured'
+    for (const d of decals) d.on = tex
+    for (const d of behind) d.on = opts.section.on && (tex || !d.decal)
+    if (lines) lines.on = opts.edges
   }
 
   function setOptions(o: DetailOptions) {
@@ -577,6 +617,8 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     shared.u_capHi.value = sec.capHi ? 1 : 0
     compMat.uniforms.u_line.value = o.style === 'line' ? 1 : 0
     compMat.uniforms.u_refLook.value = o.style === 'textured' && o.lighting === 'directional' ? 0 : 1
+    shadowOn = o.style === 'textured' && o.lighting === 'directional' && o.shadows > 0
+    if (!shadowOn) disposeShadow()
     applyVisibility()
   }
 
@@ -585,9 +627,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     model = m
     if (prev !== m) {
       for (const [k, pm] of mats) {
-        pm.mat.dispose()
-        pm.glassDepth?.dispose()
-        pm.glassColor?.dispose()
+        disposeMats(pm)
         mats.delete(k)
       }
     }
@@ -636,6 +676,92 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     clip.value.set(c.near, c.far, persp ? 1 : 0)
   }
 
+  const lightCam = new OrthographicCamera()
+  const toTex = new Matrix4().set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1)
+  const toLight = new Matrix4()
+  const pt = new Vector3()
+  const near = new Vector3()
+  const far = new Vector3()
+  const empty = () => [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]
+
+  function grow(b: number[], v: Vector3) {
+    b[0] = Math.min(b[0], v.x)
+    b[1] = Math.min(b[1], v.y)
+    b[2] = Math.min(b[2], v.z)
+    b[3] = Math.max(b[3], v.x)
+    b[4] = Math.max(b[4], v.y)
+    b[5] = Math.max(b[5], v.z)
+  }
+
+  function disposeShadow() {
+    shadowRT?.depthTexture?.dispose()
+    shadowRT?.dispose()
+    shadowRT = null
+    shared.u_shadowMap.value = noShadow.depthTexture
+  }
+
+  function fitShadow(cam: Camera): boolean {
+    if (!model) return false
+    const lo = model.boundsMin
+    const hi = model.boundsMax
+    const L = shared.u_light.value as Vector3
+    const cx = (lo[0] + hi[0]) / 2
+    const cy = (lo[1] + hi[1]) / 2
+    const cz = (lo[2] + hi[2]) / 2
+    lightCam.position.set(cx, cy, cz).addScaledVector(L, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2 + 1)
+    lightCam.up.copy(Math.abs(L.dot(up)) < 0.99 ? up : right)
+    lightCam.lookAt(cx, cy, cz)
+    lightCam.updateMatrixWorld()
+    const shipL = empty()
+    const shipV = empty()
+    for (let i = 0; i < 8; i++) {
+      pt.set(i & 1 ? hi[0] : lo[0], i & 2 ? hi[1] : lo[1], i & 4 ? hi[2] : lo[2])
+      grow(shipL, near.copy(pt).applyMatrix4(lightCam.matrixWorldInverse))
+      grow(shipV, pt.applyMatrix4(cam.matrixWorldInverse))
+    }
+    const c = cam as PerspectiveCamera
+    const d0 = Math.max(c.near, -shipV[5])
+    const d1 = Math.min(c.far, -shipV[2])
+    if (d0 >= d1) return false
+    toLight.multiplyMatrices(lightCam.matrixWorldInverse, cam.matrixWorld)
+    const view = empty()
+    for (let i = 0; i < 4; i++) {
+      near.set(i & 1 ? 1 : -1, i & 2 ? 1 : -1, -1).applyMatrix4(c.projectionMatrixInverse)
+      far.set(i & 1 ? 1 : -1, i & 2 ? 1 : -1, 1).applyMatrix4(c.projectionMatrixInverse)
+      for (const d of [d0, d1]) grow(view, pt.lerpVectors(near, far, (d + near.z) / (near.z - far.z)).applyMatrix4(toLight))
+    }
+    let x0 = Math.max(shipL[0], view[0])
+    let y0 = Math.max(shipL[1], view[1])
+    let x1 = Math.min(shipL[3], view[3])
+    let y1 = Math.min(shipL[4], view[4])
+    if (x0 >= x1 || y0 >= y1) return false
+    const size = Math.min(4096, gl.capabilities.maxTextureSize)
+    const soft = PBR.shadowSoft * model.mainCell
+    const m = soft + (4 * Math.max(x1 - x0, y1 - y0)) / size
+    x0 -= m
+    y0 -= m
+    x1 += m
+    y1 += m
+    const texel = Math.max(x1 - x0, y1 - y0) / size
+    Object.assign(lightCam, { left: x0, right: x1, bottom: y0, top: y1, near: -shipL[5] - 1, far: -shipL[2] + 1 })
+    lightCam.updateProjectionMatrix()
+    shared.u_shadowMat.value.multiplyMatrices(toTex, lightCam.projectionMatrix).multiply(lightCam.matrixWorldInverse)
+    shared.u_shadow.value.set(0, texel, Math.max(soft, 1.5 * texel))
+    shared.u_shadowInv.value.set(1 / (x1 - x0), 1 / (y1 - y0), 1 / (lightCam.far - lightCam.near))
+    if (!shadowRT || shadowRT.width !== size) {
+      disposeShadow()
+      shadowRT = shadowTarget(size)
+      shared.u_shadowMap.value = shadowRT.depthTexture
+    }
+    return true
+  }
+
+  function renderShadow() {
+    gl.setRenderTarget(shadowRT)
+    gl.clear(true, true, false)
+    drawPass('shadow', lightCam)
+  }
+
   function ensureTargets(w: number, h: number) {
     if (gRT && gRT.width === w && gRT.height === h) return
     gRT?.dispose()
@@ -681,13 +807,15 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
 
   function renderGBuffer(cam: Camera, w: number, h: number, ss: number) {
     updateLights(cam)
+    shared.u_shadow.value.x = shadowOn && fitShadow(cam) ? opts.shadows : 0
+    if (shared.u_shadow.value.x > 0) renderShadow()
     shared.u_px.value = ss
     lineMat.uniforms.u_res.value.set(w, h)
     lineMat.uniforms.u_width.value = ss
     gl.setRenderTarget(gRT)
     gl.setClearColor(0x000000, 1)
     gl.clear(true, true, false)
-    gl.render(sceneG, cam)
+    drawPass('gbuffer', cam)
   }
 
   function composite(p: DetailPass, zr: WebGLRenderTarget | null, zo: [number, number] | null) {
@@ -705,10 +833,8 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     gl.clear(true, true, true)
     if (!p.transparent) p.drawBackground(p.w, p.h)
     runPass(compMat, compRT)
-    for (const g of glassMeshes) g.mesh.material = g.pm.glassDepth!
-    gl.render(sceneGlass, p.cam)
-    for (const g of glassMeshes) g.mesh.material = g.pm.glassColor!
-    gl.render(sceneGlass, p.cam)
+    drawPass('glassDepth', p.cam)
+    drawPass('glassColor', p.cam)
   }
 
   function render(p: DetailPass, out: { w: number; h: number }) {
@@ -757,6 +883,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
       clear()
       gRT?.dispose()
       compRT?.dispose()
+      disposeShadow()
     },
   }
 }

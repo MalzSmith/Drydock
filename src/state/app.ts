@@ -107,7 +107,7 @@ export type AppState = {
   tab: Tab
   render: { mode: RenderStyle; proj: 'persp' | 'ortho'; edges: boolean; tintMods: boolean; missing: MissingMode; exposure: number }
   section: { on: boolean; axis: 0 | 1 | 2; pos: number; mode: 'cut' | 'slice'; flip: boolean; thick: number; capHi: boolean }
-  scene: { bg: string; gradTop: string; gradBot: string; sun: number; lighting: Lighting }
+  scene: { bg: string; gradTop: string; gradBot: string; sun: number; lighting: Lighting; shadows: boolean; shadowStrength: number }
   skies: SkyItem[]
   export: { res: number; aspect: string; fmt: 'PNG' | 'JPG' | 'WEBP'; transparent: boolean; ss: number; fileName: string }
   compose: { shapes: Shape[]; selShape: number | null; grid: 'Large' | 'Small'; name: string }
@@ -143,6 +143,26 @@ function readSeams(): boolean {
 export function saveSeams(on: boolean) {
   try {
     localStorage.setItem(SEAMS_KEY, on ? '1' : '0')
+  } catch {}
+}
+
+const SHADOWS_KEY = 'drydock.shadows'
+export const SHADOW_STRENGTH = 80
+
+function readShadows(): { shadows: boolean; shadowStrength: number } {
+  try {
+    const v = localStorage.getItem(SHADOWS_KEY)
+    const n = v === null ? NaN : Math.round(+v)
+    return n >= 0 && n <= 100 ? { shadows: true, shadowStrength: n } : { shadows: false, shadowStrength: SHADOW_STRENGTH }
+  } catch {
+    return { shadows: false, shadowStrength: SHADOW_STRENGTH }
+  }
+}
+
+export function saveShadows(on: boolean, strength: number) {
+  try {
+    if (on) localStorage.setItem(SHADOWS_KEY, String(strength))
+    else localStorage.removeItem(SHADOWS_KEY)
   } catch {}
 }
 
@@ -182,7 +202,7 @@ export const store = createStore<AppState>({
   tab: 'view',
   render: { mode: 'textured', proj: 'ortho', edges: readSeams(), tintMods: false, missing: 'placeholder', exposure: 0 },
   section: { on: false, axis: 0, pos: 0.5, mode: 'cut', flip: false, thick: 2, capHi: true },
-  scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40, lighting: 'directional' },
+  scene: { bg: 'sky-default', gradTop: '#d6ebff', gradBot: '#2c455d', sun: 40, lighting: 'directional', ...readShadows() },
   skies: [],
   export: { res: 2160, aspect: '16:9', fmt: 'PNG', transparent: false, ss: 8, fileName: '{blueprint}_{date}' },
   compose: { shapes: shapes0, selShape: null, grid: 'Large', name: 'Drydock Hull' },

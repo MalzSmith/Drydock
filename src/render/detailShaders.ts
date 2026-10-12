@@ -100,6 +100,12 @@ uniform vec3 u_camPos;
 uniform vec3 u_camDir;
 uniform int u_persp;
 uniform float u_uniform;
+uniform highp sampler2DShadow u_shadowMap;
+uniform mat4 u_shadowMat;
+uniform vec3 u_shadow;
+uniform vec3 u_shadowInv;
+
+float g_sun = 1.0;
 
 vec3 faceNormal(vec3 wp) {
   vec3 fn = normalize(cross(dFdx(wp), dFdy(wp)));
@@ -107,9 +113,27 @@ vec3 faceNormal(vec3 wp) {
   return dot(fn, vd) > 0.0 ? -fn : fn;
 }
 
+float sunShadow(vec3 wp, vec3 fn) {
+  if (u_shadow.x <= 0.0) return 1.0;
+  float ndl = dot(fn, u_light);
+  if (ndl <= 0.0) return 1.0;
+  float slope = min(sqrt(max(1.0 - ndl * ndl, 0.0)) / ndl, 4.0);
+  vec3 s = (u_shadowMat * vec4(wp + fn * 1.5 * u_shadow.y, 1.0)).xyz;
+  if (s.x < 0.0 || s.y < 0.0 || s.x > 1.0 || s.y > 1.0 || s.z > 1.0) return 1.0;
+  float ref = s.z - (u_shadow.y + u_shadow.z * slope) * u_shadowInv.z;
+  vec2 rad = u_shadow.z * u_shadowInv.xy;
+  float vis = 0.0;
+  for (int k = 0; k < 16; k++) {
+    float a = float(k) * 2.39996;
+    float r = sqrt((float(k) + 0.5) / 16.0);
+    vis += texture(u_shadowMap, vec3(s.xy + vec2(cos(a), sin(a)) * r * rad, ref));
+  }
+  return mix(1.0, vis / 16.0, u_shadow.x);
+}
+
 float flatShade(vec3 n) {
   if (u_uniform > 0.5) return 0.85;
-  return 0.42 + 0.58 * max(0.0, dot(n, u_light)) + 0.12 * max(0.0, dot(n, u_fill));
+  return 0.42 + 0.58 * max(0.0, dot(n, u_light)) * g_sun + 0.12 * max(0.0, dot(n, u_fill));
 }
 `
 
@@ -172,7 +196,7 @@ vec3 shadePbr(vec3 N, vec3 base, float metal, float gloss, float len, float ao, 
   float roughness = 1.0 - gloss;
   float a = filteredAlpha(max(roughness * roughness, 2e-3), len);
   vec3 V = u_persp == 1 ? normalize(u_camPos - v_wp) : -u_camDir;
-  vec3 rad = directLight(u_keyColor, u_light, N, V, albedo, f0, a);
+  vec3 rad = directLight(u_keyColor * g_sun, u_light, N, V, albedo, f0, a);
   rad += directLight(u_fillColor, u_fill, N, V, albedo, f0, a);
   float nv = max(dot(N, V), 1e-4);
   rad += albedo * env(N) * ao;
@@ -265,6 +289,7 @@ void main() {
   g_du1 = dFdx(v_uv);
   g_du2 = dFdy(v_uv);
   vec3 fn = faceNormal(v_wp);
+  g_sun = sunShadow(v_wp, fn);
   bool modded = (int(v_flags + 0.5) & 2) != 0;
   bool tinted = u_tint > 0.5 && modded;
   bool textured = u_style == 0 && u_textured == 1 && !tinted;
@@ -293,7 +318,7 @@ void main() {
     else if (u_style == 3) albedo = vec3(0.949, 0.949, 0.9529);
     else if (tinted) albedo = vec3(0.5804, 0.7373, 0.8902);
     float shade = flatShade(fn);
-    if (u_kind == 3 && u_style < 2 && !tinted) shade = 0.75 + 0.25 * max(0.0, dot(fn, u_light));
+    if (u_kind == 3 && u_style < 2 && !tinted) shade = 0.75 + 0.25 * max(0.0, dot(fn, u_light)) * g_sun;
     col = albedo * shade;
   }
   if (u_sel > 0.5 && (int(v_flags + 0.5) & 16) != 0) col = mix(col, vec3(0.42, 0.86, 0.52), 0.3);
@@ -339,6 +364,7 @@ void main() {
   vec3 V = u_persp == 1 ? normalize(u_camPos - v_wp) : -u_camDir;
   vec3 N = normalize(v_n);
   if (dot(N, V) <= 0.0) discard;
+  g_sun = sunShadow(v_wp, N);
   if (u_style != 0) {
     float al = u_inner > 0.5 ? 0.15 : 0.5;
     vec3 fl = vec3(0.17, 0.22, 0.28) * (0.55 + 0.75 * flatShade(N));
@@ -352,11 +378,11 @@ void main() {
   float a = max(roughness * roughness, 2e-3);
   vec3 base = u_gColor.rgb * t.rgb;
   float cover = clamp(u_gColor.a * t.a + u_gAdd.a, 0.0, 1.0);
-  vec3 diffuse = base * (env(N) + u_keyColor * max(dot(N, u_light), 0.0) / PI + u_fillColor * max(dot(N, u_fill), 0.0) / PI) * u_gLight * u_glassDiffuse;
+  vec3 diffuse = base * (env(N) + u_keyColor * g_sun * max(dot(N, u_light), 0.0) / PI + u_fillColor * max(dot(N, u_fill), 0.0) / PI) * u_gLight * u_glassDiffuse;
   float nv = max(dot(N, V), 1e-4);
   vec3 R = reflect(-V, N);
   vec3 spec = mix(mix(u_glassGround, u_glassSky, smoothstep(-1.0, 1.0, R.y)), 0.5 * (u_glassSky + u_glassGround), roughness);
-  spec += glassSpec(u_keyColor, u_light, N, nv, V, a);
+  spec += glassSpec(u_keyColor * g_sun, u_light, N, nv, V, a);
   spec += glassSpec(u_fillColor, u_fill, N, nv, V, a);
   float w = clamp(u_gRefl + u_gFresnel * pow(1.0 - nv, 5.0), 0.0, 1.0);
   vec3 rgb = diffuse * cover + u_gAdd.rgb + spec * w;
@@ -436,6 +462,7 @@ ${lighting}
 
 void main() {
   vec3 n = faceNormal(v_wp);
+  g_sun = sunShadow(v_wp, n);
   int flags = int(v_flags + 0.5);
   bool placeholder = (flags & 1) != 0;
   bool modded = (flags & 2) != 0;
@@ -461,6 +488,26 @@ void main() {
   if (v_cap > 0.5) col = mix(col, vec3(0.8392, 0.9216, 1.0), 0.35) * 0.97;
   fragColor = vec4(col, 1.0);
   fragNormal = vec4(n * 0.5 + 0.5, 1.0);
+}
+`
+
+export const shadowFrag = `
+layout(location = 0) out highp vec4 fragColor;
+in vec2 v_uv;
+uniform int u_textured;
+uniform int u_alphaTest;
+uniform sampler2D u_am;
+
+void main() {
+  if (u_textured == 1 && u_alphaTest == 1 && texture(u_am, v_uv).r < 0.5) discard;
+  fragColor = vec4(1.0);
+}
+`
+
+export const shadowBoxFrag = `
+layout(location = 0) out highp vec4 fragColor;
+void main() {
+  fragColor = vec4(1.0);
 }
 `
 

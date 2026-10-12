@@ -54,6 +54,7 @@ export type RenderOptions = {
   proj: 'persp' | 'ortho'
   sun: number
   lighting: 'directional' | 'uniform'
+  shadows: number
   bg: string
   gradTop: string
   gradBot: string
@@ -202,6 +203,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     proj: 'persp',
     sun: 40,
     lighting: 'directional',
+    shadows: 0,
     bg: 'sky-default',
     gradTop: '#d6ebff',
     gradBot: '#2c455d',
@@ -303,7 +305,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     boxMat.uniforms.u_sec.value.set(sec.on ? 1 : 0, sec.axis, sec.mode === 'slice' ? 1 : 0, sec.flip ? 1 : 0)
     boxMat.uniforms.u_cut.value.set(sec.cut, sec.thick)
     boxMat.uniforms.u_capHi.value = sec.capHi ? 1 : 0
-    detail.setOptions({ style: opts.style, edges: opts.edges, tintMods: opts.tintMods, exposure: opts.exposure, sun: opts.sun, lighting: opts.lighting, section: sec })
+    detail.setOptions({ style: opts.style, edges: opts.edges, tintMods: opts.tintMods, exposure: opts.exposure, sun: opts.sun, lighting: opts.lighting, shadows: opts.shadows, section: sec })
     requestFrame()
   }
 
