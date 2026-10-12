@@ -266,7 +266,7 @@
     "spinWebp": "Rotierendes WebP · 24 fps",
     "cancel": "Abbrechen",
     "progressTitle": "Rendert {dims}",
-    "progressNote": "Lass diesen Tab offen und im Vordergrund. In einem Hintergrund-Tab bremst der Browser das Rendern fast bis zum Stillstand. Das PNG wird heruntergeladen, sobald alle Kacheln fertig sind.",
+    "progressNote": "Lass diesen Tab offen und im Vordergrund. In einem Hintergrund-Tab bremst der Browser das Rendern fast bis zum Stillstand. Das Bild wird heruntergeladen, sobald alle Kacheln fertig sind.",
     "percent": "{pct} %",
     "res64k": "64K - WARNUNG",
     "res64kTip": "Hinweis: 64K-Bilder können mehrere hundert Megabyte groß werden, und viele Bildbetrachter und -editoren können so große Dateien nicht öffnen.",
