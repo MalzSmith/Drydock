@@ -266,7 +266,7 @@
     "spinWebp": "Spinning WebP · 24 fps",
     "cancel": "Cancel",
     "progressTitle": "Rendering {dims}",
-    "progressNote": "Keep this tab open. The PNG downloads when every tile is done.",
+    "progressNote": "Keep this tab open and in the foreground. In a background tab the browser slows rendering almost to a stop. The PNG downloads when every tile is done.",
     "percent": "{pct}%",
     "res64k": "64K - WARNING",
     "res64kTip": "Heads-up: 64K images can run to several hundred megabytes, and many image viewers and editors can't open files this large.",

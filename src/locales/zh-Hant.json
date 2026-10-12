@@ -252,7 +252,7 @@
     "spinWebp": "旋轉 WebP · 24 fps",
     "cancel": "取消",
     "progressTitle": "正在算繪 {dims}",
-    "progressNote": "請保持此分頁開啟。所有圖塊完成後會下載 PNG。",
+    "progressNote": "請保持此分頁開啟並位於前景。在背景分頁中，瀏覽器會讓算圖幾乎停止。所有圖塊完成後會下載 PNG。",
     "percent": "{pct}%",
     "res64k": "64K - 警告",
     "res64kTip": "提醒：64K 圖像可能達到數百 MB，許多圖像檢視器和編輯器無法開啟這麼大的檔案。",
