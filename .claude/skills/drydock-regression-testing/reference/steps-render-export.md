@@ -29,12 +29,13 @@ await s.page.mouse.move(cx, cy); await s.page.mouse.down({ button: 'right' }); a
 const p1 = await lib.shot(s, 'R7-after-pan')
 await s.page.mouse.move(cx, cy); await s.page.mouse.wheel(0, -400); await s.page.waitForTimeout(500)
 const r2 = await read()
-await s.page.mouse.dblclick(cx, cy); await s.page.waitForTimeout(800)
-const r3 = await read()
-await s.page.locator('[data-tour="vptools"] > button').nth(2).click(); await s.page.waitForTimeout(800)
-return { r0, r1, preset, pan: await lib.imgDiff(s, p0, p1), r2, r3, r4: await read(), errs: lib.drain(s) }
+await s.page.mouse.dblclick(cx, cy)
+const settle = async () => { let r = ''; for (let i = 0; i < 15; i++) { await s.page.waitForTimeout(200); r = await read(); if (r.endsWith('1.00×')) break } return r }
+const r3 = await settle()
+await s.page.locator('[data-tour="vptools"] > button').nth(2).click()
+return { r0, r1, preset, pan: await lib.imgDiff(s, p0, p1), r2, r3, r4: await settle(), errs: lib.drain(s) }
 ```
-Pass: `r1` yaw differs from `r0` and `preset` is empty; `pan.frac` above 0.01; `r2` zoom differs from `r1`; `r3` and `r4` end in `1.00×`.
+Pass: `r1` yaw differs from `r0` and `preset` is empty; `pan.frac` above 0.01; `r2` zoom differs from `r1`; `r3` and `r4` end in `1.00×` within 3 s (the reset eases, and under three parallel runners on the dev server it can take longer than 800 ms).
 
 **R8 Turntable spin.** Click `[data-tour="vptools"] > button` nth 1, wait 1 s, read the readout twice 500 ms apart. Pass: `spin` true, the button has class `on`, yaw changes; click again: `spin` false, yaw steady.
 
@@ -70,7 +71,7 @@ Pass: suggested name `<blueprint name with non-alphanumerics as _>_<YYYY-MM-DD>.
 
 **X8 File name template.** Fill `${P} .field input` with `rt-{blueprint}-{date}:x` and press Tab. Pass: suggested name `rt-<blueprint>-<YYYY-MM-DD>_x.png` (the colon replaced). Restore `{blueprint}_{date}`.
 
-**X9 Supersampling cap.** 4K, 16:9, 4× PNG. Pass: 3840×2160 output, no failure toast; record `await s.page.evaluate(() => window.__drydock.exportMs())`.
+**X9 4× at 4K** (formerly "supersampling cap"; the 700 MP cap was removed in 76be1fd, the id stays). 4K, 16:9, 4× PNG. Pass: 3840×2160 output, no failure toast; record `await s.page.evaluate(() => window.__drydock.exportMs())`.
 
 **X10 Clipboard.** Headless only (a headed browser shares the system clipboard with the other runners: then SKIP). Runner C: SKIP, `clipboard permissions not available in Playwright Firefox` (it rejects `clipboard-read`, so `lib.open` grants nothing there). 1080p, click `${P} button.btn-secondary` nth 0, wait for `busy` false.
 ```js
@@ -98,3 +99,7 @@ Pass: suggested name `<base>_turntable.zip`; 36 entries; method 0 (stored); name
 node -e "const b=require('fs').readFileSync(process.argv[1]);console.log(JSON.stringify({png:b.toString('latin1',1,4),w:b.readUInt32BE(16),h:b.readUInt32BE(20),bytes:b.length}))" "$DD_OUT/files/X14-16k.png"
 ```
 Pass: suggested name ends `.png`; `png` "PNG", `w`×`h` 15360×8640; a `@toast.downloadedFile` toast with `15360×8640`; no failure toast. Then click resolution label 3 (8K). Pass: JPG, WEBP and the spinning WebP button are enabled again and PNG stays checked (the format is not switched back). Back to 1080p, PNG.
+
+**X15 Progress dialog and Cancel.** 8K, 16:9, 8×, PNG, transparent box unchecked. Click `.btn-hero`, then wait for the export dialog: `s.page.locator('.dlg-backdrop').filter({ hasText: <export.progressNote string> })` visible (it fades in after 400 ms; wait up to 3 s). Pass: its `.dlg-title` reads "Rendering 7,680 × 4,320"; the percent label matches `/^\d+%$/`; `busy` true and `progress` a number from 0 to 1. Click the dialog's `button.btn-secondary` (Cancel) inside `lib.noDownload(s, ..., 8000)`. Pass: no download; within 8 s a `@toast.exportCancelled` toast, `busy` false, `progress` null, the dialog backdrop `hidden`; the render button label is back to its idle text. Back to 1080p, 1×.
+
+**X16 64K row.** Check `${P} .seg` nth 1: exactly one label, text the `export.res64k` string ("64K - WARNING" in English), its `title` attribute equals `export.res64kTip`. Start at 1080p, 16:9, 1×, format JPG. Click that label. Pass: `export.res` 34560; `.res-dims` reads "61,440 × 34,560 px"; the 64K label's input is checked and no resolution label in `.seg` nth 0 is; PNG is checked and JPG/WEBP inputs are `disabled`; `${P} button.btn-secondary` nth 0 (copy), nth 1 (turntable) and nth 2 (spinning WebP) are all `disabled`. Do not render (a 64K PNG is hundreds of megabytes). Click resolution label 0 (1080p). Pass: the 64K input is unchecked, copy, turntable, spinning WebP, JPG and WEBP are enabled again, PNG stays checked.

@@ -1,5 +1,5 @@
 {
-  "commit": "1b70b2a62cd32f0323c2212919ea9ba5031cf691",
+  "commit": "ae77db7f2fd00aa8704aceeedcb151ab3dca1d04",
   "date": "2026-10-12",
-  "note": "Run 20261012-000810: added X14 (16K PNG-only export, header check in Node), X ranges now X1–X14, shrink.ts mapped to X. After the run: Firefox truncated-gzip console.error expected for runner C (harness.md), L13 closes the Sources dialog first, L15 .dlg width tolerance up to 8 px."
+  "note": "Run 20261012-015100: added X15 (progress dialog + Cancel) and X16 (64K row), X9 renamed (cap removed, id kept), X ranges now X1–X16; toast.waitAssets stays a focus check (timing-dependent). After the run: R7 polls up to 3 s for the eased reset instead of a fixed 800 ms wait."
 }
