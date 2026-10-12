@@ -68,11 +68,11 @@ Pass: `narrow` and `notice` true, `app` and `booted` false, one language link pe
 
 **N4 Remembered.** `await lib.goto(s.n)`. Pass: the app boots directly, no notice. `await lib.close(s.n)`.
 
-**N5 Boundary.** Two fresh profiles (`-w1119`, `-w1120`) at widths 1119 and 1120 (`goto` happens in `open`). Pass: 1119 shows the notice, 1120 boots the app. Close both.
+**N5 Boundary.** Two fresh profiles (`-w1119`, `-w1120`) at widths 1119 and 1120 (`goto` happens in `open`), one after the other: open 1119, check, close it, then open 1120. Pass: 1119 shows the notice, 1120 boots the app. Close both.
 
 ## P Persistence across a reload (main profile)
 
-**P0 Before closing.** In the main session: set the language to Русский (menu row nth 3), make sure seams are on (R4), and in the Sources dialog move the `bp` source (kind blueprints, it defines no blocks, so resolution is unchanged) one row down with its move-down `button.src-move` so the list is no longer in ascending id order (if `bp` is the last row, move it up instead); close the dialog, then save the reference state:
+**P0 Before closing.** In the main session: set the language to Русский (menu row nth 3), make sure seams are on (R4), turn shadows on in the Scene tab (`${lib.pane('scene')} label.chk`) and set the strength to 35 (`lib.setRange(s, lib.pane('scene') + ' input[type=range] >> nth=1', 35)`), and in the Sources dialog move the `bp` source (kind blueprints, it defines no blocks, so resolution is unchanged) one row down with its move-down `button.src-move` so the list is no longer in ascending id order (if `bp` is the last row, move it up instead); close the dialog, then save the reference state:
 ```js
 return lib.save('P0', { sum: await lib.summary(s), entries: await lib.entries(s), storage: await lib.storage(s), errs: lib.drain(s) })
 ```
@@ -89,11 +89,12 @@ return {
   entries: [sum.entries, p0.sum.entries],
   locale: sum.locale, html: await s.page.evaluate(() => document.documentElement.lang),
   edges: sum.render.edges, seamsBox: await s.page.locator(lib.pane('view') + ' label.chk input').nth(0).isChecked(),
+  shadows: sum.scene.shadows, shadowStrength: sum.scene.shadowStrength, shadowBox: await s.page.locator(lib.pane('scene') + ' label.chk input').isChecked(),
   welcome: await s.page.locator('.tour-welcome').isVisible(),
   nav: sum.nav, shot: await lib.shot(s, 'P1-reloaded', null), errs: lib.drain(s),
 }
 ```
-Pass: `sourcesSame` true (order-sensitive, so it also checks the non-id order set in P0), entry counts equal, `locale` and `html` `ru`, `edges` and `seamsBox` true, `welcome` false, `nav` reports the linked sources. A `@toast.uncached` toast may appear later (files are gone); that is expected.
+Pass: `sourcesSame` true (order-sensitive, so it also checks the non-id order set in P0), entry counts equal, `locale` and `html` `ru`, `edges` and `seamsBox` true, `shadows` and `shadowBox` true with `shadowStrength` 35, `welcome` false, `nav` reports the linked sources. A `@toast.uncached` toast may appear later (files are gone); that is expected.
 
 **P2 Pairs from the snapshot.** For every pair open plain and gzipped entry with `lib.openEntry`. Pass: both load; plain and gzipped `lib.pick` are equal; name, `large` and `blockCount` equal G3 (`lib.load('G3')`), while `dims` and `lengthM` are compared with the game-linked values from G8/R1 (G3 ran before the game was linked, and game definitions give multi-cell blocks their real size); `perf` read/decode/parse are 0 (the cached parse was used because the files are no longer available); the unicode entry opens with the O3 values.
 
@@ -105,7 +106,7 @@ Pass: `sourcesSame` true (order-sensitive, so it also checks the non-id order se
 
 **P6 Unlinked source stays gone.** The source removed in L12 is not in `sources`.
 
-**P7 Settings can be reset.** Uncheck seams, choose the Browser-language row, then `lib.close(s)` and `Object.assign(s, await lib.open())`. Pass: `render.edges` false, `localStorage['drydock.seams']` "0", `drydock.lang` absent, `locale` en.
+**P7 Settings can be reset.** Uncheck seams, uncheck Shadows in the Scene tab, choose the Browser-language row, then `lib.close(s)` and `Object.assign(s, await lib.open())`. Pass: `render.edges` false, `localStorage['drydock.seams']` "0", `scene.shadows` false with `drydock.shadows` absent, `drydock.lang` absent, `locale` en.
 
 ## F Focus checks (per run)
 

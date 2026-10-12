@@ -1,5 +1,5 @@
 {
-  "commit": "ae77db7f2fd00aa8704aceeedcb151ab3dca1d04",
+  "commit": "8827ae7246b93903a38f377ec661bac9667c181e",
   "date": "2026-10-12",
-  "note": "Run 20261012-015100: added X15 (progress dialog + Cancel) and X16 (64K row), X9 renamed (cap removed, id kept), X ranges now X1–X16; toast.waitAssets stays a focus check (timing-dependent). After the run: R7 polls up to 3 s for the eased reset instead of a fixed 800 ms wait."
+  "note": "Run 20261012-185214: shadows (8827ae7) — added R14 (Shadows toggle/strength/visibility/storage/no GL errors), U7 (?shadows not persisted), X17 (tiled 8K export with shadows), shadow persistence and reset in P0/P1/P7; R12 range selector fixed (two sliders in the Scene pane now). toast.waitAssets stays a focus check. After the run: X12 clicks twice in one in-page task (a fast 1080p 1x render could finish between two Playwright clicks)."
 }

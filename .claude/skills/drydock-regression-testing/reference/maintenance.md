@@ -31,7 +31,7 @@ Keep this table current; it is how step 2 finds what to re-read.
 
 | Code | Steps |
 |---|---|
-| `src/app.ts` (URL parameters, `__drydock` hooks) | U1–U6, O1, every step that uses `window.__drydock` |
+| `src/app.ts` (URL parameters, `__drydock` hooks) | U1–U7, O1, every step that uses `window.__drydock` |
 | `src/ui/tour.ts`, `src/styles/app.css` (tour) | T1–T5, I4 |
 | `src/ui/nav.ts`, `src/ui/langMenu.ts` | B1, T3, I2, I3, L2 |
 | `src/ui/blueprintPanel.ts` | O2, L2, L13, L14, G1, G4, M1, M4–M8 |
@@ -40,13 +40,13 @@ Keep this table current; it is how step 2 finds what to re-read.
 | `src/ui/viewport.ts`, `src/render/camera.ts` | R5–R9, C18, C19 |
 | `src/ui/right/view.ts` | R2–R4, M3, M7, P1, P7 |
 | `src/ui/right/section.ts` | R9, C18 |
-| `src/ui/right/scene.ts`, `src/render/sky.ts`, `src/assets/sky.ts` | R10–R12, P4 |
-| `src/ui/right/export.ts`, `src/ui/exportDialog.ts`, `src/render/exportImage.ts`, `src/render/lanczos.ts`, `src/util/png.ts`, `src/util/save.ts`, `src/util/zip.ts`, `src/util/webp.ts` | X1–X16 |
+| `src/ui/right/scene.ts`, `src/render/sky.ts`, `src/assets/sky.ts` | R10–R12, R14, P0, P1, P4, P7 |
+| `src/ui/right/export.ts`, `src/ui/exportDialog.ts`, `src/render/exportImage.ts`, `src/render/lanczos.ts`, `src/util/png.ts`, `src/util/save.ts`, `src/util/zip.ts`, `src/util/webp.ts` | X1–X17 |
 | `src/ui/composePanel.ts`, `src/compose/*`, `src/se/sbcWrite.ts` | C1–C20 |
 | `src/se/blueprint.ts`, `src/workers/*` | O1–O6, O9, G1–G8, P2, P3, S1 test names |
 | `src/sources/scan.ts`, `src/se/mods.ts`, `src/se/defs.ts` | L2–L4, L7–L10, L15, M5, M8, M9 |
 | `src/sources/idb.ts`, `src/state/derive.ts` | G7, P1–P6 |
-| `src/render/*` (shaders, pbr, detail) | R1–R4, R12, G8, X2–X9 |
+| `src/render/*` (shaders, pbr, detail) | R1–R4, R12, R14, G8, X2–X9, X17 |
 | `src/i18n.ts`, `src/locales/*.json` | S3, T1, I2–I4, N1, N2, every toast text |
 | `index.html` (narrow page, string table) | S3, N1–N5 |
 | `src/ui/footer.ts`, `public/count.js` | B1, T4 |

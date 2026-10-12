@@ -95,7 +95,7 @@ export async function hookToasts(s) {
     window.__drydock.store.watch(
       (st) => st.toast,
       (v) => {
-        if (v) requestAnimationFrame(() => window.__rtToasts.push({ at: Date.now(), raw: v, text: document.querySelector('.toast span')?.textContent ?? '' }))
+        if (v) requestAnimationFrame(() => window.__rtToasts.push({ at: Date.now(), raw: v, error: window.__drydock.store.get().toastError, icon: [...document.querySelectorAll('.toast svg')].findIndex((e) => e.style.display !== 'none') === 1 ? 'alert' : 'check', text: document.querySelector('.toast span')?.textContent ?? '' }))
       },
     )
   })
@@ -120,6 +120,7 @@ export const summary = (s) =>
       busy: st.busy,
       modelVersion: st.modelVersion,
       toast: st.toast,
+      toastError: st.toastError,
       toastText: t && !t.hidden ? (t.querySelector('span')?.textContent ?? '') : '',
       tab: st.tab,
       locale: st.locale,

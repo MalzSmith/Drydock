@@ -105,4 +105,6 @@ Pass: `render.mode` line, `proj` persp, `edges` true, `tintMods` true, `missing`
 
 **U5 Untrusted `?bp`.** (a) `lib.goto(s, 'bp=' + encodeURIComponent('https://example.invalid/x/bp.sbc'))`, wait 3 s. Pass: `external` stays empty, no model, no toast. (b) `lib.goto(s, 'bp=/rt-does-not-exist/bp.sbc')`, wait 3 s. Pass: a toast `@toast.urlFailed` with `HTTP 404`, or, if the server answers with the SPA fallback page, `@toast.urlFailed`/`@toast.readFailed` saying it is not a blueprint; no model, no pageerror. A `console.error` "Failed to load resource: 404" is expected in (b) only.
 
-**U6** `lib.goto(s)`. Pass: default state again (`mode` blueprint, style textured, ortho). Evidence for U1–U6: one JSON each.
+**U6** `lib.goto(s)`. Pass: default state again (`mode` blueprint, style textured, ortho, `scene.shadows` false). Evidence for U1–U7: one JSON each.
+
+**U7 Shadows parameter.** `lib.goto(s, 'shadows=1')`. Pass: `scene.shadows` true, `scene.shadowStrength` 80, `localStorage['drydock.shadows']` unchanged (absent in this profile): URL parameters must not persist the setting. `lib.goto(s, 'shadows=0')`: `scene.shadows` false. `lib.goto(s)`: `scene.shadows` false.
