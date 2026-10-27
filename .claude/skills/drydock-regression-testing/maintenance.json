@@ -1,5 +1,5 @@
 {
-  "commit": "8827ae7246b93903a38f377ec661bac9667c181e",
-  "date": "2026-10-12",
-  "note": "Run 20261012-185214: shadows (8827ae7) — added R14 (Shadows toggle/strength/visibility/storage/no GL errors), U7 (?shadows not persisted), X17 (tiled 8K export with shadows), shadow persistence and reset in P0/P1/P7; R12 range selector fixed (two sliders in the Scene pane now). toast.waitAssets stays a focus check. After the run: X12 clicks twice in one in-page task (a fast 1080p 1x render could finish between two Playwright clicks)."
+  "commit": "c3bcca130fc5c36d168b2ea6013507c24a743abf",
+  "date": "2026-10-23",
+  "note": "Run 20261023-202445: no app changes since 0a746d3 (already tested as a working tree in 20261012-215148); no step edits needed, audit clean. Decal model changes, toast icons and toast.waitAssets stay focus checks. After the run: C18/C19 camera tolerance 1e-6 → 1e-3 (the app settles the ease to 1e-3)."
 }
