@@ -414,9 +414,16 @@
     "downloadedFile": "Downloaded {file} · {detail}",
     "openedFile": "Opened {file} · {detail}",
     "openFileFailed": "Could not open {file}: {error}",
-    "uncached": "{parts} · link the game folder again to load them",
-    "texturesMissing": "Textures missing: {count}",
-    "modelsMissing": "Models missing: {count}",
+    "uncached": "{parts} not loaded · link the game folder again to load them",
+    "textureCount": {
+      "one": "{count} texture",
+      "other": "{count} textures"
+    },
+    "modelCount": {
+      "one": "{count} model",
+      "other": "{count} models"
+    },
+    "texturesAndModels": "{textures} and {models}",
     "dropFailed": "Could not open: {error}",
     "urlFailed": "Blueprint load failed: {error}",
     "exportFailed": "Export failed: {error}",

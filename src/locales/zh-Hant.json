@@ -400,9 +400,14 @@
     "downloadedFile": "已下載 {file} · {detail}",
     "openedFile": "已開啟 {file} · {detail}",
     "openFileFailed": "無法開啟 {file}：{error}",
-    "uncached": "{parts} · 請重新連結遊戲資料夾以載入",
-    "texturesMissing": "缺少材質：{count}",
-    "modelsMissing": "缺少模型：{count}",
+    "uncached": "未載入 {parts} · 請重新連結遊戲資料夾以載入",
+    "textureCount": {
+      "other": "{count} 個材質"
+    },
+    "modelCount": {
+      "other": "{count} 個模型"
+    },
+    "texturesAndModels": "{textures}和 {models}",
     "dropFailed": "無法開啟：{error}",
     "urlFailed": "藍圖載入失敗：{error}",
     "exportFailed": "匯出失敗：{error}",

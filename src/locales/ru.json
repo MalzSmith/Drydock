@@ -442,9 +442,20 @@
     "downloadedFile": "{file} скачан · {detail}",
     "openedFile": "{file} открыт · {detail}",
     "openFileFailed": "Не удалось открыть {file}: {error}",
-    "uncached": "{parts} · подключите папку игры снова, чтобы загрузить их",
-    "texturesMissing": "Нет текстур: {count}",
-    "modelsMissing": "Нет моделей: {count}",
+    "uncached": "Не загружены: {parts} · подключите папку игры снова, чтобы загрузить их",
+    "textureCount": {
+      "one": "{count} текстура",
+      "few": "{count} текстуры",
+      "many": "{count} текстур",
+      "other": "{count} текстуры"
+    },
+    "modelCount": {
+      "one": "{count} модель",
+      "few": "{count} модели",
+      "many": "{count} моделей",
+      "other": "{count} модели"
+    },
+    "texturesAndModels": "{textures} и {models}",
     "dropFailed": "Не удалось открыть: {error}",
     "urlFailed": "Ошибка загрузки чертежа: {error}",
     "exportFailed": "Ошибка экспорта: {error}",

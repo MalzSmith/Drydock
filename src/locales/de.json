@@ -414,9 +414,16 @@
     "downloadedFile": "{file} heruntergeladen · {detail}",
     "openedFile": "{file} geöffnet · {detail}",
     "openFileFailed": "{file} konnte nicht geöffnet werden: {error}",
-    "uncached": "{parts} · verknüpfe den Spielordner erneut, um sie zu laden",
-    "texturesMissing": "Fehlende Texturen: {count}",
-    "modelsMissing": "Fehlende Modelle: {count}",
+    "uncached": "{parts} nicht geladen · verknüpfe den Spielordner erneut, um sie zu laden",
+    "textureCount": {
+      "one": "{count} Textur",
+      "other": "{count} Texturen"
+    },
+    "modelCount": {
+      "one": "{count} Modell",
+      "other": "{count} Modelle"
+    },
+    "texturesAndModels": "{textures} und {models}",
     "dropFailed": "Öffnen fehlgeschlagen: {error}",
     "urlFailed": "Laden der Blaupause fehlgeschlagen: {error}",
     "exportFailed": "Export fehlgeschlagen: {error}",

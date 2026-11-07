@@ -540,8 +540,10 @@ export const actions = {
     const id = s.mode === 'compose' ? 'compose' : s.bp
     if (!busy && (c.uncachedMeshes || c.uncachedTextures) && id && uncachedToast !== id) {
       uncachedToast = id
-      const parts = [c.uncachedTextures ? keyed('toast.texturesMissing', { count: c.uncachedTextures }) : '', c.uncachedMeshes ? keyed('toast.modelsMissing', { count: c.uncachedMeshes }) : '']
-      actions.toast(keyed('toast.uncached', { parts: keyedList(parts) }), true)
+      const textures = keyed('toast.textureCount', { count: c.uncachedTextures })
+      const models = keyed('toast.modelCount', { count: c.uncachedMeshes })
+      const parts = !c.uncachedMeshes ? textures : !c.uncachedTextures ? models : keyed('toast.texturesAndModels', { textures, models })
+      actions.toast(keyed('toast.uncached', { parts }), true)
     }
   },
   assetsChanged: () => store.set((s) => ({ assetsVersion: s.assetsVersion + 1 })),

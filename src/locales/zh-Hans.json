@@ -400,9 +400,14 @@
     "downloadedFile": "已下载 {file} · {detail}",
     "openedFile": "已打开 {file} · {detail}",
     "openFileFailed": "无法打开 {file}：{error}",
-    "uncached": "{parts} · 请重新关联游戏文件夹以加载",
-    "texturesMissing": "缺少纹理：{count}",
-    "modelsMissing": "缺少模型：{count}",
+    "uncached": "未加载 {parts} · 请重新关联游戏文件夹以加载",
+    "textureCount": {
+      "other": "{count} 个纹理"
+    },
+    "modelCount": {
+      "other": "{count} 个模型"
+    },
+    "texturesAndModels": "{textures}和 {models}",
     "dropFailed": "无法打开：{error}",
     "urlFailed": "蓝图加载失败：{error}",
     "exportFailed": "导出失败：{error}",
