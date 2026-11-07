@@ -1,5 +1,5 @@
 {
-  "commit": "c3bcca130fc5c36d168b2ea6013507c24a743abf",
-  "date": "2026-10-23",
-  "note": "Run 20261023-202445: no app changes since 0a746d3 (already tested as a working tree in 20261012-215148); no step edits needed, audit clean. Decal model changes, toast icons and toast.waitAssets stay focus checks. After the run: C18/C19 camera tolerance 1e-6 → 1e-3 (the app settles the ease to 1e-3)."
+  "commit": "b1ff62c65d8f217fa01dcee499a40eca20921997",
+  "date": "2026-11-07",
+  "note": "Run 20261107-153109: 3D model export (b1ff62c) → new section D (D1–D7) in steps-render-export.md, X18 promoted from focus F3 of 20261023, S4 startup size = app + three.core, selector table and file map rows, toast keys modelFailed/tooManyTriangles listed; P5 toast keys updated for 45f9bae (textureCount/modelCount/texturesAndModels). After the run: F1 orientation check folded into D3 with a one-cell tolerance (mesh extents vs dims × cell); no app defects."
 }

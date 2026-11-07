@@ -102,7 +102,7 @@ Pass: `sourcesSame` true (order-sensitive, so it also checks the non-id order se
 
 **P4 Skyboxes after reload.** Scene tab. Pass: vanilla skybox swatches are listed but disabled (`.sw-grid2 >> nth=0` buttons have `disabled`), the `.hint` note is visible, `scene.bg` is sky-default. Mod skyboxes are not listed until the workshop is linked again; this is intended, do not report it.
 
-**P5 Models from the cache.** Open the section R subject. Pass: `__drydock.info().detail` true (block models come from the IndexedDB cache without re-linking the game); textures may be missing (a `@toast.texturesMissing` or `@toast.modelsMissing` toast is expected, record which).
+**P5 Models from the cache.** Open the section R subject. Pass: `__drydock.info().detail` true (block models come from the IndexedDB cache without re-linking the game); textures may be missing: a `@toast.uncached` toast (error, icon alert) is expected whose `parts` is `@toast.textureCount`, `@toast.modelCount` or `@toast.texturesAndModels` (textures and models), record which and the displayed text (e.g. "114 textures not loaded · link the game folder again to load them").
 
 **P6 Unlinked source stays gone.** The source removed in L12 is not in `sources`.
 

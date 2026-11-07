@@ -2,7 +2,7 @@
 
 A full run took 25–40 minutes per runner on the reference machine; L9/L10 (workshop and game scans) take under a minute each when the disk cache is warm.
 
-Execution order for the whole run: E1–E4 → S1–S5 (runner A only) → E5–E6 → B1–B2 → T1, T2, T2b, T3–T5 → U1–U7 → O1–O9 → L1–L6 → G1–G7 → M1–M4 → L7–L14 → M5–M9 → L15 → G8 → R1–R14 → X1–X17 → C1–C20 → I1–I4 → N1–N5 → P0–P7 → F1–Fn (focus.md) → Z1–Z4 → report.
+Execution order for the whole run: E1–E4 → S1–S5 (runner A only) → E5–E6 → B1–B2 → T1, T2, T2b, T3–T5 → U1–U7 → O1–O9 → L1–L6 → G1–G7 → M1–M4 → L7–L14 → M5–M9 → L15 → G8 → R1–R14 → X1–X18 → D1–D7 → C1–C20 → I1–I4 → N1–N5 → P0–P7 → F1–Fn (focus.md) → Z1–Z4 → report.
 
 ## E Setup (every runner)
 
@@ -86,6 +86,6 @@ ls -R "$DD_DIST" > "$DD_OUT/logs/S4-dist-files.txt"
 node -e "const fs=require('fs'),z=require('zlib'),p=require('path');const d=process.argv[1]+'/assets';for(const f of fs.readdirSync(d).filter(f=>f.endsWith('.js')))console.log(f,fs.statSync(p.join(d,f)).size,'gzip',z.gzipSync(fs.readFileSync(p.join(d,f))).length)" "$DD_DIST" > "$DD_OUT/logs/S4-sizes.txt"
 grep -rlIF -e "$(cygpath -m "$USERPROFILE")" -e "$(cygpath -w "$USERPROFILE")" "$DD_DIST" > "$DD_OUT/logs/S4-privacy.txt"; echo "matches: $(wc -l < "$DD_OUT/logs/S4-privacy.txt")"
 ```
-Pass: exit 0; `$DD_DIST` contains `index.html`, `assets/`, `count.js`, `favicon.svg`, `THIRD_PARTY_NOTICES.txt`; the privacy grep finds no file (the build must not embed local paths or the user name); `git -C "$DD_REPO" status --porcelain=v1 --ignored` equals `git-status-before.txt` and `dist-before.txt` is unchanged (the repo's `dist/` was not touched). Record the gzip sizes; the architecture target is a JS bundle under 200 kB gzip without the data files: report the main entry chunk size as information, flag it only if clearly above.
+Pass: exit 0; `$DD_DIST` contains `index.html`, `assets/`, `count.js`, `favicon.svg`, `THIRD_PARTY_NOTICES.txt`; the privacy grep finds no file (the build must not embed local paths or the user name); `git -C "$DD_REPO" status --porcelain=v1 --ignored` equals `git-status-before.txt` and `dist-before.txt` is unchanged (the repo's `dist/` was not touched). Record the gzip sizes; the architecture target is a JS bundle under 200 kB gzip without the data files: since b1ff62c the startup JS is the `app-*.js` entry plus the shared `three.core-*.js` chunk (the `GLTFExporter-*.js` chunk loads only on a GLB export, the locale, `tile-table` and `vanilla-blocks` chunks are data), so report app + three.core as the startup size (193.8 kB gzip at b1ff62c) and flag it only if clearly above 200 kB.
 
 **S5 The repo's own `npm run build` is not run** (it would write `dist/` in the checkout). Mark S5 as SKIP with the note `covered by S2 + S4`.

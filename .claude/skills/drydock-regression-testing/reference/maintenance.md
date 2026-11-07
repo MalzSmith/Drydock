@@ -23,7 +23,7 @@ If the working tree is dirty, the uncommitted changes are also "since the last r
 
 The audit lists toast keys that no step mentions. These are failure paths that need an injected fault and have no fixed step on purpose; keep the list current when `src/locales/en.json` changes, and move a key out of it when a step starts covering it.
 
-`@toast.composeFailed` (worker crash while building a composition), `@toast.exportFailed`, `@toast.copyFailed`, `@toast.turntableFailed` (renderer or encoder failure during export), `@toast.dropFailed` (drop handler exception, the non-blueprint and damaged cases go through `readFailed`), `@toast.storeListFailed`, `@toast.snapshotFailed`, `@toast.cacheFailed`, `@toast.clearFailed` (IndexedDB failures), `@toast.scanFailed` (scan worker exception). A focus check may cover one of them when a commit touches that path, for example by blocking IndexedDB in the test profile.
+`@toast.composeFailed` (worker crash while building a composition), `@toast.exportFailed`, `@toast.copyFailed`, `@toast.turntableFailed` (renderer or encoder failure during export), `@toast.dropFailed` (drop handler exception, the non-blueprint and damaged cases go through `readFailed`), `@toast.storeListFailed`, `@toast.snapshotFailed`, `@toast.cacheFailed`, `@toast.clearFailed` (IndexedDB failures), `@toast.scanFailed` (scan worker exception), `@toast.modelFailed` (bake or writer exception during a 3D export), `@toast.tooManyTriangles` (a blueprint above the per-format triangle cap in `MAX_TRIS` of `src/render/exportModel.ts`; no fixture reaches 20M triangles). A focus check may cover one of them when a commit touches that path, for example by blocking IndexedDB in the test profile.
 
 ## Source file → steps map
 
@@ -41,7 +41,8 @@ Keep this table current; it is how step 2 finds what to re-read.
 | `src/ui/right/view.ts` | R2–R4, M3, M7, P1, P7 |
 | `src/ui/right/section.ts` | R9, C18 |
 | `src/ui/right/scene.ts`, `src/render/sky.ts`, `src/assets/sky.ts` | R10–R12, R14, P0, P1, P4, P7 |
-| `src/ui/right/export.ts`, `src/ui/exportDialog.ts`, `src/render/exportImage.ts`, `src/render/lanczos.ts`, `src/util/png.ts`, `src/util/save.ts`, `src/util/zip.ts`, `src/util/webp.ts` | X1–X17 |
+| `src/ui/right/export.ts`, `src/ui/exportDialog.ts`, `src/render/exportImage.ts`, `src/render/lanczos.ts`, `src/util/png.ts`, `src/util/save.ts`, `src/util/zip.ts`, `src/util/webp.ts` | X1–X18, D1–D7 |
+| `src/render/bake.ts`, `src/render/exportModel.ts`, `src/util/stl.ts`, `src/util/obj.ts`, `src/render/cube.ts`, `src/render/detailLayer.ts` (`scene`, `onRebuild`), `src/ui/footer.ts` (progress title) | D1–D7, S4 (chunk sizes) |
 | `src/ui/composePanel.ts`, `src/compose/*`, `src/se/sbcWrite.ts` | C1–C20 |
 | `src/se/blueprint.ts`, `src/workers/*` | O1–O6, O9, G1–G8, P2, P3, S1 test names |
 | `src/sources/scan.ts`, `src/se/mods.ts`, `src/se/defs.ts` | L2–L4, L7–L10, L15, M5, M8, M9 |

@@ -1,4 +1,4 @@
-# Rendering (R), image export (X) and 3D model export (M)
+# Rendering (R), image export (X) and 3D model export (D)
 
 ## R Rendering (main session, game linked)
 
@@ -108,26 +108,28 @@ Pass: suggested name ends `.png`; `png` "PNG", `w`×`h` 15360×8640; a `@toast.d
 
 **X16 64K row.** Check `${P} .seg` nth 1: exactly one label, text the `export.res64k` string ("64K - WARNING" in English), its `title` attribute equals `export.res64kTip`. Start at 1080p, 16:9, 1×, format JPG. Click that label. Pass: `export.res` 34560; `.res-dims` reads "61,440 × 34,560 px"; the 64K label's input is checked and no resolution label in `.seg` nth 0 is; PNG is checked and JPG/WEBP inputs are `disabled`; `${P} button.btn-secondary` nth 0 (copy), nth 1 (turntable) and nth 2 (spinning WebP) are all `disabled`. Do not render (a 64K PNG is hundreds of megabytes). Click resolution label 0 (1080p). Pass: the 64K input is unchecked, copy, turntable, spinning WebP, JPG and WEBP are enabled again, PNG stays checked.
 
-## M 3D model export (subject from R, Textured, section off, after X)
+**X18 Export waits for assets** (promoted from focus F3 of run 20261023). Open a blueprint not opened before in this session (any game-textured local blueprint other than the R subject), switch to the Export tab before it finishes loading, and as soon as `store.get().assetText` is non-empty click `.btn-hero` inside `lib.noDownload(s, ..., 4000)`. Pass: no download and a `@toast.waitAssets` toast with `icon` `alert`; `busy` stays false. If `assetText` is already empty when you click, report SKIP with that reason, not FAIL. Afterwards `lib.waitIdle` and reopen the R subject.
 
-**M1 Block and stats.** In `lib.pane('export')`: `.btn-model` has exactly three buttons with `data-fmt` glb, stl, obj and texts "GLB", "STL", "OBJ", none `disabled`; the span right after their grid (`${P} .btn-model >> nth=0 >> xpath=../following-sibling::span[1]`) matches `/^[d,.]+ triangles · GLB ≈ .+ · STL ≈ .+ · OBJ ≈ .+$/` (the `export.modelStats` string) and the span after it is the `export.modelNote` string. Pass: as stated; `window.__drydock.info().detail` is true (models are exported, not boxes).
+## D 3D model export (subject from R, Textured, section off, after X)
 
-**M2 STL.** `lib.download(s, () => s.page.locator(P + ' .btn-model[data-fmt="stl"]').click(), 'M2.stl')`, then wait for `busy` false and read the header in Node:
+**D1 Block and stats.** In `lib.pane('export')`: `.btn-model` has exactly three buttons with `data-fmt` glb, stl, obj and texts "GLB", "STL", "OBJ", none `disabled`; the span right after their grid (`${P} .btn-model >> nth=0 >> xpath=../following-sibling::span[1]`) matches `/^[d,.]+ triangles · GLB ≈ .+ · STL ≈ .+ · OBJ ≈ .+$/` (the `export.modelStats` string) and the span after it is the `export.modelNote` string. Pass: as stated; `window.__drydock.info().detail` is true (models are exported, not boxes).
+
+**D2 STL.** `lib.download(s, () => s.page.locator(P + ' .btn-model[data-fmt="stl"]').click(), 'D2.stl')`, then wait for `busy` false and read the header in Node:
 ```sh
-node -e "const b=require('fs').readFileSync(process.argv[1]);const n=b.readUInt32LE(80);console.log(JSON.stringify({tris:n,sizeOk:b.length===84+50*n,head:b.toString('latin1',0,32)}))" "$DD_OUT/files/M2.stl"
+node -e "const b=require('fs').readFileSync(process.argv[1]);const n=b.readUInt32LE(80);console.log(JSON.stringify({tris:n,sizeOk:b.length===84+50*n,head:b.toString('latin1',0,32)}))" "$DD_OUT/files/D2.stl"
 ```
 Pass: suggested name `<base>.stl`; `sizeOk` true; `tris` equals the number in the stats line; `head` is "Drydock binary STL, metres, Z up" (the STL is turned so its vertical axis is Z, as slicers expect; GLB and OBJ stay Y up); a `@toast.downloadedFile` toast whose detail is `units.triangles` with that count; `error` false.
 
-**M3 GLB.** Same with `data-fmt="glb"` as `M3.glb`:
+**D3 GLB.** Same with `data-fmt="glb"` as `D3.glb`:
 ```sh
-node -e "const b=require('fs').readFileSync(process.argv[1]);const j=JSON.parse(b.toString('utf8',20,20+b.readUInt32LE(12)));console.log(JSON.stringify({magic:b.toString('latin1',0,4),ver:b.readUInt32LE(4),lenOk:b.readUInt32LE(8)===b.length,meshes:j.meshes.length,materials:j.materials.length,tris:j.meshes.reduce((n,m)=>n+m.primitives.reduce((k,p)=>k+j.accessors[p.indices].count/3,0),0)}))" "$DD_OUT/files/M3.glb"
+node -e "const b=require('fs').readFileSync(process.argv[1]);const j=JSON.parse(b.toString('utf8',20,20+b.readUInt32LE(12)));console.log(JSON.stringify({magic:b.toString('latin1',0,4),ver:b.readUInt32LE(4),lenOk:b.readUInt32LE(8)===b.length,meshes:j.meshes.length,materials:j.materials.length,tris:j.meshes.reduce((n,m)=>n+m.primitives.reduce((k,p)=>k+j.accessors[p.indices].count/3,0),0)}))" "$DD_OUT/files/D3.glb"
 ```
-Pass: suggested name `<base>.glb`; `magic` "glTF", `ver` 2, `lenOk` true; `meshes` equals `materials` (one mesh per material); `tris` equals M2's count; toast as in M2.
+Pass: suggested name `<base>.glb`; `magic` "glTF", `ver` 2, `lenOk` true; `meshes` equals `materials` (one mesh per material); `tris` equals D2's count; toast as in D2. Orientation (added after run 20261107, where a 1 m tolerance on the cell length failed on every runner): take the union of the POSITION accessor `min`/`max` over all meshes (`j.meshes.map(m => j.accessors[m.primitives[0].attributes.POSITION])`) and the same for the D2 STL vertices; with `cell` = 2.5 (large grid) and `dims` from the store `info`, every GLB extent `hi − lo` per axis is at most `dims[axis] × cell + 0.01` and at least `(dims[axis] − 1) × cell` (the outermost cell may hold a thin or small model, e.g. a slim spotlight on the hull face, so the mesh is up to one cell short; `lengthM` counts cells and is not the mesh length); the STL extents are the GLB's with axes 1 and 2 swapped (turned about X). Record both triples.
 
-**M4 OBJ.** Same with `data-fmt="obj"` as `M4.zip`, then list the zip with the X11 one-liner. Pass: suggested name `<base>_obj.zip`; 2 entries, method 0, `<base>.obj` and `<base>.mtl`; the obj entry starts with `# Drydock` and contains `mtllib <base>.mtl` (read the stored bytes after the 30-byte local header plus name length); toast as in M2.
+**D4 OBJ.** Same with `data-fmt="obj"` as `D4.zip`, then list the zip with the X11 one-liner. Pass: suggested name `<base>_obj.zip`; 2 entries, method 0, `<base>.obj` and `<base>.mtl`; the obj entry starts with `# Drydock` and contains `mtllib <base>.mtl` (read the stored bytes after the 30-byte local header plus name length); toast as in D2.
 
-**M5 Section applied.** `actions.setSection({ on: true, axis: 0, pos: 0.5 })`, wait 600 ms. Pass: the stats line shows fewer triangles than M1; an STL download (`M5-cut.stl`) has that lower count and `sizeOk`. `actions.setSection({ on: false })` afterwards; the stats line returns to the M1 count.
+**D5 Section applied.** `actions.setSection({ on: true, axis: 0, pos: 0.5 })`, wait 600 ms. Pass: the stats line shows fewer triangles than D1; an STL download (`D5-cut.stl`) has that lower count and `sizeOk`. `actions.setSection({ on: false })` afterwards; the stats line returns to the D1 count.
 
-**M6 Progress title.** Click `.btn-model[data-fmt="glb"]` inside `lib.download` and, 450 ms after the click, read the footer status (`#foot` first span) and, if the export is still running, the export dialog title (`s.page.locator('.dlg-backdrop').filter({ hasText: <export.progressNote string> }).locator('.dlg-title')`). Pass: both read "Writing GLB" (the `export.modelProgress` string) while `busy`; the download finishes; no errors. A fast export (small ship) may already be done at 450 ms: then only the toast is checked.
+**D6 Progress title.** Click `.btn-model[data-fmt="glb"]` inside `lib.download` and, 450 ms after the click, read the footer status (`#foot` first span) and, if the export is still running, the export dialog title (`s.page.locator('.dlg-backdrop').filter({ hasText: <export.progressNote string> }).locator('.dlg-title')`). Pass: both read "Writing GLB" (the `export.modelProgress` string) while `busy`; the download finishes; no errors. A fast export (small ship) may already be done at 450 ms: then only the toast is checked.
 
-**M7 Boxes without models** (any runner, in section O right after O1 with the dropped blueprint, before the game is linked in L10). Pass: `info().detail` false, the three buttons enabled, STL downloads with `tris` = 12 × the block count shown in the footer (one cube per block, no armor tile culling) and `sizeOk`.
+**D7 Boxes without models** (any runner, in section O right after O1 with the dropped blueprint, before the game is linked in L10). Pass: `info().detail` false, the three buttons enabled, STL downloads with `tris` = 12 × the block count shown in the footer (one cube per block, no armor tile culling) and `sizeOk`.

@@ -19,7 +19,7 @@ This skill runs a complete regression test of the Drydock checkout at `<repo>` a
     steps-setup.md        E (setup) and S (static checks), execution order
     steps-boot.md         B (boot), T (tour), U (URL parameters)
     steps-blueprints.md   O (open), L (link), G (gzip/plain), M (mods, missing)
-    steps-render-export.md  R (render), X (export)
+    steps-render-export.md  R (render), X (image export), D (3D model export)
     steps-compose.md      C (compose)
     steps-locale-narrow-persist.md  I (locales), N (narrow), P (persistence), F (focus)
     steps-teardown.md     Z (teardown)
@@ -79,7 +79,7 @@ Rules you must keep:
 7. Keep each shell command under your tool's time limit; long operations are started once and polled.
 8. Always run the teardown Z1–Z4, also after failures.
 
-Execution order: E1–E4 → S1–S5 (A only) → E5–E6 → B1–B2 → T1, T2, T2b, T3–T5 → U1–U7 → O1–O9 → L1–L6 → G1–G7 → M1–M4 → L7–L14 → M5–M9 → L15 → G8 → R1–R14 → X1–X17 → C1–C20 → I1–I4 → N1–N5 → P0–P7 → F (focus.md) → Z1–Z4.
+Execution order: E1–E4 → S1–S5 (A only) → E5–E6 → B1–B2 → T1, T2, T2b, T3–T5 → U1–U7 → O1–O9 → L1–L6 → G1–G7 → M1–M4 → L7–L14 → M5–M9 → L15 → G8 → R1–R14 → X1–X18 → D1–D7 → C1–C20 → I1–I4 → N1–N5 → P0–P7 → F (focus.md) → Z1–Z4.
 
 Deliver: write the report in the exact format of report.md to $DD_OUT/report.md and return the same text as your final message.
 ```
