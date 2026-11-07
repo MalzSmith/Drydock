@@ -1,6 +1,7 @@
-import { actions, PNG_ONLY_ABOVE, STREAM_ABOVE, store } from '../../state/app.ts'
+import { actions, formatSize, PNG_ONLY_ABOVE, STREAM_ABOVE, store } from '../../state/app.ts'
 import { aspectOf } from '../../render/camera.ts'
 import { copyImage, exportImage, exportSpinWebp, exportTurntable } from '../../render/exportImage.ts'
+import { exportModel, modelBytes, modelStats, MODEL_FORMATS, type ModelFormat } from '../../render/exportModel.ts'
 import type { Renderer } from '../../render/renderer.ts'
 import { fmt as fmtN, tr } from '../../i18n.ts'
 import { check, corners, h, kicker, seg, t, tAttr, text } from '../dom.ts'
@@ -50,6 +51,9 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
   const copy = h('button', { class: 'btn btn-secondary', onClick: () => void copyImage(renderer, renderer.canvas) }, t('export.copy'))
   const turntable = h('button', { class: 'btn btn-secondary', onClick: () => void exportTurntable(renderer, renderer.canvas) }, t('export.turntable'))
   render.append(renderLabel.el)
+  const modelStat = text()
+  const modelBtn = (fmt: ModelFormat) => h('button', { class: 'btn btn-secondary btn-model', 'data-fmt': fmt, onClick: () => void exportModel(renderer, fmt) }, fmt.toUpperCase())
+  const modelBtns = MODEL_FORMATS.map(modelBtn)
 
   const el = h(
     'div',
@@ -83,6 +87,14 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
       h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px' }, copy, turntable),
       spin,
     ),
+    h(
+      'div',
+      { class: 'col g8' },
+      kicker(t('export.model')),
+      h('div', { style: 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px' }, ...modelBtns),
+      h('span', { class: 's12 muted' }, modelStat.el),
+      h('span', { class: 's12 muted' }, t('export.modelNote')),
+    ),
   )
 
   store.watch((s) => s.export.res, res.set)
@@ -111,5 +123,20 @@ export function mountExportTab(renderer: Renderer): HTMLElement {
     dims.set,
   )
   store.watch((s) => (s.busy ? tr('export.rendering') : tr('export.render', { fmt: s.export.fmt === 'WEBP' ? 'WebP' : s.export.fmt })), renderLabel.set)
+  let statTimer = 0
+  store.watch(
+    (s) => [s.modelVersion, s.composeVersion, s.mode, s.detailVersion, s.section.on, s.section.axis, s.section.pos, s.section.mode, s.section.flip, s.section.thick, s.locale] as const,
+    () => {
+      clearTimeout(statTimer)
+      // The renderer picks up the same change in its own watcher; the delay also coalesces slider drags.
+      statTimer = window.setTimeout(() => {
+        const st = modelStats(renderer)
+        const has = !!st && st.tris > 0
+        for (const b of modelBtns) b.disabled = !has
+        modelStat.set(has ? tr('export.modelStats', { tris: st.tris, glb: formatSize(modelBytes('glb', st)), stl: formatSize(modelBytes('stl', st)), obj: formatSize(modelBytes('obj', st)) }) : tr('caption.noBlueprint'))
+      }, 100)
+    },
+    (a, b) => a.every((v, i) => v === b[i]),
+  )
   return el
 }

@@ -72,6 +72,10 @@
   "units": {
     "gridLarge": "Großes Grid",
     "gridSmall": "Kleines Grid",
+    "triangles": {
+      "one": "{count} Dreieck",
+      "other": "{count} Dreiecke"
+    },
     "blocks": {
       "one": "{count} Block",
       "other": "{count} Blöcke"
@@ -272,7 +276,11 @@
     "percent": "{pct} %",
     "res64k": "64K - WARNUNG",
     "res64kTip": "Hinweis: 64K-Bilder können mehrere hundert Megabyte groß werden, und viele Bildbetrachter und -editoren können so große Dateien nicht öffnen.",
-    "ssTip": "Rendert das Bild in höherer Auflösung und skaliert es herunter. Das glättet gezackte Kanten und feine Details. Höhere Werte sehen sauberer aus, dauern aber länger."
+    "ssTip": "Rendert das Bild in höherer Auflösung und skaliert es herunter. Das glättet gezackte Kanten und feine Details. Höhere Werte sehen sauberer aus, dauern aber länger.",
+    "model": "3D-Modell",
+    "modelNote": "Schnitt angewendet. Lackfarben, keine Texturen. Meter; GLB und OBJ Y nach oben, STL Z nach oben.",
+    "modelStats": "{tris} Dreiecke · GLB ≈ {glb} · STL ≈ {stl} · OBJ ≈ {obj}",
+    "modelProgress": "Schreibe {fmt}"
   },
   "compose": {
     "stack": "Formstapel",
@@ -429,6 +437,8 @@
     "exportFailed": "Export fehlgeschlagen: {error}",
     "copyFailed": "Kopieren fehlgeschlagen: {error}",
     "turntableFailed": "Drehteller fehlgeschlagen: {error}",
+    "modelFailed": "3D-Export fehlgeschlagen: {error}",
+    "tooManyTriangles": "Zu viele Dreiecke für {fmt}: {count} (Limit {max}). Schneide das Schiff mit einem Schnitt zu oder exportiere eine kleinere Blaupause.",
     "copied": "Bild in die Zwischenablage kopiert",
     "noClipboard": "Zwischenablage nicht verfügbar",
     "storeListFailed": "Die Quellenliste konnte nicht gespeichert werden; sie geht nach dieser Sitzung verloren.",

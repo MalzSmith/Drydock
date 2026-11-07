@@ -32,8 +32,10 @@ function newCanvas(w: number, h: number): HTMLCanvasElement {
   return c
 }
 
-const CANCELLED = new Error('cancelled')
+export const CANCELLED = new Error('cancelled')
 let cancelled = false
+
+export const isCancelled = () => cancelled
 
 export function cancelExport() {
   cancelled = true
@@ -112,11 +114,11 @@ function cssWidth(canvas: HTMLCanvasElement): number {
 
 export const exportPerf: { lastMs: number } = { lastMs: 0 }
 
-async function guarded(fn: () => Promise<void>, failKey: string) {
+export async function guarded(fn: () => Promise<void>, failKey: string, title = '') {
   if (store.get().busy) return
   if (store.get().assetText) return actions.toast(keyed('toast.waitAssets'), true)
   cancelled = false
-  store.set({ busy: true, progress: 0 })
+  store.set({ busy: true, progress: 0, progressTitle: title })
   await nextFrame()
   const t0 = performance.now()
   try {
@@ -126,7 +128,7 @@ async function guarded(fn: () => Promise<void>, failKey: string) {
     if (err === CANCELLED) actions.toast(keyed('toast.exportCancelled'))
     else actions.toast(keyed(failKey, { error: errText(err) }), true)
   } finally {
-    store.set({ busy: false, progress: null })
+    store.set({ busy: false, progress: null, progressTitle: '' })
   }
 }
 

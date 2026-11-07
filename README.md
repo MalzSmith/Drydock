@@ -20,6 +20,11 @@ Drydock is a browser application for viewing and rendering Space Engineers bluep
 - Copy to clipboard.
 - Turntable: 36 frames as a ZIP file, or as a looping animated WebP at 24 fps.
 
+**3D model export**
+
+- GLB, STL or OBJ + MTL of the loaded blueprint, with the game's block models when the game folder is linked and boxes otherwise.
+- Metres; GLB and OBJ Y up, STL Z up. Paint colours as flat materials, no textures. The section view is applied; everything else, interior included, is exported.
+
 **Compose**
 
 - Build a hull from a stack of shapes: box, sphere, cylinder, ellipsoid, torus, pyramid.

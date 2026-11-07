@@ -8,41 +8,50 @@ const TABLE = (() => {
   return t
 })()
 
-export function crc32(data: Uint8Array): number {
-  let c = 0xffffffff
+export function crc32(data: Uint8Array, prev = 0): number {
+  let c = (prev ^ 0xffffffff) >>> 0
   for (let i = 0; i < data.length; i++) c = TABLE[(c ^ data[i]) & 255] ^ (c >>> 8)
   return (c ^ 0xffffffff) >>> 0
 }
 
-export function zipStore(files: Array<{ name: string; data: Uint8Array }>): Blob {
+export type ZipFile = { name: string; data: Uint8Array | Uint8Array[] }
+
+// Store-only zip; a file given as chunks is written as they are, so a large text never has to be joined first.
+export function zipStore(files: ZipFile[]): Blob {
   const enc = new TextEncoder()
   const parts: BlobPart[] = []
   const central: Uint8Array[] = []
   let offset = 0
   for (const f of files) {
     const name = enc.encode(f.name)
-    const crc = crc32(f.data)
+    const chunks = Array.isArray(f.data) ? f.data : [f.data]
+    let crc = 0
+    let size = 0
+    for (const c of chunks) {
+      crc = crc32(c, crc)
+      size += c.length
+    }
     const head = new DataView(new ArrayBuffer(30))
     head.setUint32(0, 0x04034b50, true)
     head.setUint16(4, 20, true)
     head.setUint16(6, 0x0800, true)
     head.setUint32(14, crc, true)
-    head.setUint32(18, f.data.length, true)
-    head.setUint32(22, f.data.length, true)
+    head.setUint32(18, size, true)
+    head.setUint32(22, size, true)
     head.setUint16(26, name.length, true)
-    parts.push(head.buffer, name as BlobPart, f.data as BlobPart)
+    parts.push(head.buffer, name as BlobPart, ...(chunks as BlobPart[]))
     const c = new DataView(new ArrayBuffer(46))
     c.setUint32(0, 0x02014b50, true)
     c.setUint16(4, 20, true)
     c.setUint16(6, 20, true)
     c.setUint16(8, 0x0800, true)
     c.setUint32(16, crc, true)
-    c.setUint32(20, f.data.length, true)
-    c.setUint32(24, f.data.length, true)
+    c.setUint32(20, size, true)
+    c.setUint32(24, size, true)
     c.setUint16(28, name.length, true)
     c.setUint32(42, offset, true)
     central.push(new Uint8Array(c.buffer), name)
-    offset += 30 + name.length + f.data.length
+    offset += 30 + name.length + size
   }
   let size = 0
   for (const c of central) {

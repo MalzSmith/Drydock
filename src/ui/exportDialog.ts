@@ -1,7 +1,7 @@
 import { store } from '../state/app.ts'
 import { aspectOf } from '../render/camera.ts'
 import { cancelExport } from '../render/exportImage.ts'
-import { fmt, tr } from '../i18n.ts'
+import { fmt, msg, tr } from '../i18n.ts'
 import { corners, h, progressBar, t, text } from './dom.ts'
 
 export function mountExportDialog(root: HTMLElement) {
@@ -34,8 +34,8 @@ export function mountExportDialog(root: HTMLElement) {
     },
   )
   store.watch(
-    (s) => [s.export.res, s.export.aspect, s.locale] as const,
-    ([res, aspect]) => title.set(tr('export.progressTitle', { dims: `${fmt(Math.round(res * aspectOf(aspect)))} × ${fmt(res)}` })),
+    (s) => [s.export.res, s.export.aspect, s.locale, s.progressTitle] as const,
+    ([res, aspect, , custom]) => title.set(custom ? msg(custom) : tr('export.progressTitle', { dims: `${fmt(Math.round(res * aspectOf(aspect)))} × ${fmt(res)}` })),
   )
   store.watch(
     (s) => [s.progress ?? 0, s.locale] as const,

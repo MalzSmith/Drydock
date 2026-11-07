@@ -38,6 +38,7 @@ import {
 } from './camera.ts'
 import { bgFrag, bgVert, boxFrag, boxVert } from './shaders.ts'
 import { cubeGeometry, gridGeometry } from './cube.ts'
+import type { BakeInput } from './bake.ts'
 import { createDetailLayer } from './detailLayer.ts'
 import { createResolver, type Resolver, type TilePlan } from './lanczos.ts'
 import { capsOf, type AssetCounts } from './assets.ts'
@@ -91,7 +92,7 @@ function hexVec(hex: string): Vector3 {
 
 export type Renderer = ReturnType<typeof createRenderer>
 
-export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: FrameInfo) => void; onFirstFrame: () => void; onAssets: (c: AssetCounts) => void }) {
+export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: FrameInfo) => void; onFirstFrame: () => void; onAssets: (c: AssetCounts) => void; onDetail: () => void }) {
   const gl = new WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: false })
   gl.setClearColor(0x000000, 1)
   const scene = new Scene()
@@ -99,7 +100,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
   const cube = cubeGeometry()
   const root = new Group()
   scene.add(root)
-  const detail = createDetailLayer(gl, capsOf(gl), { requestFrame: () => requestFrame(), onCounts: (c) => hooks.onAssets(c) })
+  const detail = createDetailLayer(gl, capsOf(gl), { requestFrame: () => requestFrame(), onCounts: (c) => hooks.onAssets(c), onRebuild: () => hooks.onDetail() })
 
   const boxMat = new ShaderMaterial({
     glslVersion: GLSL3,
@@ -549,6 +550,7 @@ export function createRenderer(canvas: HTMLCanvasElement, hooks: { onFrame: (f: 
     info: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles, detail: detail.active(), assets: detail.counts(), stats: detail.stats() }),
     retryAssets: () => detail.retry(),
     detailStats: () => detail.stats(),
+    exportModelInput: (): Omit<BakeInput, 'section'> | null => (model ? { model, scene: detail.scene() } : null),
     finish() {
       const ctx = gl.getContext()
       ctx.readPixels(0, 0, 1, 1, ctx.RGBA, ctx.UNSIGNED_BYTE, new Uint8Array(4))

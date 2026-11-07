@@ -5,7 +5,7 @@ import { installDrop } from './sources/drop.ts'
 import { exportPerf } from './render/exportImage.ts'
 import { PBR } from './render/pbr.ts'
 import { restoreSources } from './sources/sources.ts'
-import { actions, composePerf, getComposeModel, getModel, indexStats, perf, sectionCut, store } from './state/app.ts'
+import { actions, composePerf, getComposeModel, getModel, indexStats, perf, sectionOpts, store } from './state/app.ts'
 import { activeInfo } from './state/derive.ts'
 import { mountBlueprintPanel } from './ui/blueprintPanel.ts'
 import { mountComposePanel } from './ui/composePanel.ts'
@@ -53,7 +53,7 @@ store.watch(
 
 store.watch(
   (s) => [s.render, s.scene, s.export.aspect, s.spin, s.section, activeInfo(s)] as const,
-  ([render, scene, aspect, spin, section, info]) =>
+  ([render, scene, aspect, spin]) =>
     renderer.setOptions({
       style: render.mode,
       edges: render.edges,
@@ -68,15 +68,7 @@ store.watch(
       gradBot: scene.gradBot,
       aspect,
       spin,
-      section: {
-        on: section.on,
-        axis: section.axis,
-        cut: Math.round(sectionCut(section).pos * (info?.dims[section.axis] ?? 0)),
-        mode: section.mode,
-        flip: sectionCut(section).flip,
-        thick: section.thick,
-        capHi: section.capHi,
-      },
+      section: sectionOpts(store.get()),
     }),
   (a, b) => a.every((v, i) => v === b[i]),
 )

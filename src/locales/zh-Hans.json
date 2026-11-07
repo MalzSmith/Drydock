@@ -67,6 +67,9 @@
   "units": {
     "gridLarge": "大型网格",
     "gridSmall": "小型网格",
+    "triangles": {
+      "other": "{count} 个三角形"
+    },
     "blocks": {
       "other": "{count} 个方块"
     },
@@ -258,7 +261,11 @@
     "percent": "{pct}%",
     "res64k": "64K - 警告",
     "res64kTip": "提示：64K 图像可能达到数百 MB，许多图像查看器和编辑器无法打开这么大的文件。",
-    "ssTip": "以更高分辨率渲染图像再缩小，使锯齿边缘和细节更平滑。数值越高效果越干净，但耗时越长。"
+    "ssTip": "以更高分辨率渲染图像再缩小，使锯齿边缘和细节更平滑。数值越高效果越干净，但耗时越长。",
+    "model": "3D 模型",
+    "modelNote": "已应用剖面。使用涂装颜色，不含纹理。单位为米；GLB 和 OBJ 为 Y 轴朝上，STL 为 Z 轴朝上。",
+    "modelStats": "{tris} 个三角形 · GLB ≈ {glb} · STL ≈ {stl} · OBJ ≈ {obj}",
+    "modelProgress": "正在写入 {fmt}"
   },
   "compose": {
     "stack": "形状堆栈",
@@ -413,6 +420,8 @@
     "exportFailed": "导出失败：{error}",
     "copyFailed": "复制失败：{error}",
     "turntableFailed": "转台导出失败：{error}",
+    "modelFailed": "3D 导出失败：{error}",
+    "tooManyTriangles": "{fmt} 的三角形过多：{count}（上限 {max}）。请用剖面裁切飞船，或导出更小的蓝图。",
     "copied": "图片已复制到剪贴板",
     "noClipboard": "剪贴板不可用",
     "storeListFailed": "无法保存来源列表；本次会话结束后将会丢失。",

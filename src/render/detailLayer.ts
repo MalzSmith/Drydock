@@ -230,7 +230,7 @@ function warmPrograms(gl: WebGLRenderer, quad: BufferGeometry, cam: Camera, soli
   shaded.dispose()
 }
 
-export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { requestFrame: () => void; onCounts: (c: AssetCounts) => void }) {
+export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { requestFrame: () => void; onCounts: (c: AssetCounts) => void; onRebuild: () => void }) {
   const shared: Record<string, IUniform> = {
     u_style: { value: 0 },
     u_tint: { value: 0 },
@@ -523,6 +523,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     built = null
     if (!model || !table || !model.defs) {
       hooks.requestFrame()
+      hooks.onRebuild()
       return
     }
     const scene = buildDetail(model, table, (c, turret) => assets.mesh(c, turret))
@@ -530,6 +531,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     active = scene.groups.length > 0
     if (!active) {
       hooks.requestFrame()
+      hooks.onRebuild()
       return
     }
     refBoxMat.uniforms.u_cmin.value.set(model.cellMin[0], model.cellMin[1], model.cellMin[2])
@@ -598,6 +600,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
       }
     applyVisibility()
     hooks.requestFrame()
+    hooks.onRebuild()
   }
 
   function applyVisibility() {
@@ -876,6 +879,7 @@ export function createDetailLayer(gl: WebGLRenderer, caps: Caps, hooks: { reques
     renderTile,
     depthRange,
     active: () => active,
+    scene: () => built,
     retry: () => assets.retry(),
     counts: () => assets.counts(),
     stats: () => (built ? { models: built.models, pending: built.pending, missing: built.missing, uncached: built.uncached } : null),

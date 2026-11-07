@@ -1,6 +1,8 @@
 import { BufferAttribute, InstancedBufferGeometry, InstancedInterleavedBuffer, InterleavedBufferAttribute } from 'three'
 
-export function cubeGeometry(): InstancedBufferGeometry {
+export type CubeData = { pos: Float32Array; nrm: Float32Array; idx: Uint32Array }
+
+export function cubeData(): CubeData {
   const pos: number[] = []
   const nor: number[] = []
   const idx: number[] = []
@@ -20,10 +22,15 @@ export function cubeGeometry(): InstancedBufferGeometry {
     const o = f * 4
     idx.push(o, o + 1, o + 2, o, o + 2, o + 3)
   })
+  return { pos: new Float32Array(pos), nrm: new Float32Array(nor), idx: new Uint32Array(idx) }
+}
+
+export function cubeGeometry(): InstancedBufferGeometry {
+  const d = cubeData()
   const g = new InstancedBufferGeometry()
-  g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3))
-  g.setAttribute('normal', new BufferAttribute(new Float32Array(nor), 3))
-  g.setIndex(idx)
+  g.setAttribute('position', new BufferAttribute(d.pos, 3))
+  g.setAttribute('normal', new BufferAttribute(d.nrm, 3))
+  g.setIndex(Array.from(d.idx))
   return g
 }
 

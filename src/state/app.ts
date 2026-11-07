@@ -27,6 +27,8 @@ import type { ParseArg, ParseResult, VoxelizeResult, WriteResult } from '../work
 import { estimateSbcBytes, formatBytes } from '../se/sbcWrite.ts'
 import { download } from '../util/save.ts'
 import { createStore } from './store.ts'
+import { activeInfo } from './derive.ts'
+import type { RenderOptions } from '../render/renderer.ts'
 import { currentLang, ensureLocale, applyLocale, readLangSetting, resolveLang, saveLangSetting, type Lang, type LangSetting } from '../i18n.ts'
 import { errText, keyed, keyedList } from '../util/keyed.ts'
 
@@ -120,6 +122,8 @@ export type AppState = {
   toastError: boolean
   busy: boolean
   progress: number | null
+  progressTitle: string
+  detailVersion: number
   spin: boolean
   preset: string
 }
@@ -216,6 +220,8 @@ export const store = createStore<AppState>({
   toastError: false,
   busy: false,
   progress: null,
+  progressTitle: '',
+  detailVersion: 0,
   spin: false,
   preset: 'iso',
 })
@@ -223,6 +229,12 @@ export const store = createStore<AppState>({
 export function sectionCut(s: AppState['section']): { pos: number; flip: boolean } {
   const mirror = s.axis !== 1
   return { pos: mirror ? 1 - s.pos : s.pos, flip: s.flip !== mirror }
+}
+
+export function sectionOpts(s: AppState): RenderOptions['section'] {
+  const sec = s.section
+  const cut = sectionCut(sec)
+  return { on: sec.on, axis: sec.axis, cut: Math.round(cut.pos * (activeInfo(s)?.dims[sec.axis] ?? 0)), mode: sec.mode, flip: cut.flip, thick: sec.thick, capHi: sec.capHi }
 }
 
 type Perf ={ read: number; decode: number; parse: number; resolve: number; firstFrame: number; total: number; blocks: number }
@@ -517,6 +529,7 @@ export const actions = {
   setTab: (tab: Tab) => store.set({ tab }),
   setRender: (p: Partial<AppState['render']>) => store.set((s) => ({ render: { ...s.render, ...p } })),
   setSection: (p: Partial<AppState['section']>) => store.set((s) => ({ section: { ...s.section, ...p } })),
+  detailChanged: () => store.set((s) => ({ detailVersion: s.detailVersion + 1 })),
   setScene: (p: Partial<AppState['scene']>) => store.set((s) => ({ scene: { ...s.scene, ...p } })),
   setSkies: (skies: SkyItem[]) =>
     store.set((s) => ({ skies, scene: s.scene.bg.startsWith('sky:') && !skies.some((k) => k.id === s.scene.bg && k.ready) ? { ...s.scene, bg: 'sky-default' } : s.scene })),

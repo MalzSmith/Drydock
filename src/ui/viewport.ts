@@ -99,6 +99,7 @@ export function mountViewport(root: HTMLElement) {
       readout.set(`YAW ${String(dg(f.view.yaw)).padStart(3, '0')}° · PITCH ${Math.round((wrapAngle(f.view.pitch) * 180) / Math.PI)}° · ${f.view.zoom.toFixed(2)}×`)
     },
     onAssets: (c) => actions.setAssets(c),
+    onDetail: () => queueMicrotask(() => actions.detailChanged()),
     onFirstFrame() {
       if (perf.last) {
         perf.last.firstFrame = performance.now() - perf.t0 - perf.last.read - perf.last.decode - perf.last.parse - perf.last.resolve

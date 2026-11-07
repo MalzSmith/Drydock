@@ -72,6 +72,10 @@
   "units": {
     "gridLarge": "Large grid",
     "gridSmall": "Small grid",
+    "triangles": {
+      "one": "{count} triangle",
+      "other": "{count} triangles"
+    },
     "blocks": {
       "one": "{count} block",
       "other": "{count} blocks"
@@ -272,7 +276,11 @@
     "percent": "{pct}%",
     "res64k": "64K - WARNING",
     "res64kTip": "Heads-up: 64K images can run to several hundred megabytes, and many image viewers and editors can't open files this large.",
-    "ssTip": "Renders the image at a higher resolution and scales it down, smoothing jagged edges and fine details. Higher values look cleaner but take longer."
+    "ssTip": "Renders the image at a higher resolution and scales it down, smoothing jagged edges and fine details. Higher values look cleaner but take longer.",
+    "model": "3D model",
+    "modelNote": "Section applied. Paint colours, no textures. Metres; GLB and OBJ Y up, STL Z up.",
+    "modelStats": "{tris} triangles · GLB ≈ {glb} · STL ≈ {stl} · OBJ ≈ {obj}",
+    "modelProgress": "Writing {fmt}"
   },
   "compose": {
     "stack": "Shape stack",
@@ -429,6 +437,8 @@
     "exportFailed": "Export failed: {error}",
     "copyFailed": "Copy failed: {error}",
     "turntableFailed": "Turntable failed: {error}",
+    "modelFailed": "3D export failed: {error}",
+    "tooManyTriangles": "Too many triangles for {fmt}: {count} (limit {max}). Cut the ship with a section or export a smaller blueprint.",
     "copied": "Image copied to clipboard",
     "noClipboard": "Clipboard not available",
     "storeListFailed": "Could not store the source list; it will be forgotten after this session.",

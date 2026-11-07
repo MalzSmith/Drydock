@@ -20,7 +20,7 @@ export function mountFooter(root: HTMLElement) {
     h('span', null, t('footer.privacy')),
     h('a', { href: 'https://github.com/MalzSmith/Drydock', target: '_blank', rel: 'noopener' }, 'GitHub'),
   )
-  store.watch((s) => (s.busy ? tr('status.rendering') : s.loading ? tr('status.loading') : msg(s.scanText || s.assetText) || tr('footer.ready')), status.set)
+  store.watch((s) => (s.busy ? (s.progressTitle ? msg(s.progressTitle) : tr('status.rendering')) : s.loading ? tr('status.loading') : msg(s.scanText || s.assetText) || tr('footer.ready')), status.set)
   store.watch(
     (s) => (s.scanText ? (s.scanFrac ?? -1) : s.assetText ? (s.assetFrac ?? -1) : -2),
     (v) => {
